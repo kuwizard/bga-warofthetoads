@@ -138,6 +138,21 @@ class Cards extends CachedDB_Manager
         $card->setLocationArg($bottom + 1);
     }
 
+    /**
+     * The card most recently returned by `$playerId` via `returnToDeckBottom()` —
+     * that's the only call site appending to a deck's bottom, so the max
+     * `locationArg` among their deck cards is unambiguously it. Used to undo a
+     * confirmed-but-not-yet-resolved ReturnCard choice.
+     */
+    public static function getLastReturnedCard(int $playerId): ?Card
+    {
+        return static::getAll()
+            ->where('controller', $playerId)
+            ->where('location', LOCATION_DECK)
+            ->sort(fn(Card $a, Card $b) => $b->getLocationArg() <=> $a->getLocationArg())
+            ->first();
+    }
+
     // ── READS ─────────────────────────────────────────────────────────────────
 
     public static function get(int $id): ?Card

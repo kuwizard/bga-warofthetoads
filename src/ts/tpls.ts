@@ -13,8 +13,17 @@ const specialAttributeLabels: { [code: string]: string } = {
     siege: 'Loses in Defence, wins in Attack — except against Saboteur',
 };
 
+// Two-sided (see src/scss/hand.scss's .wott-card-flip) so a returned card can
+// flip face-down before sliding into the deck, and back when undone.
 export function tplHandCard(card: CardData): string {
-    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-card-${card.id}" data-card-id="${card.id}"></div>`;
+    return `
+        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${card.deck}-back"></div>
+            </div>
+        </div>
+    `;
 }
 
 /** Shown via `bga.gameui.addTooltipHtml` on hover — see hand.ts. */

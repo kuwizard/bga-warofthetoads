@@ -48,3 +48,11 @@ interface CardReturnedNotifArgs {
     card_id?: number;
     card_type?: string;
 }
+
+interface CardReturnUndoneNotifArgs {
+    player_id: number;
+    player_name: string;
+    // Present only in the `_private` block delivered to the acting player
+    // (Notifications::cardReturnUndone()) — absent for everyone else, [H13].
+    card?: CardData;
+}

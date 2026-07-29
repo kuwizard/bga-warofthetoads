@@ -8,7 +8,14 @@ const specialAttributeLabels = {
     siege: 'Loses in Defence, wins in Attack — except against Saboteur',
 };
 export function tplHandCard(card) {
-    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-card-${card.id}" data-card-id="${card.id}"></div>`;
+    return `
+        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${card.deck}-back"></div>
+            </div>
+        </div>
+    `;
 }
 export function tplCardTooltip(card) {
     const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;

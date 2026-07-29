@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads\States;
 
+use Bga\GameFramework\Actions\CheckAction;
 use Bga\GameFramework\StateType;
 use Bga\GameFramework\States\GameState;
 use Bga\GameFramework\States\PossibleAction;
@@ -28,8 +29,8 @@ class ReturnCard extends GameState
         parent::__construct($game,
             id: ST_RETURN_CARD,
             type: StateType::MULTIPLE_ACTIVE_PLAYER,
-            description: clienttranslate('${actplayer} must return a card to their deck'),
-            descriptionMyTurn: clienttranslate('${you} must return a card to your deck'),
+            description: clienttranslate('${actplayer} must return a card to the bottom of their deck'),
+            descriptionMyTurn: clienttranslate('${you} must return a card to the bottom of your deck'),
         );
     }
 
@@ -61,6 +62,29 @@ class ReturnCard extends GameState
     {
         Cards::returnToDeckBottom($card);
         Notifications::cardReturned(Players::get($playerId), $card);
+    }
+
+    /**
+     * Lets a player who already confirmed take it back, as long as
+     * ReturnCard hasn't fully resolved yet. `#[CheckAction(false)]` disables
+     * the framework's default "must be currently active" gate (this player
+     * just made themselves inactive via actReturnCard); `checkPossibleAction`
+     * re-validates it manually instead — which naturally fails once every
+     * player has confirmed and the state has moved on to EndScore, so "only
+     * if the other player hasn't decided yet" needs no extra guard.
+     */
+    #[PossibleAction]
+    #[CheckAction(false)]
+    public function actUndoReturnCard(): void
+    {
+        $this->gamestate->checkPossibleAction('actUndoReturnCard');
+        $playerId = Players::getCurrentId();
+        $card = Cards::getLastReturnedCard($playerId);
+
+        $card->setLocation(LOCATION_HAND);
+        Notifications::cardReturnUndone(Players::get($playerId), $card);
+
+        $this->gamestate->setPlayersMultiactive([$playerId], EndScore::class);
     }
 
     /**

@@ -12,6 +12,8 @@ import { Game } from "../Game";
  */
 export class ReturnCard {
     private selectedCardId: number | null = null;
+    // Only way to go inactive here is by confirming (entry activates everyone at once).
+    private hasConfirmedReturn: boolean = false;
 
     constructor(private game: Game, private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
@@ -21,8 +23,8 @@ export class ReturnCard {
      */
     onEnteringState(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
         this.bga.statusBar.setTitle(isCurrentPlayerActive ?
-            _('${you} must return a card to your deck') :
-            _('${actplayer} must return a card to their deck')
+            _('${you} must return a card to the bottom of your deck') :
+            _('${actplayer} must return a card to the bottom of their deck')
         );
 
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
@@ -34,6 +36,7 @@ export class ReturnCard {
     onLeavingState(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
         this.game.setHandSelectable(false);
         this.selectedCardId = null;
+        this.hasConfirmedReturn = false;
         this.game.setSelectedHandCard(null);
     }
 
@@ -42,6 +45,8 @@ export class ReturnCard {
      */
     onPlayerActivationChange(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
         this.selectedCardId = null;
+        this.hasConfirmedReturn = !isCurrentPlayerActive;
+        this.game.setSelectedHandCard(null);
         this.game.setHandSelectable(isCurrentPlayerActive, cardId => this.onCardClick(cardId));
         this.refreshActionButtons();
     }
@@ -54,6 +59,15 @@ export class ReturnCard {
 
     private refreshActionButtons() {
         this.bga.statusBar.removeActionButtons();
+
+        if (this.hasConfirmedReturn) {
+            this.bga.statusBar.addActionButton(_('Undo'), () => {
+                // checkAction: false — this player is inactive, mirrors server-side #[CheckAction(false)].
+                this.bga.actions.performAction('actUndoReturnCard', {}, { checkAction: false, checkPossibleActions: true });
+            }, { id: 'btn-undo-return-card', color: 'secondary' });
+            return;
+        }
+
         if (this.selectedCardId === null) {
             return;
         }

@@ -3,20 +3,24 @@ export class ReturnCard {
         this.game = game;
         this.bga = bga;
         this.selectedCardId = null;
+        this.hasConfirmedReturn = false;
     }
     onEnteringState(args, isCurrentPlayerActive) {
         this.bga.statusBar.setTitle(isCurrentPlayerActive ?
-            _('${you} must return a card to your deck') :
-            _('${actplayer} must return a card to their deck'));
+            _('${you} must return a card to the bottom of your deck') :
+            _('${actplayer} must return a card to the bottom of their deck'));
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
     onLeavingState(args, isCurrentPlayerActive) {
         this.game.setHandSelectable(false);
         this.selectedCardId = null;
+        this.hasConfirmedReturn = false;
         this.game.setSelectedHandCard(null);
     }
     onPlayerActivationChange(args, isCurrentPlayerActive) {
         this.selectedCardId = null;
+        this.hasConfirmedReturn = !isCurrentPlayerActive;
+        this.game.setSelectedHandCard(null);
         this.game.setHandSelectable(isCurrentPlayerActive, cardId => this.onCardClick(cardId));
         this.refreshActionButtons();
     }
@@ -27,6 +31,12 @@ export class ReturnCard {
     }
     refreshActionButtons() {
         this.bga.statusBar.removeActionButtons();
+        if (this.hasConfirmedReturn) {
+            this.bga.statusBar.addActionButton(_('Undo'), () => {
+                this.bga.actions.performAction('actUndoReturnCard', {}, { checkAction: false, checkPossibleActions: true });
+            }, { id: 'btn-undo-return-card', color: 'secondary' });
+            return;
+        }
         if (this.selectedCardId === null) {
             return;
         }

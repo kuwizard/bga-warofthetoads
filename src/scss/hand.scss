@@ -13,12 +13,41 @@
   background: hsla(0, 0%, 100%, 0.75);
   border-radius: v.$radius * 2;
 
-  .wott-card {
+  .wott-card-flip {
     width: 130px;
   }
 }
 
-.wott-card.wott-selectable {
+// Two-sided hand card (see tpls.ts::tplHandCard) — rotated via
+// .wott-card-flip--flipped, e.g. when ReturnCard confirms/undoes a card
+// (Game.ts::notif_cardReturned / notif_cardReturnUndone).
+.wott-card-flip {
+  perspective: 1000px;
+}
+
+.wott-card-flip__inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 25 / 36;
+  transition: transform calc(0.4s * var(--am)) ease;
+  transform-style: preserve-3d;
+}
+
+.wott-card-flip--flipped .wott-card-flip__inner {
+  transform: rotateY(180deg);
+}
+
+.wott-card-flip__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.wott-card-flip__face--back {
+  transform: rotateY(180deg);
+}
+
+.wott-card-flip.wott-selectable {
   cursor: pointer;
   transition: transform calc(0.15s * var(--am)) ease;
 
@@ -29,10 +58,23 @@
 
 // Chosen but not yet confirmed (see src/ts/States/ReturnCard.ts) — stays
 // lifted and outlined until Confirm or Cancel is clicked.
-.wott-card.wott-selectable.wott-card--selected {
+.wott-card-flip.wott-selectable.wott-card--selected {
   transform: translateY(-10px);
   outline: 3px solid gold;
   outline-offset: 2px;
+}
+
+// Runtime slide (src/ts/hand.ts::slideIntoPlace, the classic FLIP technique).
+// The card is already reparented to its real final position when this runs,
+// so stacking/z-index is correct for the whole move; --slide-dx/--slide-dy
+// hold the pixel offset from its previous screen position, and removing them
+// (with .wott-card-slide--animating's transition active) animates the slide.
+.wott-card-slide {
+  transform: translate(var(--slide-dx, 0px), var(--slide-dy, 0px));
+}
+
+.wott-card-slide--animating {
+  transition: transform calc(0.4s * var(--am)) ease;
 }
 
 // Card name + Tactic text, shown via bga.gameui.addTooltipHtml on hover

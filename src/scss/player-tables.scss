@@ -54,6 +54,9 @@
 // looking at your own face-down deck too, so no card fronts belong here.
 .wott-deck {
   position: relative;
+  // Own stacking context, so .wott-deck-anchor's z-index: -1 is guaranteed to
+  // land behind the back sprite below and nothing further up the page.
+  z-index: 0;
   display: inline-block;
   width: 110px;
   margin-bottom: v.$gap;
@@ -61,6 +64,17 @@
   .wott-card {
     width: 100%;
   }
+}
+
+// slideAndAttach target for ReturnCard's confirm/undo card animation
+// (Game.ts/hand.ts) — absolutely positioned over the deck square so an
+// in-transit card never adds flow height to .wott-deck the way a plain child
+// would, and negative z-index keeps it visually behind the deck's own back
+// sprite ("under the deck").
+.wott-deck-anchor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
 }
 
 .wott-deck-count {

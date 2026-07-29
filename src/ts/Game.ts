@@ -99,6 +99,7 @@ export class Game {
                     <div class="wott-deck">
                         <div class="wott-card wott-card--${deckColor}-back"></div>
                         <span class="wott-deck-count" id="wott-deck-count-${playerId}">${deckCount}</span>
+                        <div class="wott-deck-anchor" id="wott-deck-anchor-${playerId}"></div>
                     </div>
                 </div>
             `);
@@ -176,7 +177,42 @@ export class Game {
         // opponent's hand is never rendered, so there is nothing to remove for them.
         if (args.card_id !== undefined) {
             this.gamedatas.cards.hand = this.gamedatas.cards.hand.filter(card => card.id !== args.card_id);
-            this.hand.removeCard(args.card_id);
+
+            const deckAnchor = document.getElementById(`wott-deck-anchor-${playerId}`);
+            if (deckAnchor) {
+                await this.hand.animateReturnToDeck(args.card_id, deckAnchor);
+            } else {
+                this.hand.removeCard(args.card_id);
+            }
+        }
+    }
+
+    /**
+     * Undoes a `cardReturned` while ReturnCard hasn't resolved yet — see
+     * Notifications::cardReturnUndone(). `args.card` (full data) is present
+     * only for the acting player ([H13]); everyone else just sees their
+     * counts reversed.
+     */
+    async notif_cardReturnUndone(args: CardReturnUndoneNotifArgs) {
+        const playerId = Number(args.player_id);
+
+        this.gamedatas.cards.deckCounts[playerId] = (this.gamedatas.cards.deckCounts[playerId] ?? 1) - 1;
+        this.gamedatas.cards.handCounts[playerId] = (this.gamedatas.cards.handCounts[playerId] ?? 0) + 1;
+
+        const deckCountElement = document.getElementById(`wott-deck-count-${playerId}`);
+        if (deckCountElement) {
+            deckCountElement.textContent = `${this.gamedatas.cards.deckCounts[playerId]}`;
+        }
+
+        if (args.card !== undefined) {
+            this.gamedatas.cards.hand.push(args.card);
+
+            const deckAnchor = document.getElementById(`wott-deck-anchor-${playerId}`);
+            if (deckAnchor) {
+                await this.hand.animateUndoReturn(args.card, deckAnchor);
+            } else {
+                this.hand.appendCard(args.card);
+            }
         }
     }
 }

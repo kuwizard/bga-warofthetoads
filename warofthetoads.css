@@ -43,12 +43,19 @@
 
 .wott-deck {
   position: relative;
+  z-index: 0;
   display: inline-block;
   width: 110px;
   margin-bottom: 8px;
 }
 .wott-deck .wott-card {
   width: 100%;
+}
+
+.wott-deck-anchor {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
 }
 
 .wott-deck-count {
@@ -73,22 +80,56 @@
   background: hsla(0, 0%, 100%, 0.75);
   border-radius: 12px;
 }
-#wott-my-hand .wott-card {
+#wott-my-hand .wott-card-flip {
   width: 130px;
 }
 
-.wott-card.wott-selectable {
+.wott-card-flip {
+  perspective: 1000px;
+}
+
+.wott-card-flip__inner {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 25/36;
+  transition: transform calc(0.4s * var(--am)) ease;
+  transform-style: preserve-3d;
+}
+
+.wott-card-flip--flipped .wott-card-flip__inner {
+  transform: rotateY(180deg);
+}
+
+.wott-card-flip__face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+}
+
+.wott-card-flip__face--back {
+  transform: rotateY(180deg);
+}
+
+.wott-card-flip.wott-selectable {
   cursor: pointer;
   transition: transform calc(0.15s * var(--am)) ease;
 }
-.wott-card.wott-selectable:hover {
+.wott-card-flip.wott-selectable:hover {
   transform: translateY(-10px);
 }
 
-.wott-card.wott-selectable.wott-card--selected {
+.wott-card-flip.wott-selectable.wott-card--selected {
   transform: translateY(-10px);
   outline: 3px solid gold;
   outline-offset: 2px;
+}
+
+.wott-card-slide {
+  transform: translate(var(--slide-dx, 0px), var(--slide-dy, 0px));
+}
+
+.wott-card-slide--animating {
+  transition: transform calc(0.4s * var(--am)) ease;
 }
 
 .wott-card-tooltip {

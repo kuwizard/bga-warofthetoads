@@ -83,12 +83,32 @@ class Notifications
      */
     public static function cardReturned(Player $player, Card $card): void
     {
-        self::notifyAll('cardReturned', clienttranslate('${player_name} returns a card to their deck'), [
-            'player'   => $player,
-            '_private' => [
+        self::notifyAll('cardReturned', clienttranslate('${player_name} returns a card to the bottom of their deck'), [
+            'player'          => $player,
+            '_merge_private'  => true,
+            '_private'        => [
                 $player->getId() => [
                     'card_id'   => $card->getId(),
                     'card_type' => $card->getType(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * Undoes a `cardReturned` while ReturnCard hasn't fully resolved yet — see
+     * States/ReturnCard.php::actUndoReturnCard(). Same public/private split:
+     * everyone else just sees the return undone, only the acting player's own
+     * client gets the full card back to re-add it to their hand display.
+     */
+    public static function cardReturnUndone(Player $player, Card $card): void
+    {
+        self::notifyAll('cardReturnUndone', clienttranslate('${player_name} cancels their card return'), [
+            'player'         => $player,
+            '_merge_private' => true,
+            '_private'       => [
+                $player->getId() => [
+                    'card' => $card->getUiData($player->getId()),
                 ],
             ],
         ]);
