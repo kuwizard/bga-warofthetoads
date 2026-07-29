@@ -1,0 +1,13 @@
+// Shared SCSS variables. Consumed with `@use 'variables' as v;` and referenced
+// as `v.$name`. Keep magic numbers and colours here rather than in feature files.
+
+// Keys must be valid CSS identifiers, hence the leading underscore.
+$player-colors: (
+    _ff0000: #ff0000,
+    _008000: #008000,
+    _0000ff: #0000ff,
+    _ffa500: #ffa500,
+);
+
+$gap: 8px;
+$radius: 6px;

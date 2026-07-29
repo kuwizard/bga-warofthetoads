@@ -1,0 +1,52 @@
+// Root SCSS entry point. Compiled to warofthetoads.css (the file BGA deploys).
+//
+// NEVER edit warofthetoads.css directly — it is generated and will be overwritten.
+//
+// Split styles across partials in this folder (filenames starting with `_`) and
+// pull them in with @use below, one line per feature area.
+//
+// IMPORTANT: keep every @use at the very top, above any loud /* */ comment.
+// Sass re-emits loud comments that precede a @use once per loaded module, which
+// duplicates them in the compiled CSS. Use // comments up here instead.
+
+@use 'variables' as v;
+@use './player-tables';
+
+/**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * WarOfTheToads implementation : © <Your name here> <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
+
+/* Note: you must not use any @import directive in the compiled CSS */
+
+/********* You can start writing your CSS below this line: **********/
+
+/*
+    Example of CSS sprites (a black token and a white token, 20x20px each,
+    embedded in the same "tokens.png" 40x20px image):
+
+    .white_token {
+        background-image: url('img/tokens.png');
+        background-position: 0px 0px;
+    }
+    .black_token {
+        background-image: url('img/tokens.png');
+        background-position: -20px 0px;
+    }
+    .token {
+        width: 20px;
+        height: 20px;
+        background-repeat: none;
+    }
+*/
+
+@each $key, $val in v.$player-colors {
+    .fgcolor#{$key} {
+        color: #{$val};
+    }
+}

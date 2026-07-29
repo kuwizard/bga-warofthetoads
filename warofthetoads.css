@@ -1,0 +1,57 @@
+@charset "UTF-8";
+#player-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+[id^=player-table-] {
+  padding: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+}
+
+/**
+ *------
+ * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
+ * WarOfTheToads implementation : © <Your name here> <Your email address here>
+ *
+ * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
+ * See http://en.boardgamearena.com/#!doc/Studio for more information.
+ * -----
+ */
+/* Note: you must not use any @import directive in the compiled CSS */
+/********* You can start writing your CSS below this line: **********/
+/*
+    Example of CSS sprites (a black token and a white token, 20x20px each,
+    embedded in the same "tokens.png" 40x20px image):
+
+    .white_token {
+        background-image: url('img/tokens.png');
+        background-position: 0px 0px;
+    }
+    .black_token {
+        background-image: url('img/tokens.png');
+        background-position: -20px 0px;
+    }
+    .token {
+        width: 20px;
+        height: 20px;
+        background-repeat: none;
+    }
+*/
+.fgcolor_ff0000 {
+  color: #ff0000;
+}
+
+.fgcolor_008000 {
+  color: #008000;
+}
+
+.fgcolor_0000ff {
+  color: #0000ff;
+}
+
+.fgcolor_ffa500 {
+  color: #ffa500;
+}

@@ -1,0 +1,19 @@
+# Dependencies
+node_modules/
+
+# IDE / editor local config (machine-specific; holds SFTP server settings)
+.idea/
+.vscode/
+.claude/settings.local.json
+
+# BGA Studio scaffold reference — never modified, never tracked
+bga_initial_code_template/
+
+# Images: large binaries, deployed to BGA via SFTP separately
+img/
+
+# Generated source maps
+*.css.map
+*.js.map
+
+.DS_Store
