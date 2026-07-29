@@ -1,6 +1,9 @@
 {
   // option ids should be between 100 and 199
   // See https://en.doc.boardgamearena.com/Options_and_preferences:_gameoptions.json,_gamepreferences.json for more details
+
+  // War of the Toads has no variants (doc/IMPLEMENTATION_PLAN.md §3, PR1) — this
+  // file is expected to stay empty for the life of the project.
   /*
   EXAMPLE:
 

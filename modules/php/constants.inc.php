@@ -16,42 +16,96 @@
  *   - string constants for anything stored in a DB column (locations, types) —
  *     they survive a schema dump readably; ints do not.
  *
- * Everything below is an example. Delete what the game does not use.
+ * See doc/IMPLEMENTATION_PLAN.md §2 for the design these mirror.
  */
 
 // ── State ids ─────────────────────────────────────────────────────────────────
 // Passed to the GameState constructor. 1 (gameSetup) and 99 (gameEnd) are
 // reserved by the framework. 98 is the conventional slot for score computation,
 // since argGameEnd()/stGameEnd() are final and cannot be overridden.
+//
+// PR1 still ships the template's example states (States/PlayerTurn.php,
+// NextPlayer.php, EndScore.php) as a placeholder so the game keeps compiling —
+// PR2+ deletes them and replaces them with the real ones below. IDs 10/90/98
+// are already claimed by that placeholder trio (ST_PLAYER_TURN/ST_NEXT_PLAYER/
+// ST_END_SCORE, still declared further down); WarSetup/BattleEnd/ComputeScores
+// will reuse those same three numbers when the classes are renamed in place,
+// not new ones — so no consts for them are declared here yet.
 
 const ST_GAME_SETUP  = 1;
+const ST_RETURN_CARD    = 15;
+const ST_BATTLE_START   = 20;
+const ST_ATTACKER_PLAY  = 30;
+const ST_DEFENDER_PLAY  = 40;
+const ST_DRAW_CARDS     = 50;
+const ST_RESOLVE_TACTICS = 60;
+const ST_SCOUT_REVEAL   = 65;
+const ST_RESOLVE_BATTLE = 70;
+const ST_CHOOSE_STACK   = 75;
+const ST_SIEGE_GUESS    = 80;
+const ST_WAR_END        = 95;
+const ST_GAME_END       = 99;
+
+// Template placeholder states, still wired in Game.php until PR2.
 const ST_PLAYER_TURN = 10;
 const ST_NEXT_PLAYER = 90;
 const ST_END_SCORE   = 98;
-const ST_GAME_END    = 99;
 
 // ── Card / token locations ────────────────────────────────────────────────────
-// Values of a `location` column. Keep them short — the column is usually
-// VARCHAR(16) — and keep them stable, they end up in saved games.
+// Values of the `card_location` column (dbmodel.sql, PR2). Keep them short —
+// the column is VARCHAR(16) — and keep them stable, they end up in saved games.
 
-const LOCATION_DECK    = 'deck';
-const LOCATION_HAND    = 'hand';
-const LOCATION_BOARD   = 'board';
-const LOCATION_DISCARD = 'discard';
+const LOCATION_DECK     = 'deck';
+const LOCATION_HAND     = 'hand';
+const LOCATION_LANE     = 'lane';
+const LOCATION_STACK    = 'stack';
+const LOCATION_SHRINE   = 'shrine';
+const LOCATION_CASUALTY = 'casualty';
+
+// ── Card type ──────────────────────────────────────────────────────────────────
+// Values of the `card_type` column. The 9 card definitions (material.inc.php,
+// PR2) — one of each per deck colour, 18 cards total.
+
+const CARD_TYPE_ASSASSIN  = 'assassin';
+const CARD_TYPE_SCOUT     = 'scout';
+const CARD_TYPE_SABOTEUR  = 'saboteur';
+const CARD_TYPE_TRICKSTER = 'trickster';
+const CARD_TYPE_BERSERKER = 'berserker';
+const CARD_TYPE_BODYGUARD = 'bodyguard';
+const CARD_TYPE_GENERAL_A = 'general_a';
+const CARD_TYPE_GENERAL_B = 'general_b';
+const CARD_TYPE_SIEGE     = 'siege';
+
+// ── Card deck (printed colour) ──────────────────────────────────────────────────
+// Values of the `card_deck` column. NEVER changes for a card, unlike
+// `card_controller` which swaps at the 2nd War (RULES.md, [H2]).
+
+const CARD_DECK_BLUE = 'blue';
+const CARD_DECK_RED  = 'red';
+
+// ── Card role (within a captured stack) ─────────────────────────────────────────
+// Values of the `card_role` column. Only meaningful while `card_location` is
+// LOCATION_STACK.
+
+const CARD_ROLE_CAPTOR  = 'captor';
+const CARD_ROLE_HOSTAGE = 'hostage';
+
+// ── Tactic priority bands ────────────────────────────────────────────────────────
+// The order the Tactic pipeline resolves in (IMPLEMENTATION_PLAN.md §2.3).
+
+const TACTIC_BAND_BLOCK  = 'block';
+const TACTIC_BAND_START  = 'start';
+const TACTIC_BAND_DURING = 'during';
+const TACTIC_BAND_AFTER  = 'after';
 
 // ── Game options ──────────────────────────────────────────────────────────────
-// Ids must match the keys in gameoptions.jsonc (100-199).
-
-// const OPT_VARIANT      = 100;
-// const VARIANT_STANDARD = 1;
-// const VARIANT_ADVANCED = 2;
+// This game has no variants — gameoptions.jsonc stays empty, nothing to declare.
 
 // ── Player preferences ────────────────────────────────────────────────────────
 // Ids must match the keys in gamepreferences.jsonc (100-199).
 
-// const PREF_COLORBLIND = 100;
+const PREF_ANIMATION_SPEED = 100;
 
 // ── Statistics ────────────────────────────────────────────────────────────────
 // Names must match the keys in stats.jsonc, and be registered in Core\Stats.
-
-// const STAT_TURNS_NUMBER = 'turns_number';
+// None yet — the first real statistics ship in PR9.

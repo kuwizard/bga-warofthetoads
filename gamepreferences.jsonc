@@ -1,26 +1,22 @@
 {
   // user preferences ids should be between 100 and 199
   // See https://en.doc.boardgamearena.com/Options_and_preferences:_gameoptions.json,_gamepreferences.json for more details
-  /*
-  EXAMPLE:
 
+  // Drives the --am CSS custom property (src/scss/Game.scss) and the client's
+  // animDur() helper. No cssPref — Game.ts applies the multiplier itself via JS
+  // so it can also update the bga-cards animation manager (PR8).
   "100": {
-    "name": "Colorblind Support",
+    "name": "Animation speed",
+    "needReload": false,
     "values": {
-      "0": {
-        "name": "None",
-        "cssPref": "colorblind_off"
-      },
-      "1": {
-        "name": "Numbers",
-        "cssPref": "colorblind_on"
-      },
-      "2": {
-        "name": "Shapes",
-        "cssPref": "colorblind_shapes"
-      }
+      "1": { "name": "Slow" },
+      "2": { "name": "Normal" },
+      "3": { "name": "Fast" },
+      "4": { "name": "Very fast" }
     },
-    "default": 0
+    "default": 2
   }
-  */
+
+  // 101 is reserved for the card-counting aid toggle (PR9) — default off, shows
+  // which of the 9 card types have been seen this War.
 }
