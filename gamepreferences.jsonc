@@ -15,8 +15,32 @@
       "4": { "name": "Very fast" }
     },
     "default": 2
-  }
+  },
 
   // 101 is reserved for the card-counting aid toggle (PR9) — default off, shows
   // which of the 9 card types have been seen this War.
+
+  // Read via bga.userPreferences.get(102) in Game.ts::applyLayoutPreferences.
+  // "Top and bottom" stacks the two player-table blocks instead of placing them
+  // on opposite sides, and pairs "my" block with wherever the hand (103) is.
+  "102": {
+    "name": "Player blocks position",
+    "needReload": false,
+    "values": {
+      "1": { "name": "Left and right" },
+      "2": { "name": "Top and bottom" }
+    },
+    "default": 1
+  },
+
+  // Read via hand.ts::HAND_POSITION_PREF_ID.
+  "103": {
+    "name": "Hand position",
+    "needReload": false,
+    "values": {
+      "1": { "name": "Top" },
+      "2": { "name": "Bottom" }
+    },
+    "default": 1
+  }
 }

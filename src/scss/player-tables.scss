@@ -1,15 +1,42 @@
-// Per-player zones created in src/ts/Game.ts (`#player-tables`).
+// Per-player zones created in src/ts/Game.ts (`#player-tables`). Own-hand
+// rendering lives in hand.scss — these boxes only ever show a deck now.
+//
+// DOM order is always [opponent, me] (Game.ts::buildPlayerTables) — layout is
+// done entirely in CSS below via the "Player blocks position" preference
+// (--wott-player-tables--stacked etc., toggled in applyLayoutPreferences()),
+// never by rebuilding the markup.
 
 @use 'variables' as v;
 
+// Default: opposite sides of the board.
 #player-tables {
   display: flex;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: v.$gap;
+  gap: v.$gap * 2;
+}
+
+// "Top and bottom" player-blocks preference: stack instead, and pair "my"
+// block with whichever edge the hand preference put the hand on, so a
+// player's own information stays grouped together (hand.ts::setPosition
+// moves the actual hand element; this only reorders the two blocks here).
+.wott-player-tables--stacked {
+  flex-direction: column;
+
+  &.wott-player-tables--hand-top {
+    .wott-player-table--me { order: 0; }
+    .wott-player-table--opponent { order: 1; }
+  }
+
+  &.wott-player-tables--hand-bottom {
+    .wott-player-table--me { order: 1; }
+    .wott-player-table--opponent { order: 0; }
+  }
 }
 
 [id^='player-table-'] {
-  padding: v.$gap;
+  min-width: 220px;
+  padding: v.$gap * 2;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-top: 4px solid var(--player-color, transparent);
   border-radius: v.$radius;
@@ -19,6 +46,7 @@
 
 .wott-player-name {
   margin: 0 0 v.$gap;
+  font-size: 1.3em;
 }
 
 // Deck counter — a single deck-back sprite with the remaining count badged
@@ -27,7 +55,7 @@
 .wott-deck {
   position: relative;
   display: inline-block;
-  width: 60px;
+  width: 110px;
   margin-bottom: v.$gap;
 
   .wott-card {
@@ -37,31 +65,13 @@
 
 .wott-deck-count {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
-  min-width: 1.4em;
-  padding: 0 0.3em;
+  right: 4px;
+  bottom: 4px;
+  min-width: 1.6em;
+  padding: 0.1em 0.4em;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
-  font-size: 0.85em;
+  font-size: 1.1em;
   text-align: center;
-}
-
-.wott-hand {
-  display: flex;
-  gap: v.$gap;
-
-  .wott-card {
-    width: 60px;
-  }
-}
-
-.wott-card.wott-selectable {
-  cursor: pointer;
-  transition: transform calc(0.15s * var(--am)) ease;
-
-  &:hover {
-    transform: translateY(-6px);
-  }
 }

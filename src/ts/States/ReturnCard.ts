@@ -5,8 +5,14 @@ import { Game } from "../Game";
  * pick 1 of their 5 hand cards to return to the bottom of their deck. A
  * MULTIPLE_ACTIVE_PLAYER state — both players can be active at once, so all
  * hand-selectability logic funnels through onPlayerActivationChange.
+ *
+ * Clicking a card only selects it (Confirm/Cancel buttons appear) — nothing
+ * is sent to the server until Confirm, so the player can change their mind
+ * freely beforehand (mirrors libertalia's select-then-confirm hand flow).
  */
 export class ReturnCard {
+    private selectedCardId: number | null = null;
+
     constructor(private game: Game, private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
 
@@ -27,21 +33,40 @@ export class ReturnCard {
      */
     onLeavingState(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
         this.game.setHandSelectable(false);
+        this.selectedCardId = null;
+        this.game.setSelectedHandCard(null);
     }
 
     /**
      * This method is called each time the current player becomes active or inactive in a MULTIPLE_ACTIVE_PLAYER state. You can use this method to perform some user interface changes at this moment.
      */
     onPlayerActivationChange(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
+        this.selectedCardId = null;
         this.game.setHandSelectable(isCurrentPlayerActive, cardId => this.onCardClick(cardId));
+        this.refreshActionButtons();
     }
 
-    onCardClick(card_id: number) {
-        console.log( 'onCardClick', card_id );
-
-        this.bga.actions.performAction("actReturnCard", {
-            card_id,
-        });
+    private onCardClick(cardId: number) {
+        this.selectedCardId = this.selectedCardId === cardId ? null : cardId;
+        this.game.setSelectedHandCard(this.selectedCardId);
+        this.refreshActionButtons();
     }
 
+    private refreshActionButtons() {
+        this.bga.statusBar.removeActionButtons();
+        if (this.selectedCardId === null) {
+            return;
+        }
+
+        const cardId = this.selectedCardId;
+        this.bga.statusBar.addActionButton(_('Confirm'), () => {
+            this.bga.actions.performAction('actReturnCard', { card_id: cardId });
+        }, { id: 'btn-confirm-return-card' });
+
+        this.bga.statusBar.addActionButton(_('Cancel'), () => {
+            this.selectedCardId = null;
+            this.game.setSelectedHandCard(null);
+            this.refreshActionButtons();
+        }, { id: 'btn-cancel-return-card', color: 'secondary' });
+    }
 }

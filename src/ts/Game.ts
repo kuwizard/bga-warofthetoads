@@ -1,17 +1,17 @@
 // Import specifiers must end in .js — tsc emits them unchanged, and the browser
 // cannot resolve an extensionless ES module path.
 import { ReturnCard } from "./States/ReturnCard.js";
+import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 
-/** `card_type` (DB value, underscores) → sprite role class suffix (hyphens). See src/scss/cards.scss. */
-function cardRoleSlug(cardType: string): string {
-    return cardType.replace(/_/g, '-');
-}
+// "Player blocks position" preference — see gamepreferences.jsonc.
+const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
     private gamedatas: WarOfTheToadsGamedatas;
 
     private returnCard: ReturnCard;
+    private hand: Hand;
 
     /** Table order index (0 or 1) → deck colour. Mirrors Managers/Cards::setupNewGame(). */
     private deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' } = {};
@@ -50,12 +50,24 @@ export class Game {
             this.deckColorByPlayerId[playerId] = index === 0 ? 'blue' : 'red';
         });
 
+        const gameArea = this.bga.gameArea.getElement();
+        gameArea.classList.add('wott-game-area');
+
+        this.hand = new Hand(this.bga);
+        this.hand.render(gameArea, this.gamedatas.cards.hand);
+
         // Container for the per-player zones
-        this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
+        gameArea.insertAdjacentHTML('beforeend', `
             <div id="player-tables"></div>
         `);
 
         this.buildPlayerTables();
+        this.applyLayoutPreferences();
+        this.bga.userPreferences.onChange = (prefId) => {
+            if (prefId === HAND_POSITION_PREF_ID || prefId === PLAYER_BLOCKS_POSITION_PREF_ID) {
+                this.applyLayoutPreferences();
+            }
+        };
 
         // Setup game notifications to handle (see "setupNotifications" method below)
         this.setupNotifications();
@@ -67,56 +79,47 @@ export class Game {
     //// Utility methods
 
     private buildPlayerTables() {
-        const playerTables = document.getElementById('player-tables');
+        const playerTables = document.getElementById('player-tables')!;
+        const myId = Number(this.bga.gameui.player_id);
         const playerIds = this.gamedatas.playerorder.map(id => Number(id));
+        // Opponent(s) first, "me" last — fixed DOM order the layout preferences
+        // below reposition via CSS, never by rebuilding this markup. Falls back
+        // to plain playerorder for a spectator (no id matches myId).
+        const orderedIds = [...playerIds].sort((a, b) => (a === myId ? 1 : 0) - (b === myId ? 1 : 0));
 
-        playerIds.forEach(playerId => {
+        orderedIds.forEach(playerId => {
             const player = this.gamedatas.players[playerId];
             const deckColor = this.deckColorByPlayerId[playerId];
             const deckCount = this.gamedatas.cards.deckCounts[playerId] ?? 0;
+            const sideClass = playerId === myId ? 'wott-player-table--me' : 'wott-player-table--opponent';
 
             playerTables.insertAdjacentHTML('beforeend', `
-                <div id="player-table-${playerId}" class="wott-player-table" style="--player-color: #${player.color}">
+                <div id="player-table-${playerId}" class="wott-player-table ${sideClass}" style="--player-color: #${player.color}">
                     <h3 class="wott-player-name">${player.name}</h3>
                     <div class="wott-deck">
                         <div class="wott-card wott-card--${deckColor}-back"></div>
                         <span class="wott-deck-count" id="wott-deck-count-${playerId}">${deckCount}</span>
                     </div>
-                    <div class="wott-hand" id="wott-hand-${playerId}"></div>
                 </div>
             `);
         });
-
-        this.renderHands();
     }
 
-    private renderHands() {
-        // gameui.player_id arrives as a string at runtime despite its `number` typing —
-        // same reason playerorder ids get Number()'d above.
-        const myId = Number(this.bga.gameui.player_id);
+    /**
+     * Applies the "Hand position" and "Player blocks position" preferences.
+     * In the stacked (top/bottom) player-blocks layout, "my" block always
+     * sits on the same edge as the hand, so a player's own information stays
+     * grouped together and the opponent's stays on the opposite edge.
+     */
+    private applyLayoutPreferences() {
+        const handOnTop = this.bga.userPreferences.get(HAND_POSITION_PREF_ID) === 1;
+        this.hand.setPosition(handOnTop ? 'top' : 'bottom');
 
-        Object.keys(this.deckColorByPlayerId).map(Number).forEach(playerId => {
-            const handElement = document.getElementById(`wott-hand-${playerId}`);
-            if (!handElement) return;
-
-            handElement.innerHTML = '';
-
-            if (playerId === myId) {
-                this.gamedatas.cards.hand.forEach(card => this.appendHandCard(handElement, card));
-            } else {
-                const count = this.gamedatas.cards.handCounts[playerId] ?? 0;
-                const deckColor = this.deckColorByPlayerId[playerId];
-                for (let i = 0; i < count; i++) {
-                    handElement.insertAdjacentHTML('beforeend', `<div class="wott-card wott-card--${deckColor}-back"></div>`);
-                }
-            }
-        });
-    }
-
-    private appendHandCard(handElement: HTMLElement, card: CardData) {
-        handElement.insertAdjacentHTML('beforeend', `
-            <div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" data-card-id="${card.id}" title="${card.name}"></div>
-        `);
+        const stacked = this.bga.userPreferences.get(PLAYER_BLOCKS_POSITION_PREF_ID) === 2;
+        const playerTables = document.getElementById('player-tables')!;
+        playerTables.classList.toggle('wott-player-tables--stacked', stacked);
+        playerTables.classList.toggle('wott-player-tables--hand-top', stacked && handOnTop);
+        playerTables.classList.toggle('wott-player-tables--hand-bottom', stacked && !handOnTop);
     }
 
     /**
@@ -124,15 +127,12 @@ export class Game {
      * ReturnCard (and future states needing "pick a card from your hand").
      */
     public setHandSelectable(selectable: boolean, onClick?: (cardId: number) => void) {
-        const handElement = document.getElementById(`wott-hand-${this.bga.gameui.player_id}`);
-        if (!handElement) return;
+        this.hand.setSelectable(selectable, onClick);
+    }
 
-        handElement.querySelectorAll<HTMLElement>('.wott-card[data-card-id]').forEach(cardElement => {
-            cardElement.classList.toggle('wott-selectable', selectable);
-            cardElement.onclick = (selectable && onClick) ?
-                () => onClick(Number(cardElement.dataset.cardId)) :
-                null;
-        });
+    /** Highlights (or clears) the chosen hand card — used by states with a select-then-confirm flow (e.g. ReturnCard). */
+    public setSelectedHandCard(cardId: number | null) {
+        this.hand.setSelectedCard(cardId);
     }
 
     ///////////////////////////////////////////////////
@@ -172,12 +172,11 @@ export class Game {
             deckCountElement.textContent = `${this.gamedatas.cards.deckCounts[playerId]}`;
         }
 
-        const handElement = document.getElementById(`wott-hand-${playerId}`);
+        // Only the returning player's own client carries `card_id` ([H13]) — the
+        // opponent's hand is never rendered, so there is nothing to remove for them.
         if (args.card_id !== undefined) {
             this.gamedatas.cards.hand = this.gamedatas.cards.hand.filter(card => card.id !== args.card_id);
-            handElement?.querySelector(`[data-card-id="${args.card_id}"]`)?.remove();
-        } else {
-            handElement?.querySelector('.wott-card')?.remove();
+            this.hand.removeCard(args.card_id);
         }
     }
 }

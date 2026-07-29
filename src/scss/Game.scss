@@ -14,6 +14,7 @@
 @use 'variables' as v;
 @use './common';
 @use './player-tables';
+@use './hand';
 @use './cards';
 
 // Custom fonts, if the game ships any. Font files live in img/ (deployed via SFTP).

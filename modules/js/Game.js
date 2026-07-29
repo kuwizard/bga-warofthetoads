@@ -1,7 +1,6 @@
 import { ReturnCard } from "./States/ReturnCard.js";
-function cardRoleSlug(cardType) {
-    return cardType.replace(/_/g, '-');
-}
+import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
+const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     constructor(bga) {
         this.deckColorByPlayerId = {};
@@ -17,67 +16,58 @@ export class Game {
         playerIds.forEach((playerId, index) => {
             this.deckColorByPlayerId[playerId] = index === 0 ? 'blue' : 'red';
         });
-        this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
+        const gameArea = this.bga.gameArea.getElement();
+        gameArea.classList.add('wott-game-area');
+        this.hand = new Hand(this.bga);
+        this.hand.render(gameArea, this.gamedatas.cards.hand);
+        gameArea.insertAdjacentHTML('beforeend', `
             <div id="player-tables"></div>
         `);
         this.buildPlayerTables();
+        this.applyLayoutPreferences();
+        this.bga.userPreferences.onChange = (prefId) => {
+            if (prefId === HAND_POSITION_PREF_ID || prefId === PLAYER_BLOCKS_POSITION_PREF_ID) {
+                this.applyLayoutPreferences();
+            }
+        };
         this.setupNotifications();
         console.log("Ending game setup");
     }
     buildPlayerTables() {
         const playerTables = document.getElementById('player-tables');
+        const myId = Number(this.bga.gameui.player_id);
         const playerIds = this.gamedatas.playerorder.map(id => Number(id));
-        playerIds.forEach(playerId => {
+        const orderedIds = [...playerIds].sort((a, b) => (a === myId ? 1 : 0) - (b === myId ? 1 : 0));
+        orderedIds.forEach(playerId => {
             const player = this.gamedatas.players[playerId];
             const deckColor = this.deckColorByPlayerId[playerId];
             const deckCount = this.gamedatas.cards.deckCounts[playerId] ?? 0;
+            const sideClass = playerId === myId ? 'wott-player-table--me' : 'wott-player-table--opponent';
             playerTables.insertAdjacentHTML('beforeend', `
-                <div id="player-table-${playerId}" class="wott-player-table" style="--player-color: #${player.color}">
+                <div id="player-table-${playerId}" class="wott-player-table ${sideClass}" style="--player-color: #${player.color}">
                     <h3 class="wott-player-name">${player.name}</h3>
                     <div class="wott-deck">
                         <div class="wott-card wott-card--${deckColor}-back"></div>
                         <span class="wott-deck-count" id="wott-deck-count-${playerId}">${deckCount}</span>
                     </div>
-                    <div class="wott-hand" id="wott-hand-${playerId}"></div>
                 </div>
             `);
         });
-        this.renderHands();
     }
-    renderHands() {
-        const myId = Number(this.bga.gameui.player_id);
-        Object.keys(this.deckColorByPlayerId).map(Number).forEach(playerId => {
-            const handElement = document.getElementById(`wott-hand-${playerId}`);
-            if (!handElement)
-                return;
-            handElement.innerHTML = '';
-            if (playerId === myId) {
-                this.gamedatas.cards.hand.forEach(card => this.appendHandCard(handElement, card));
-            }
-            else {
-                const count = this.gamedatas.cards.handCounts[playerId] ?? 0;
-                const deckColor = this.deckColorByPlayerId[playerId];
-                for (let i = 0; i < count; i++) {
-                    handElement.insertAdjacentHTML('beforeend', `<div class="wott-card wott-card--${deckColor}-back"></div>`);
-                }
-            }
-        });
-    }
-    appendHandCard(handElement, card) {
-        handElement.insertAdjacentHTML('beforeend', `
-            <div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" data-card-id="${card.id}" title="${card.name}"></div>
-        `);
+    applyLayoutPreferences() {
+        const handOnTop = this.bga.userPreferences.get(HAND_POSITION_PREF_ID) === 1;
+        this.hand.setPosition(handOnTop ? 'top' : 'bottom');
+        const stacked = this.bga.userPreferences.get(PLAYER_BLOCKS_POSITION_PREF_ID) === 2;
+        const playerTables = document.getElementById('player-tables');
+        playerTables.classList.toggle('wott-player-tables--stacked', stacked);
+        playerTables.classList.toggle('wott-player-tables--hand-top', stacked && handOnTop);
+        playerTables.classList.toggle('wott-player-tables--hand-bottom', stacked && !handOnTop);
     }
     setHandSelectable(selectable, onClick) {
-        const handElement = document.getElementById(`wott-hand-${this.bga.gameui.player_id}`);
-        if (!handElement)
-            return;
-        handElement.querySelectorAll('.wott-card[data-card-id]').forEach(cardElement => {
-            cardElement.classList.toggle('wott-selectable', selectable);
-            cardElement.onclick = (selectable && onClick) ?
-                () => onClick(Number(cardElement.dataset.cardId)) :
-                null;
-        });
+        this.hand.setSelectable(selectable, onClick);
+    }
+    setSelectedHandCard(cardId) {
+        this.hand.setSelectedCard(cardId);
     }
     setupNotifications() {
         console.log('notifications subscriptions setup');
@@ -91,13 +81,9 @@ export class Game {
         if (deckCountElement) {
             deckCountElement.textContent = `${this.gamedatas.cards.deckCounts[playerId]}`;
         }
-        const handElement = document.getElementById(`wott-hand-${playerId}`);
         if (args.card_id !== undefined) {
             this.gamedatas.cards.hand = this.gamedatas.cards.hand.filter(card => card.id !== args.card_id);
-            handElement?.querySelector(`[data-card-id="${args.card_id}"]`)?.remove();
-        }
-        else {
-            handElement?.querySelector('.wott-card')?.remove();
+            this.hand.removeCard(args.card_id);
         }
     }
 }

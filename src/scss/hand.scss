@@ -1,0 +1,78 @@
+// The viewing player's own hand — rendered above #player-tables (src/ts/hand.ts),
+// Imperial Settlers style. The opponent's hand is never rendered, so there is
+// nothing to style for it here.
+
+@use 'variables' as v;
+
+#wott-my-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: v.$gap * 2;
+  padding: v.$gap * 2;
+  background: hsla(0, 0%, 100%, 0.75);
+  border-radius: v.$radius * 2;
+
+  .wott-card {
+    width: 130px;
+  }
+}
+
+.wott-card.wott-selectable {
+  cursor: pointer;
+  transition: transform calc(0.15s * var(--am)) ease;
+
+  &:hover {
+    transform: translateY(-10px);
+  }
+}
+
+// Chosen but not yet confirmed (see src/ts/States/ReturnCard.ts) — stays
+// lifted and outlined until Confirm or Cancel is clicked.
+.wott-card.wott-selectable.wott-card--selected {
+  transform: translateY(-10px);
+  outline: 3px solid gold;
+  outline-offset: 2px;
+}
+
+// Card name + Tactic text, shown via bga.gameui.addTooltipHtml on hover
+// (see tpls.ts::tplCardTooltip). General-purpose — any future card tooltip
+// (lanes, Shrine) can reuse these classes. Card at 3x hand size on top, text
+// below — reuses the .wott-card sprite rules from cards.scss.
+.wott-card-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  max-width: min(420px, 90vw);
+}
+
+// Compound selector (not just .wott-card-tooltip__image) so this reliably
+// beats cards.scss's `.wott-card { border-radius }` — that file is @use'd
+// after this one in Game.scss, so at equal specificity it would otherwise
+// win the cascade and silently revert this override.
+.wott-card.wott-card-tooltip__image {
+  width: 390px;
+  flex-shrink: 0;
+  border-radius: v.$radius * 4;
+}
+
+.wott-card-tooltip__text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 6px;
+}
+
+.wott-card-tooltip__name {
+  font-size: 1.05em;
+}
+
+.wott-card-tooltip__strength,
+.wott-card-tooltip__special {
+  opacity: 0.85;
+}
+
+.wott-card-tooltip__description {
+  line-height: 1.4;
+}

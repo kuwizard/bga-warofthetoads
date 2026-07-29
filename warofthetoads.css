@@ -1,11 +1,35 @@
+.wott-game-area {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 #player-tables {
   display: flex;
+  justify-content: space-between;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: 16px;
+}
+
+.wott-player-tables--stacked {
+  flex-direction: column;
+}
+.wott-player-tables--stacked.wott-player-tables--hand-top .wott-player-table--me {
+  order: 0;
+}
+.wott-player-tables--stacked.wott-player-tables--hand-top .wott-player-table--opponent {
+  order: 1;
+}
+.wott-player-tables--stacked.wott-player-tables--hand-bottom .wott-player-table--me {
+  order: 1;
+}
+.wott-player-tables--stacked.wott-player-tables--hand-bottom .wott-player-table--opponent {
+  order: 0;
 }
 
 [id^=player-table-] {
-  padding: 8px;
+  min-width: 220px;
+  padding: 16px;
   border: 1px solid rgba(0, 0, 0, 0.2);
   border-top: 4px solid var(--player-color, transparent);
   border-radius: 6px;
@@ -14,12 +38,13 @@
 
 .wott-player-name {
   margin: 0 0 8px;
+  font-size: 1.3em;
 }
 
 .wott-deck {
   position: relative;
   display: inline-block;
-  width: 60px;
+  width: 110px;
   margin-bottom: 8px;
 }
 .wott-deck .wott-card {
@@ -28,23 +53,28 @@
 
 .wott-deck-count {
   position: absolute;
-  right: 2px;
-  bottom: 2px;
-  min-width: 1.4em;
-  padding: 0 0.3em;
+  right: 4px;
+  bottom: 4px;
+  min-width: 1.6em;
+  padding: 0.1em 0.4em;
   border-radius: 999px;
   background: rgba(0, 0, 0, 0.75);
   color: #fff;
-  font-size: 0.85em;
+  font-size: 1.1em;
   text-align: center;
 }
 
-.wott-hand {
+#wott-my-hand {
   display: flex;
-  gap: 8px;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background: hsla(0, 0%, 100%, 0.75);
+  border-radius: 12px;
 }
-.wott-hand .wott-card {
-  width: 60px;
+#wott-my-hand .wott-card {
+  width: 130px;
 }
 
 .wott-card.wott-selectable {
@@ -52,7 +82,47 @@
   transition: transform calc(0.15s * var(--am)) ease;
 }
 .wott-card.wott-selectable:hover {
-  transform: translateY(-6px);
+  transform: translateY(-10px);
+}
+
+.wott-card.wott-selectable.wott-card--selected {
+  transform: translateY(-10px);
+  outline: 3px solid gold;
+  outline-offset: 2px;
+}
+
+.wott-card-tooltip {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: center;
+  max-width: min(420px, 90vw);
+}
+
+.wott-card.wott-card-tooltip__image {
+  width: 390px;
+  flex-shrink: 0;
+  border-radius: 24px;
+}
+
+.wott-card-tooltip__text {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+  gap: 6px;
+}
+
+.wott-card-tooltip__name {
+  font-size: 1.05em;
+}
+
+.wott-card-tooltip__strength,
+.wott-card-tooltip__special {
+  opacity: 0.85;
+}
+
+.wott-card-tooltip__description {
+  line-height: 1.4;
 }
 
 .wott-card {

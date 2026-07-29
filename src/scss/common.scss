@@ -2,3 +2,15 @@
 //
 // Class naming: prefix every game class with `wott-` so it can never collide
 // with a BGA framework class. Stay consistent — the prefix is project-wide.
+
+@use 'variables' as v;
+
+// The BGA-owned game area div (src/ts/Game.ts tags it on setup). A column
+// flex so the hand and #player-tables stack in DOM order, which is how
+// Game.ts's applyLayoutPreferences() moves the hand between top and bottom
+// (Element.prepend/append) without any extra positioning CSS.
+.wott-game-area {
+  display: flex;
+  flex-direction: column;
+  gap: v.$gap * 2;
+}
