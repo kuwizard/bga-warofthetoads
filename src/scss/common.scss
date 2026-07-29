@@ -1,0 +1,4 @@
+// Cross-cutting bits that don't belong to any single feature.
+//
+// Class naming: prefix every game class with `wott-` so it can never collide
+// with a BGA framework class. Stay consistent — the prefix is project-wide.

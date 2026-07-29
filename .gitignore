@@ -16,4 +16,8 @@ img/
 *.css.map
 *.js.map
 
+# Stray CSS compiled next to the SCSS sources — the watcher must output
+# warofthetoads.css in the project root instead (see README, IDE file watcher)
+src/scss/*.css
+
 .DS_Store

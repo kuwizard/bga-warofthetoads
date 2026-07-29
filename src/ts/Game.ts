@@ -1,4 +1,6 @@
-import { PlayerTurn } from "./States/PlayerTurn";
+// Import specifiers must end in .js — tsc emits them unchanged, and the browser
+// cannot resolve an extensionless ES module path.
+import { PlayerTurn } from "./States/PlayerTurn.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
@@ -39,36 +41,13 @@ export class Game {
         console.log( "Starting game setup" );
         this.gamedatas = gamedatas;
 
-        // Example to add a div on the game area
+        // Container for the per-player zones
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
             <div id="player-tables"></div>
         `);
-        
-        // Setting up player boards
-        Object.entries(gamedatas.players).forEach(([pId, player]) => {
-            const playerId = Number(pId);
-            // example of setting up players boards
-            this.bga.playerPanels.getElement(playerId).insertAdjacentHTML('beforeend', `
-                <span id="energy-player-counter-${playerId}"></span> Energy
-            `);
-            const counter = new ebg.counter();
-            counter.create(`energy-player-counter-${playerId}`, {
-                value: player.energy,
-                playerCounter: 'energy',
-                playerId: playerId,
-            });
 
-            // example of adding a div for each player
-            document.getElementById('player-tables').insertAdjacentHTML('beforeend', `
-                <div id="player-table-${player.id}">
-                    <strong>${player.name}</strong>
-                    <div>Player zone content goes here</div>
-                </div>
-            `);
-        });
-        
         // TODO: Set up your game interface here, according to "gamedatas"
-        
+
 
         // Setup game notifications to handle (see "setupNotifications" method below)
         this.setupNotifications();

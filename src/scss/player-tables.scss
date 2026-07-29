@@ -1,0 +1,18 @@
+// Per-player zones created in src/ts/Game.ts (`#player-tables`).
+// Example feature file — replace with the real game layout.
+
+@use 'variables' as v;
+
+#player-tables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$gap;
+}
+
+[id^='player-table-'] {
+  padding: v.$gap;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: v.$radius;
+  // Timed rules always scale with the animation speed preference
+  transition: transform calc(0.15s * var(--am)) ease;
+}

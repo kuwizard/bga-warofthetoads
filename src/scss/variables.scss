@@ -1,0 +1,11 @@
+// Shared SCSS values. Used as `@use 'variables' as v;` + `v.$name`.
+//
+// With @use (unlike the old @import), nothing is global: every file that needs a
+// variable or mixin from here must @use this file itself.
+//
+// Keep this small. Anything the framework already exposes as a CSS custom
+// property — most importantly var(--player-color), which BGA sets per player —
+// belongs in CSS, not here.
+
+$gap: 8px;
+$radius: 6px;

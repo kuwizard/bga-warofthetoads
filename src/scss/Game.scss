@@ -1,52 +1,34 @@
-// Root SCSS entry point. Compiled to warofthetoads.css (the file BGA deploys).
+// Root SCSS hub — the only file the IDE file watcher compiles.
+// Output: warofthetoads.css in the project root (the file BGA deploys).
+// NEVER edit warofthetoads.css by hand — it is generated and will be overwritten.
 //
-// NEVER edit warofthetoads.css directly — it is generated and will be overwritten.
+// Every feature area gets its own file next to this one in src/scss/ and exactly
+// one @use line below. Nothing else belongs in this hub except global setup:
+// @font-face rules and :root custom properties.
 //
-// Split styles across partials in this folder (filenames starting with `_`) and
-// pull them in with @use below, one line per feature area.
-//
-// IMPORTANT: keep every @use at the very top, above any loud /* */ comment.
-// Sass re-emits loud comments that precede a @use once per loaded module, which
-// duplicates them in the compiled CSS. Use // comments up here instead.
+// IMPORTANT: comment with // only, never /* */. Sass copies loud /* */ comments
+// straight into the compiled CSS, and re-emits any that precede a @use once per
+// loaded module — so they end up duplicated in warofthetoads.css. // comments are
+// stripped at compile time and never reach the output.
 
 @use 'variables' as v;
+@use './common';
 @use './player-tables';
 
-/**
- *------
- * BGA framework: Gregory Isabelli & Emmanuel Colin & BoardGameArena
- * WarOfTheToads implementation : © <Your name here> <Your email address here>
- *
- * This code has been produced on the BGA studio platform for use on http://boardgamearena.com.
- * See http://en.boardgamearena.com/#!doc/Studio for more information.
- * -----
- */
+// Custom fonts, if the game ships any. Font files live in img/ (deployed via SFTP).
+// @font-face {
+//   font-family: 'FiraSansCondensed';
+//   src: url('img/fonts/FiraSansCondensed-Regular.ttf') format('truetype');
+//   font-weight: normal;
+//   font-style: normal;
+// }
 
-/* Note: you must not use any @import directive in the compiled CSS */
-
-/********* You can start writing your CSS below this line: **********/
-
-/*
-    Example of CSS sprites (a black token and a white token, 20x20px each,
-    embedded in the same "tokens.png" 40x20px image):
-
-    .white_token {
-        background-image: url('img/tokens.png');
-        background-position: 0px 0px;
-    }
-    .black_token {
-        background-image: url('img/tokens.png');
-        background-position: -20px 0px;
-    }
-    .token {
-        width: 20px;
-        height: 20px;
-        background-repeat: none;
-    }
-*/
-
-@each $key, $val in v.$player-colors {
-    .fgcolor#{$key} {
-        color: #{$val};
-    }
+// Animation speed multiplier — driven by the "Animation speed" player preference.
+// JS sets --am on :root at setup; this declaration is only the fallback for
+// replays and for the moment before JS runs.
+//
+// Every timed CSS rule must be written as calc(Xs * var(--am)) — a transition or
+// animation with a hardcoded duration silently ignores the preference.
+:root {
+  --am: 1;
 }
