@@ -12,6 +12,14 @@ bga_initial_code_template/
 # Images: large binaries, deployed to BGA via SFTP separately
 img/
 
+# Publisher source material — print-resolution PDFs, rulebooks, art masters.
+# Hundreds of MB, never deployed; sprite sheets are derived from it into img/.
+Raw/
+
+# Working documentation — rules transcriptions, implementation plans, author
+# questions, assumptions. Local reference only; never tracked, never deployed.
+doc/
+
 # Generated source maps
 *.css.map
 *.js.map

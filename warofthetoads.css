@@ -11,6 +11,103 @@
   transition: transform calc(0.15s * var(--am)) ease;
 }
 
+.wott-card {
+  aspect-ratio: 25/36;
+  background-image: url("img/cards.png");
+  background-repeat: no-repeat;
+  background-size: 1000% 300%;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.wott-card--blue-assassin {
+  background-position: 0% 0%;
+}
+
+.wott-card--red-assassin {
+  background-position: 0% 50%;
+}
+
+.wott-card--blue-scout {
+  background-position: 11.1111111111% 0%;
+}
+
+.wott-card--red-scout {
+  background-position: 11.1111111111% 50%;
+}
+
+.wott-card--blue-saboteur {
+  background-position: 22.2222222222% 0%;
+}
+
+.wott-card--red-saboteur {
+  background-position: 22.2222222222% 50%;
+}
+
+.wott-card--blue-trickster {
+  background-position: 33.3333333333% 0%;
+}
+
+.wott-card--red-trickster {
+  background-position: 33.3333333333% 50%;
+}
+
+.wott-card--blue-berserker {
+  background-position: 44.4444444444% 0%;
+}
+
+.wott-card--red-berserker {
+  background-position: 44.4444444444% 50%;
+}
+
+.wott-card--blue-bodyguard {
+  background-position: 55.5555555556% 0%;
+}
+
+.wott-card--red-bodyguard {
+  background-position: 55.5555555556% 50%;
+}
+
+.wott-card--blue-general-a {
+  background-position: 66.6666666667% 0%;
+}
+
+.wott-card--red-general-a {
+  background-position: 66.6666666667% 50%;
+}
+
+.wott-card--blue-general-b {
+  background-position: 77.7777777778% 0%;
+}
+
+.wott-card--red-general-b {
+  background-position: 77.7777777778% 50%;
+}
+
+.wott-card--blue-siege {
+  background-position: 88.8888888889% 0%;
+}
+
+.wott-card--red-siege {
+  background-position: 88.8888888889% 50%;
+}
+
+.wott-card--blue-back {
+  background-position: 100% 0%;
+}
+
+.wott-card--red-back {
+  background-position: 100% 50%;
+}
+
+.wott-card--shrine-front {
+  background-position: 0% 100%;
+}
+
+.wott-card--shrine-back {
+  background-position: 11.1111111111% 100%;
+}
+
 :root {
   --am: 1;
 }

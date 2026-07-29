@@ -1,0 +1,46 @@
+// Card art sprite — img/cards.png, a 10 col × 3 row grid (see img/README or the
+// build note in this file's PR for how it was cut from the print PDFs in Raw/).
+//
+// Row 0: Blue Hill player — 9 role fronts, then the deck back.
+// Row 1: Red Sun player   — same 9 roles, then the deck back.
+// Row 2: Shrine front, Shrine back. The remaining 8 cells in that row are
+// transparent (unused) — the grid stays 10 cols wide so the position math below
+// is a single formula for every row.
+@use 'sass:math';
+@use 'variables' as v;
+
+$wott-card-cols: 10;
+$wott-card-rows: 3;
+
+// Order matters: it is the column order baked into img/cards.png.
+$wott-card-roles: assassin, scout, saboteur, trickster, berserker, bodyguard, general-a, general-b, siege, back;
+
+.wott-card {
+  aspect-ratio: 25 / 36; // 300×432 sprite cell
+  background-image: url('img/cards.png');
+  background-repeat: no-repeat;
+  background-size: #{$wott-card-cols * 100%} #{$wott-card-rows * 100%};
+  border-radius: v.$radius;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+@each $role in $wott-card-roles {
+  $col: index($wott-card-roles, $role) - 1;
+  $x: math.div($col, $wott-card-cols - 1) * 100%;
+
+  .wott-card--blue-#{$role} {
+    background-position: #{$x} 0%;
+  }
+
+  .wott-card--red-#{$role} {
+    background-position: #{$x} 50%;
+  }
+}
+
+.wott-card--shrine-front {
+  background-position: 0% 100%;
+}
+
+.wott-card--shrine-back {
+  background-position: #{math.div(1, $wott-card-cols - 1) * 100%} 100%;
+}
