@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads;
 
+use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Models\Player;
 
 /**
@@ -71,32 +72,25 @@ class Notifications
         self::notifyAll('message', $msg, $data);
     }
 
-    // ── EXAMPLE — replace with the game's own notifications ────────────────────
+    // ── GAME NOTIFICATIONS ───────────────────────────────────────────────────────
 
     /**
-     * Handled client-side by `notif_playerPassed` (the JS handler name is the
-     * notification name prefixed with `notif_`; `setupPromiseNotifications()`
-     * wires them automatically).
+     * Setup's card return ([H13]) — deliberately generic. Every other player
+     * and spectator sees only that *a* card was returned; the `_private` block
+     * is merged into the args only for the player who returned it, so their
+     * own client can reconcile its hand without the card ever appearing in the
+     * public notification payload.
      */
-    public static function playerPassed(Player $player): void
+    public static function cardReturned(Player $player, Card $card): void
     {
-        self::notifyAll('playerPassed', clienttranslate('${player_name} passes'), [
-            'player' => $player,
-        ]);
-    }
-
-    /**
-     * Note the `i18n` key: it marks arg values that must be translated on the
-     * client. It only works on notification args — it does nothing for strings
-     * returned from getAllDatas().
-     */
-    public static function cardPlayed(Player $player, int $cardId): void
-    {
-        self::notifyAll('cardPlayed', clienttranslate('${player_name} plays ${card_name}'), [
-            'player'    => $player,
-            'card_id'   => $cardId,
-            'card_name' => 'TODO',
-            'i18n'      => ['card_name'],
+        self::notifyAll('cardReturned', clienttranslate('${player_name} returns a card to their deck'), [
+            'player'   => $player,
+            '_private' => [
+                $player->getId() => [
+                    'card_id'   => $card->getId(),
+                    'card_type' => $card->getType(),
+                ],
+            ],
         ]);
     }
 }

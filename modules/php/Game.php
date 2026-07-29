@@ -29,8 +29,9 @@ require_once dirname(__FILE__) . '/constants.inc.php';
 
 use Bga\Games\WarOfTheToads\Core\DebugTrait;
 use Bga\Games\WarOfTheToads\Core\Stats;
+use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
-use Bga\Games\WarOfTheToads\States\PlayerTurn;
+use Bga\Games\WarOfTheToads\States\WarSetup;
 
 class Game extends \Bga\GameFramework\Table
 {
@@ -74,11 +75,11 @@ class Game extends \Bga\GameFramework\Table
 
         Stats::setupNewGame();
 
-        // TODO: read $options, deal the starting position, set initial globals.
+        // Deck build/shuffle/deal and the 1st-War Attacker pick happen in
+        // WarSetup::onEnteringState() — nothing is watching the table yet,
+        // so there is no notification to send for it.
 
-        $this->activeNextPlayer();
-
-        return PlayerTurn::class;
+        return WarSetup::class;
     }
 
     /**
@@ -92,6 +93,7 @@ class Game extends \Bga\GameFramework\Table
     {
         return [
             'players' => Players::getUiData($currentPlayerId)->toAssoc(),
+            'cards'   => Cards::getUiData($currentPlayerId),
         ];
     }
 

@@ -28,15 +28,44 @@ class Globals
         return Game::get()->getBgaEnvironment() === 'studio';
     }
 
-    // ── EXAMPLE — replace with the game's own globals ──────────────────────────
+    // ── WAR ───────────────────────────────────────────────────────────────────
 
-    public static function getRound(): int
+    public static function getWar(): int
     {
-        return (int) Game::get()->bga->globals->get('round', 0);
+        return (int) Game::get()->bga->globals->get('war', 1);
     }
 
-    public static function setRound(int $round): void
+    public static function setWar(int $war): void
     {
-        Game::get()->bga->globals->set('round', $round);
+        Game::get()->bga->globals->set('war', $war);
+    }
+
+    // ── ATTACKER ──────────────────────────────────────────────────────────────
+
+    public static function getAttackerId(): int
+    {
+        return (int) Game::get()->bga->globals->get('attackerId', 0);
+    }
+
+    public static function setAttackerId(int $playerId): void
+    {
+        Game::get()->bga->globals->set('attackerId', $playerId);
+    }
+
+    /**
+     * Whoever attacked first in the 1st War, set once by `WarSetup` and never
+     * touched again. The 2nd War's Attacker is the *other* player — whoever
+     * defended first in the 1st War (RULES.md §9, [H12]) — so this is the one
+     * value `attackerId` itself cannot answer once it starts alternating
+     * battle to battle (PR3).
+     */
+    public static function getFirstAttackerWar1(): int
+    {
+        return (int) Game::get()->bga->globals->get('firstAttackerWar1', 0);
+    }
+
+    public static function setFirstAttackerWar1(int $playerId): void
+    {
+        Game::get()->bga->globals->set('firstAttackerWar1', $playerId);
     }
 }

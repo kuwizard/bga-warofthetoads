@@ -27,6 +27,6 @@ class EndScore extends \Bga\GameFramework\States\GameState
     public function onEnteringState() {
         // Here, we would compute scores if they are not updated live, and compute average statistics
 
-        return ST_END_GAME;
+        return ST_GAME_END;
     }
 }

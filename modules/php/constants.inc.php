@@ -24,15 +24,16 @@
 // reserved by the framework. 98 is the conventional slot for score computation,
 // since argGameEnd()/stGameEnd() are final and cannot be overridden.
 //
-// PR1 still ships the template's example states (States/PlayerTurn.php,
-// NextPlayer.php, EndScore.php) as a placeholder so the game keeps compiling —
-// PR2+ deletes them and replaces them with the real ones below. IDs 10/90/98
-// are already claimed by that placeholder trio (ST_PLAYER_TURN/ST_NEXT_PLAYER/
-// ST_END_SCORE, still declared further down); WarSetup/BattleEnd/ComputeScores
-// will reuse those same three numbers when the classes are renamed in place,
-// not new ones — so no consts for them are declared here yet.
+// PR2 renamed the template's placeholder PlayerTurn (id 10) in place into the
+// real WarSetup — same numeric id, real logic — and deleted the now-dead
+// NextPlayer (its id, 90, stays reserved further down for PR3's BattleEnd,
+// which will reuse the number the same way WarSetup just did). EndScore (98)
+// is still the template placeholder: ReturnCard transitions straight to it
+// for now as a harmless early terminal; PR3 rewires that transition to the
+// real BattleStart and PR7 renames EndScore in place into ComputeScores.
 
 const ST_GAME_SETUP  = 1;
+const ST_WAR_SETUP      = 10;
 const ST_RETURN_CARD    = 15;
 const ST_BATTLE_START   = 20;
 const ST_ATTACKER_PLAY  = 30;
@@ -46,8 +47,7 @@ const ST_SIEGE_GUESS    = 80;
 const ST_WAR_END        = 95;
 const ST_GAME_END       = 99;
 
-// Template placeholder states, still wired in Game.php until PR2.
-const ST_PLAYER_TURN = 10;
+// Template placeholder states, still wired until PR3 (BattleEnd) / PR7 (ComputeScores).
 const ST_NEXT_PLAYER = 90;
 const ST_END_SCORE   = 98;
 
@@ -82,6 +82,18 @@ const CARD_TYPE_SIEGE     = 'siege';
 
 const CARD_DECK_BLUE = 'blue';
 const CARD_DECK_RED  = 'red';
+
+// ── Special Attributes ───────────────────────────────────────────────────────
+// Not a DB column — looked up from `material.inc.php` by `card_type`, same as
+// Strength and the Tactic band. `null` in material.inc.php means "no Special
+// Attribute" (Scout, Trickster, Berserker, Bodyguard). The Siege Cannon's
+// value covers both halves of its printed text (wins in Attack, loses in
+// Defence, except against a Saboteur) — RULES.md §3, [H16].
+
+const SPECIAL_ATTRIBUTE_BEATS_GENERAL    = 'beats_general';    // Assassin
+const SPECIAL_ATTRIBUTE_BEATS_SIEGE      = 'beats_siege';      // Saboteur
+const SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN = 'loses_to_assassin'; // General A, General B
+const SPECIAL_ATTRIBUTE_SIEGE             = 'siege';            // Siege Cannon, [H16]
 
 // ── Card role (within a captured stack) ─────────────────────────────────────────
 // Values of the `card_role` column. Only meaningful while `card_location` is

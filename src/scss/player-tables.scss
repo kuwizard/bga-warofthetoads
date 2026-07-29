@@ -1,5 +1,4 @@
 // Per-player zones created in src/ts/Game.ts (`#player-tables`).
-// Example feature file — replace with the real game layout.
 
 @use 'variables' as v;
 
@@ -12,7 +11,57 @@
 [id^='player-table-'] {
   padding: v.$gap;
   border: 1px solid rgba(0, 0, 0, 0.2);
+  border-top: 4px solid var(--player-color, transparent);
   border-radius: v.$radius;
   // Timed rules always scale with the animation speed preference
   transition: transform calc(0.15s * var(--am)) ease;
+}
+
+.wott-player-name {
+  margin: 0 0 v.$gap;
+}
+
+// Deck counter — a single deck-back sprite with the remaining count badged
+// on top. The count is the only thing that ever changes: RULES.md forbids
+// looking at your own face-down deck too, so no card fronts belong here.
+.wott-deck {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  margin-bottom: v.$gap;
+
+  .wott-card {
+    width: 100%;
+  }
+}
+
+.wott-deck-count {
+  position: absolute;
+  right: 2px;
+  bottom: 2px;
+  min-width: 1.4em;
+  padding: 0 0.3em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.75);
+  color: #fff;
+  font-size: 0.85em;
+  text-align: center;
+}
+
+.wott-hand {
+  display: flex;
+  gap: v.$gap;
+
+  .wott-card {
+    width: 60px;
+  }
+}
+
+.wott-card.wott-selectable {
+  cursor: pointer;
+  transition: transform calc(0.15s * var(--am)) ease;
+
+  &:hover {
+    transform: translateY(-6px);
+  }
 }
