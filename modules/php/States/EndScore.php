@@ -7,8 +7,6 @@ namespace Bga\Games\WarOfTheToads\States;
 use Bga\GameFramework\StateType;
 use Bga\Games\WarOfTheToads\Game;
 
-const ST_END_GAME = 99;
-
 class EndScore extends \Bga\GameFramework\States\GameState
 {
 
@@ -16,7 +14,7 @@ class EndScore extends \Bga\GameFramework\States\GameState
         protected Game $game,
     ) {
         parent::__construct($game,
-            id: 98,
+            id: ST_END_SCORE,
             type: StateType::GAME,
         );
     }

@@ -14,7 +14,7 @@ class NextPlayer extends \Bga\GameFramework\States\GameState
         protected Game $game,
     ) {
         parent::__construct($game,
-            id: 90,
+            id: ST_NEXT_PLAYER,
             type: StateType::GAME,
             updateGameProgression: true,
         );
