@@ -1,6 +1,7 @@
 // Import specifiers must end in .js — tsc emits them unchanged, and the browser
 // cannot resolve an extensionless ES module path.
 import { PlayerTurn } from "./States/PlayerTurn.js";
+import { debug, stateLogger } from "./debug.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
@@ -9,16 +10,16 @@ export class Game {
     private playerTurn: PlayerTurn;
 
     constructor(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
-        console.log('warofthetoads constructor');
+        debug('warofthetoads constructor');
         this.bga = bga;
+
+        // Framework hook that traces every state entry/exit.
+        this.bga.states.logger = stateLogger;
 
         // Declare the State classes
         this.playerTurn = new PlayerTurn(this, bga);
         this.bga.states.register('PlayerTurn', this.playerTurn);
 
-        // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
-        // this.bga.states.logger = console.log;
-            
         // Here, you can init the global variables of your user interface
         // Example:
         // this.myGlobalValue = 0;
@@ -38,7 +39,8 @@ export class Game {
     */
     
     setup(gamedatas: WarOfTheToadsGamedatas) {
-        console.log( "Starting game setup" );
+        debug('Starting game setup');
+        debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
 
         // Container for the per-player zones
@@ -52,7 +54,7 @@ export class Game {
         // Setup game notifications to handle (see "setupNotifications" method below)
         this.setupNotifications();
 
-        console.log( "Ending game setup" );
+        debug('Ending game setup');
     }
 
     ///////////////////////////////////////////////////
@@ -78,12 +80,11 @@ export class Game {
     
     */
     setupNotifications() {
-        console.log( 'notifications subscriptions setup' );
+        debug('notifications subscriptions setup');
         
         // automatically listen to the notifications, based on the `notif_xxx` function on this class. 
-        // Uncomment the logger param to see debug information in the console about notifications.
         this.bga.notifications.setupPromiseNotifications({
-            // logger: console.log
+            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
         });
     }
     
