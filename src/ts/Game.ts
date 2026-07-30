@@ -2,10 +2,13 @@
 // cannot resolve an extensionless ES module path.
 import { PlayerTurn } from "./States/PlayerTurn.js";
 import { debug, stateLogger } from "./debug.js";
+import { notificationOptions } from "./notifications.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
     private gamedatas: WarOfTheToadsGamedatas;
+
+    public bgaFormatText?: (log: string, args: any) => { log: string; args: any };
 
     private playerTurn: PlayerTurn;
 
@@ -24,20 +27,20 @@ export class Game {
         // Example:
         // this.myGlobalValue = 0;
     }
-    
+
     /*
         setup:
-        
+
         This method must set up the game user interface according to current game situation specified
         in parameters.
-        
+
         The method is called each time the game interface is displayed to a player, ie:
         _ when the game starts
         _ when a player refreshes the game page (F5)
-        
+
         "gamedatas" argument contains all datas retrieved by your "getAllDatas" PHP method.
     */
-    
+
     setup(gamedatas: WarOfTheToadsGamedatas) {
         debug('Starting game setup');
         debug('gamedatas', gamedatas);
@@ -59,42 +62,40 @@ export class Game {
 
     ///////////////////////////////////////////////////
     //// Utility methods
-    
+
     /*
-    
+
         Here, you can defines some utility methods that you can use everywhere in your javascript
         script. Typically, functions that are used in multiple state classes or outside a state class.
-    
+
     */
 
-    
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
     /*
         setupNotifications:
-        
+
         In this method, you associate each of your game notifications with your local method to handle it.
-        
+
         Note: game notification names correspond to "bga->notify->all" calls in your Game.php file.
-    
+
     */
     setupNotifications() {
         debug('notifications subscriptions setup');
-        
-        // automatically listen to the notifications, based on the `notif_xxx` function on this class. 
-        this.bga.notifications.setupPromiseNotifications({
-            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
-        });
+
+        // automatically listen to the notifications, based on the `notif_xxx` function on this class.
+        this.bga.notifications.setupPromiseNotifications(notificationOptions(this));
     }
-    
+
     // TODO: from this point and below, you can write your game notifications handling methods
-    
+
     /*
     Example:
     async notif_cardPlayed( args ) {
         // Note: args contains the arguments specified during you "notifyAllPlayers" / "notifyPlayer" PHP call
-        
+
         // TODO: play the card in the user interface.
     }
     */
