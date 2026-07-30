@@ -5,12 +5,14 @@ import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
+import { debug, stateLogger } from "./debug.js";
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     constructor(bga) {
         this.deckColorByPlayerId = {};
-        console.log('warofthetoads constructor');
+        debug('warofthetoads constructor');
         this.bga = bga;
+        this.bga.states.logger = stateLogger;
         this.returnCard = new ReturnCard(this, bga);
         this.bga.states.register('ReturnCard', this.returnCard);
         this.playCards = new PlayCards(this, bga);
@@ -20,7 +22,8 @@ export class Game {
         this.bga.states.register('ChooseStack', this.chooseStack);
     }
     setup(gamedatas) {
-        console.log("Starting game setup");
+        debug('Starting game setup');
+        debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
         playerIdsInTableOrder.forEach((playerId, index) => {
@@ -47,7 +50,7 @@ export class Game {
             }
         };
         this.setupNotifications();
-        console.log("Ending game setup");
+        debug('Ending game setup');
     }
     getPlayerIdsInTableOrder() {
         return Object.entries(this.gamedatas.players)
@@ -111,8 +114,10 @@ export class Game {
         await this.lanes.previewUnplay(cardId, this.hand.getElement(), wasFaceDown);
     }
     setupNotifications() {
-        console.log('notifications subscriptions setup');
-        this.bga.notifications.setupPromiseNotifications({});
+        debug('notifications subscriptions setup');
+        this.bga.notifications.setupPromiseNotifications({
+            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
+        });
     }
     async notif_battleStarted(_args) {
         this.lanes.clear();

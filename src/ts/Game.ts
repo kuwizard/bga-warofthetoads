@@ -7,6 +7,7 @@ import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
+import { debug, stateLogger } from "./debug.js";
 
 // "Player blocks position" preference — see gamepreferences.jsonc.
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -27,8 +28,11 @@ export class Game {
     private deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' } = {};
 
     constructor(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
-        console.log('warofthetoads constructor');
+        debug('warofthetoads constructor');
         this.bga = bga;
+
+        // Framework hook that traces every state entry/exit.
+        this.bga.states.logger = stateLogger;
 
         // Declare the State classes
         this.returnCard = new ReturnCard(this, bga);
@@ -42,9 +46,6 @@ export class Game {
 
         this.chooseStack = new ChooseStack(this, bga);
         this.bga.states.register('ChooseStack', this.chooseStack);
-
-        // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
-        // this.bga.states.logger = console.log;
     }
 
     /*
@@ -61,7 +62,8 @@ export class Game {
     */
 
     setup(gamedatas: WarOfTheToadsGamedatas) {
-        console.log( "Starting game setup" );
+        debug('Starting game setup');
+        debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
 
         // `no` (Managers/Players::getInTableOrder()) is the stable seat order
@@ -104,7 +106,7 @@ export class Game {
         // Setup game notifications to handle (see "setupNotifications" method below)
         this.setupNotifications();
 
-        console.log( "Ending game setup" );
+        debug('Ending game setup');
     }
 
     ///////////////////////////////////////////////////
@@ -213,12 +215,11 @@ export class Game {
 
     */
     setupNotifications() {
-        console.log( 'notifications subscriptions setup' );
+        debug('notifications subscriptions setup');
 
         // automatically listen to the notifications, based on the `notif_xxx` function on this class.
-        // Uncomment the logger param to see debug information in the console about notifications.
         this.bga.notifications.setupPromiseNotifications({
-            // logger: console.log
+            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
         });
     }
 
