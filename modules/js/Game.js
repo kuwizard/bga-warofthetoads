@@ -6,6 +6,7 @@ import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { debug, stateLogger } from "./debug.js";
+import { notificationOptions } from "./notifications.js";
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     constructor(bga) {
@@ -115,9 +116,7 @@ export class Game {
     }
     setupNotifications() {
         debug('notifications subscriptions setup');
-        this.bga.notifications.setupPromiseNotifications({
-            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
-        });
+        this.bga.notifications.setupPromiseNotifications(notificationOptions(this));
     }
     async notif_battleStarted(_args) {
         this.lanes.clear();

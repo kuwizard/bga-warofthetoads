@@ -8,6 +8,7 @@ import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { debug, stateLogger } from "./debug.js";
+import { notificationOptions } from "./notifications.js";
 
 // "Player blocks position" preference — see gamepreferences.jsonc.
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -15,6 +16,8 @@ const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
     private gamedatas: WarOfTheToadsGamedatas;
+
+    public bgaFormatText?: (log: string, args: any) => { log: string; args: any };
 
     private returnCard: ReturnCard;
     private playCards: PlayCards;
@@ -218,9 +221,7 @@ export class Game {
         debug('notifications subscriptions setup');
 
         // automatically listen to the notifications, based on the `notif_xxx` function on this class.
-        this.bga.notifications.setupPromiseNotifications({
-            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
-        });
+        this.bga.notifications.setupPromiseNotifications(notificationOptions(this));
     }
 
     /**
