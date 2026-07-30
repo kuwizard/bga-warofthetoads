@@ -1,5 +1,6 @@
 import { PlayerTurn } from "./States/PlayerTurn.js";
 import { debug, stateLogger } from "./debug.js";
+import { notificationOptions } from "./notifications.js";
 export class Game {
     constructor(bga) {
         debug('warofthetoads constructor');
@@ -20,8 +21,6 @@ export class Game {
     }
     setupNotifications() {
         debug('notifications subscriptions setup');
-        this.bga.notifications.setupPromiseNotifications({
-            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
-        });
+        this.bga.notifications.setupPromiseNotifications(notificationOptions(this));
     }
 }

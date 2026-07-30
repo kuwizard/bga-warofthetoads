@@ -2,10 +2,13 @@
 // cannot resolve an extensionless ES module path.
 import { PlayerTurn } from "./States/PlayerTurn.js";
 import { debug, stateLogger } from "./debug.js";
+import { notificationOptions } from "./notifications.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
     private gamedatas: WarOfTheToadsGamedatas;
+
+    public bgaFormatText?: (log: string, args: any) => { log: string; args: any };
 
     private playerTurn: PlayerTurn;
 
@@ -81,11 +84,9 @@ export class Game {
     */
     setupNotifications() {
         debug('notifications subscriptions setup');
-        
-        // automatically listen to the notifications, based on the `notif_xxx` function on this class. 
-        this.bga.notifications.setupPromiseNotifications({
-            onStart: (name, msg, args) => debug(`Notif [${name}]`, { ...args, message: msg }),
-        });
+
+        // automatically listen to the notifications, based on the `notif_xxx` function on this class.
+        this.bga.notifications.setupPromiseNotifications(notificationOptions(this));
     }
     
     // TODO: from this point and below, you can write your game notifications handling methods
