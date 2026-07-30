@@ -27,7 +27,6 @@ abstract class Card extends DB_Model
     protected ?string $location    = null;
     protected ?int    $locationArg = null;
     protected ?bool   $facedown    = null;
-    protected ?string $role        = null;
 
     protected array $attributes = [
         'id'          => ['card_id', 'int'],
@@ -37,7 +36,6 @@ abstract class Card extends DB_Model
         'location'    => 'card_location',
         'locationArg' => ['card_location_arg', 'int'],
         'facedown'    => ['card_facedown', 'bool'],
-        'role'        => 'card_role',
     ];
 
     // Set by subclass constructors — static per card type, never persisted.

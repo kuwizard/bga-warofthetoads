@@ -2,8 +2,11 @@
 // cannot resolve an extensionless ES module path.
 import { ReturnCard } from "./States/ReturnCard.js";
 import { PlayCards } from "./States/PlayCards.js";
+import { ChooseStack } from "./States/ChooseStack.js";
 import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
+import { Shrine } from "./shrine.js";
+import { PlayerPanels } from "./playerPanels.js";
 
 // "Player blocks position" preference — see gamepreferences.jsonc.
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -14,8 +17,11 @@ export class Game {
 
     private returnCard: ReturnCard;
     private playCards: PlayCards;
+    private chooseStack: ChooseStack;
     private hand: Hand;
     private lanes: Lanes;
+    private shrine: Shrine;
+    private playerPanels: PlayerPanels;
 
     /** Table order index (0 or 1) → deck colour. Mirrors Managers/Cards::setupNewGame(). */
     private deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' } = {};
@@ -33,6 +39,9 @@ export class Game {
         this.playCards = new PlayCards(this, bga);
         this.bga.states.register('AttackerPlay', this.playCards);
         this.bga.states.register('DefenderPlay', this.playCards);
+
+        this.chooseStack = new ChooseStack(this, bga);
+        this.bga.states.register('ChooseStack', this.chooseStack);
 
         // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
         // this.bga.states.logger = console.log;
@@ -72,6 +81,12 @@ export class Game {
 
         this.lanes = new Lanes(this.bga);
         this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder);
+
+        this.shrine = new Shrine(this.bga);
+        this.shrine.render(gameArea, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder);
+
+        this.playerPanels = new PlayerPanels(this.bga);
+        this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
 
         // Container for the per-player zones
         gameArea.insertAdjacentHTML('beforeend', `
@@ -164,6 +179,18 @@ export class Game {
         this.lanes.setCardsSelectable(cardIds, selectable, onClick);
     }
 
+    public setStacksSelectable(stackIds: number[], selectable: boolean, onClick?: (stackId: number) => void) {
+        this.shrine.setStacksSelectable(stackIds, selectable, onClick);
+    }
+
+    public setSelectedStack(stackId: number | null) {
+        this.shrine.setSelectedStack(stackId);
+    }
+
+    public getMyPendingStackIds(): number[] {
+        return this.shrine.getMyPendingStackIds(Number(this.bga.gameui.player_id));
+    }
+
     public async previewPlayCard(cardId: number, faceDown: boolean): Promise<void> {
         const card = this.gamedatas.cards.hand.find(c => c.id === cardId)!;
         const myId = Number(this.bga.gameui.player_id);
@@ -199,8 +226,9 @@ export class Game {
      * `BattleStart`'s GAME-state entry (RULES.md §5) — see
      * Notifications::battleStarted(). Clears the previous battle's lane
      * cards; harmless (a no-op) on the War's first battle, when the lanes are
-     * already empty. `BattleEnd`'s `Cards::clearLane()` is what actually moves
-     * the cards server-side, so this is purely the client catching up visually.
+     * already empty. `ResolveBattle` is what actually moves the cards to a
+     * stack or the Shrine server-side, so this is purely the client catching
+     * up visually.
      */
     async notif_battleStarted(_args: BattleStartedNotifArgs) {
         this.lanes.clear();
@@ -316,5 +344,35 @@ export class Game {
             this.lanes.revealCard(args.card1),
             this.lanes.revealCard(args.card2),
         ]);
+    }
+
+    /** `ResolveBattle`'s tie branch (RULES.md §6 ➎, [H16]) — see Notifications::laneTied(). */
+    async notif_laneTied(args: LaneTiedNotifArgs) {
+        this.shrine.onLaneTied(args);
+    }
+
+    /** `ResolveBattle`'s single-lane-win branch (RULES.md §6 ➎) — see Notifications::hostageCaptured(). */
+    async notif_hostageCaptured(args: HostageCapturedNotifArgs) {
+        this.shrine.onHostageCaptured(args);
+    }
+
+    /** `ResolveBattle`'s double-win-while-Angry branch (§7, [H4]) — see Notifications::leapFrog(). */
+    async notif_leapFrog(args: LeapFrogNotifArgs) {
+        this.shrine.onLeapFrog(args);
+    }
+
+    /** `ResolveBattle`'s double-win-while-Calm branch ([H14]) — see Notifications::doubleWinCalm(). */
+    async notif_doubleWinCalm(args: DoubleWinCalmNotifArgs) {
+        this.shrine.onDoubleWinCalm(args);
+    }
+
+    /** `ChooseStack` ([H14]) — see Notifications::stackKept(). */
+    async notif_stackKept(args: StackKeptNotifArgs) {
+        this.shrine.onStackKept(args);
+    }
+
+    /** `BattleEnd` (RULES.md §7) — see Notifications::moodChanged(). */
+    async notif_moodChanged(args: MoodChangedNotifArgs) {
+        this.playerPanels.onMoodChanged(args);
     }
 }

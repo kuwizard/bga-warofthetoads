@@ -174,4 +174,108 @@ class Notifications
             'card2' => $card2->getUiData(),
         ]);
     }
+
+    /**
+     * `ResolveBattle` (PR4, RULES.md §6 ➎): equal Strength, no winner — both
+     * cards retire to the Shrine as Monks. Called after `Cards::retireToShrine()`,
+     * so both are already flipped face-down; `getUiData()` redacts them here
+     * the same way it redacts a captured Hostage — a card-counting opponent
+     * must recall their identity from the earlier `cardsRevealed` line rather
+     * than re-reading it off this one.
+     */
+    public static function laneTied(Card $card1, Card $card2): void
+    {
+        self::notifyAll('laneTied', clienttranslate('The lane ties — both cards retire to the Shrine as Monks'), [
+            'card1' => $card1->getUiData(),
+            'card2' => $card2->getUiData(),
+        ]);
+    }
+
+    /**
+     * `ResolveBattle` (RULES.md §6 ➏): a single-lane win, capped at 1 Hostage
+     * regardless of Calm/Angry (§7 only ever caps a *double*-lane win).
+     * Called after `Cards::capture()`, so `$loser` is already the face-down
+     * Hostage — its `getUiData()` is redacted here for the same card-counting
+     * reason as `laneTied()`; `$winner` stays public, it never hides again.
+     */
+    public static function hostageCaptured(Player $player, Card $winner, Card $loser, int $stackId): void
+    {
+        self::notifyAll('hostageCaptured', clienttranslate('${player_name} captures a Hostage'), [
+            'player'  => $player,
+            'winner'  => $winner->getUiData(),
+            'loser'   => $loser->getUiData(),
+            'stackId' => $stackId,
+        ]);
+    }
+
+    /**
+     * [H4]/§7 — Angry, winning both lanes keeps both stacks: a Leap-Frog!
+     * `$winners`/`$losers`/`$stackIds` are parallel arrays, 1 entry per lane
+     * won, in the same order — same redaction split as `hostageCaptured()`.
+     *
+     * @param Card[] $winners
+     * @param Card[] $losers
+     * @param int[]  $stackIds
+     */
+    public static function leapFrog(Player $player, array $winners, array $losers, array $stackIds): void
+    {
+        self::notifyAll('leapFrog', clienttranslate('${player_name} wins both lanes while Angry — Leap-Frog! Both stacks are kept'), [
+            'player'   => $player,
+            'winners'  => array_map(fn(Card $c) => $c->getUiData(), $winners),
+            'losers'   => array_map(fn(Card $c) => $c->getUiData(), $losers),
+            'stackIds' => $stackIds,
+        ]);
+    }
+
+    /**
+     * [H14]/§7 — Calm, winning both lanes: both stacks are formed (already
+     * captured by the time this is sent), but the winner must now choose
+     * which 1 to keep — `States/ChooseStack.php` (state 75) follows. Same
+     * parallel-array shape as `leapFrog()`.
+     *
+     * @param Card[] $winners
+     * @param Card[] $losers
+     * @param int[]  $stackIds
+     */
+    public static function doubleWinCalm(Player $player, array $winners, array $losers, array $stackIds): void
+    {
+        self::notifyAll('doubleWinCalm', clienttranslate('${player_name} wins both lanes while Calm and must choose which stack to keep'), [
+            'player'   => $player,
+            'winners'  => array_map(fn(Card $c) => $c->getUiData(), $winners),
+            'losers'   => array_map(fn(Card $c) => $c->getUiData(), $losers),
+            'stackIds' => $stackIds,
+        ]);
+    }
+
+    /**
+     * `ChooseStack`'s resolution ([H14]): the declined stack's Captor and
+     * Hostage both retire to the Shrine as Monks. No card data needed here —
+     * both stacks were already fully rendered client-side by `doubleWinCalm()`,
+     * so the client just reparents/flips its own existing elements by id.
+     */
+    public static function stackKept(Player $player, int $keptStackId, int $declinedStackId): void
+    {
+        self::notifyAll('stackKept', clienttranslate('${player_name} keeps 1 stack; the other retires to the Shrine'), [
+            'player'          => $player,
+            'keptStackId'     => $keptStackId,
+            'declinedStackId' => $declinedStackId,
+        ]);
+    }
+
+    /**
+     * RULES.md §7's Calm/Angry, for both players at once. Physically the
+     * Shrine itself shows this by being flipped/rotated; until `shrine.ts`
+     * renders that, the client puts the word in each player panel.
+     *
+     * Sent from `BattleEnd` — the one point every capture path (ResolveBattle
+     * directly, or via ChooseStack on [H14]) has converged and the standing
+     * hostage totals are final for the Battle. Deliberately silent: the
+     * capture lines above already say *why* it moved.
+     *
+     * @param array<int, bool> $angry playerId => is Angry (Cards::getAngryByPlayerId())
+     */
+    public static function moodChanged(array $angry): void
+    {
+        self::notifyAll('moodChanged', '', ['angry' => $angry]);
+    }
 }

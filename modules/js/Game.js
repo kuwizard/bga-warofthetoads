@@ -1,7 +1,10 @@
 import { ReturnCard } from "./States/ReturnCard.js";
 import { PlayCards } from "./States/PlayCards.js";
+import { ChooseStack } from "./States/ChooseStack.js";
 import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
+import { Shrine } from "./shrine.js";
+import { PlayerPanels } from "./playerPanels.js";
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     constructor(bga) {
@@ -13,6 +16,8 @@ export class Game {
         this.playCards = new PlayCards(this, bga);
         this.bga.states.register('AttackerPlay', this.playCards);
         this.bga.states.register('DefenderPlay', this.playCards);
+        this.chooseStack = new ChooseStack(this, bga);
+        this.bga.states.register('ChooseStack', this.chooseStack);
     }
     setup(gamedatas) {
         console.log("Starting game setup");
@@ -27,6 +32,10 @@ export class Game {
         this.hand.render(gameArea, this.gamedatas.cards.hand);
         this.lanes = new Lanes(this.bga);
         this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder);
+        this.shrine = new Shrine(this.bga);
+        this.shrine.render(gameArea, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder);
+        this.playerPanels = new PlayerPanels(this.bga);
+        this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
         gameArea.insertAdjacentHTML('beforeend', `
             <div id="player-tables"></div>
         `);
@@ -83,6 +92,15 @@ export class Game {
     }
     setLaneCardsSelectable(cardIds, selectable, onClick) {
         this.lanes.setCardsSelectable(cardIds, selectable, onClick);
+    }
+    setStacksSelectable(stackIds, selectable, onClick) {
+        this.shrine.setStacksSelectable(stackIds, selectable, onClick);
+    }
+    setSelectedStack(stackId) {
+        this.shrine.setSelectedStack(stackId);
+    }
+    getMyPendingStackIds() {
+        return this.shrine.getMyPendingStackIds(Number(this.bga.gameui.player_id));
     }
     async previewPlayCard(cardId, faceDown) {
         const card = this.gamedatas.cards.hand.find(c => c.id === cardId);
@@ -167,5 +185,23 @@ export class Game {
             this.lanes.revealCard(args.card1),
             this.lanes.revealCard(args.card2),
         ]);
+    }
+    async notif_laneTied(args) {
+        this.shrine.onLaneTied(args);
+    }
+    async notif_hostageCaptured(args) {
+        this.shrine.onHostageCaptured(args);
+    }
+    async notif_leapFrog(args) {
+        this.shrine.onLeapFrog(args);
+    }
+    async notif_doubleWinCalm(args) {
+        this.shrine.onDoubleWinCalm(args);
+    }
+    async notif_stackKept(args) {
+        this.shrine.onStackKept(args);
+    }
+    async notif_moodChanged(args) {
+        this.playerPanels.onMoodChanged(args);
     }
 }

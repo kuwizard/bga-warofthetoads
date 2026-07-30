@@ -108,13 +108,6 @@ const SPECIAL_ATTRIBUTE_BEATS_SIEGE      = 'beats_siege';      // Saboteur
 const SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN = 'loses_to_assassin'; // General A, General B
 const SPECIAL_ATTRIBUTE_SIEGE             = 'siege';            // Siege Cannon, [H16]
 
-// ── Card role (within a captured stack) ─────────────────────────────────────────
-// Values of the `card_role` column. Only meaningful while `card_location` is
-// LOCATION_STACK.
-
-const CARD_ROLE_CAPTOR  = 'captor';
-const CARD_ROLE_HOSTAGE = 'hostage';
-
 // ── Tactic priority bands ────────────────────────────────────────────────────────
 // The order the Tactic pipeline resolves in (IMPLEMENTATION_PLAN.md §2.3).
 

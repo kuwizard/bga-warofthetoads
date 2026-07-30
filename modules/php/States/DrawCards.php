@@ -48,6 +48,6 @@ class DrawCards extends GameState
         $card2->setFacedown(false);
         Notifications::cardsRevealed($card1, $card2);
 
-        return BattleEnd::class;
+        return ResolveBattle::class;
     }
 }

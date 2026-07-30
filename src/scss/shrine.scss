@@ -1,0 +1,74 @@
+// The Shrine (src/ts/shrine.ts) — each player's captured stacks, plus the
+// shared Monk pile. Flip mechanics are already generic in hand.scss; this
+// file is layout only.
+
+@use 'variables' as v;
+
+#wott-shrine {
+  display: flex;
+  gap: v.$gap * 4;
+  align-items: flex-start;
+  justify-content: center;
+  padding: v.$gap * 2;
+}
+
+.wott-stack-column {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$gap * 2;
+  min-height: 90px;
+}
+
+.wott-stack-count {
+  align-self: center;
+  font-weight: bold;
+  min-width: 1.5em;
+  text-align: center;
+}
+
+// Captor on top of its Hostage — a small fanned offset so both remain
+// visible, rather than a flush overlap that would hide the Hostage's back
+// entirely.
+.wott-stack {
+  position: relative;
+  width: 90px;
+  aspect-ratio: 25 / 36;
+
+  .wott-card-flip {
+    position: absolute;
+    width: 100%;
+
+    &:first-child {
+      top: 10px;
+      left: 6px;
+    }
+  }
+}
+
+// ChooseStack's select-then-confirm flow — same treatment as
+// hand.scss's .wott-card-flip.wott-selectable, applied to the stack as a whole.
+.wott-stack.wott-selectable {
+  cursor: pointer;
+  transition: transform calc(0.15s * var(--am)) ease;
+
+  &:hover {
+    transform: translateY(-10px);
+  }
+}
+
+.wott-stack.wott-selectable.wott-card--selected {
+  transform: translateY(-10px);
+  outline: 3px solid gold;
+  outline-offset: 2px;
+}
+
+.wott-monks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: v.$gap;
+  max-width: 260px;
+
+  .wott-card-flip {
+    width: 60px;
+  }
+}

@@ -1,0 +1,15 @@
+// Game-specific content inside the BGA player panels (src/ts/playerPanels.ts).
+
+// RULES.md §7's Calm/Angry. Temporary — it goes away once the Shrine renders
+// the flip/rotate that shows this physically.
+.wott-mood {
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: #2e7d32;
+}
+
+.wott-mood--angry {
+  color: #c62828;
+}

@@ -6,6 +6,5 @@ CREATE TABLE IF NOT EXISTS `card` (
   `card_location` VARCHAR(16) NOT NULL,
   `card_location_arg` INT NOT NULL DEFAULT 0,
   `card_facedown` TINYINT UNSIGNED NOT NULL DEFAULT 0,
-  `card_role` VARCHAR(8) DEFAULT NULL,
   PRIMARY KEY (`card_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 AUTO_INCREMENT=1;

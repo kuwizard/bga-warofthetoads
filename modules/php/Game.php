@@ -94,6 +94,7 @@ class Game extends \Bga\GameFramework\Table
         return [
             'players' => Players::getUiData($currentPlayerId)->toAssoc(),
             'cards'   => Cards::getUiData($currentPlayerId),
+            'angry'   => Cards::getAngryByPlayerId(),
         ];
     }
 

@@ -71,6 +71,18 @@
   text-align: center;
 }
 
+.wott-mood {
+  font-weight: bold;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  text-align: center;
+  color: #2e7d32;
+}
+
+.wott-mood--angry {
+  color: #c62828;
+}
+
 #wott-my-hand {
   display: flex;
   justify-content: center;
@@ -187,6 +199,66 @@
 }
 .wott-lane-slot .wott-card-flip {
   width: 100%;
+}
+
+#wott-shrine {
+  display: flex;
+  gap: 32px;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 16px;
+}
+
+.wott-stack-column {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  min-height: 90px;
+}
+
+.wott-stack-count {
+  align-self: center;
+  font-weight: bold;
+  min-width: 1.5em;
+  text-align: center;
+}
+
+.wott-stack {
+  position: relative;
+  width: 90px;
+  aspect-ratio: 25/36;
+}
+.wott-stack .wott-card-flip {
+  position: absolute;
+  width: 100%;
+}
+.wott-stack .wott-card-flip:first-child {
+  top: 10px;
+  left: 6px;
+}
+
+.wott-stack.wott-selectable {
+  cursor: pointer;
+  transition: transform calc(0.15s * var(--am)) ease;
+}
+.wott-stack.wott-selectable:hover {
+  transform: translateY(-10px);
+}
+
+.wott-stack.wott-selectable.wott-card--selected {
+  transform: translateY(-10px);
+  outline: 3px solid gold;
+  outline-offset: 2px;
+}
+
+.wott-monks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  max-width: 260px;
+}
+.wott-monks .wott-card-flip {
+  width: 60px;
 }
 
 .wott-card {

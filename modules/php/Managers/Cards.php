@@ -70,7 +70,7 @@ class Cards extends CachedDB_Manager
         foreach ($players as $i => $player) {
             $deck = $decks[$i];
             foreach (array_keys(self::$map) as $order => $type) {
-                $rows[] = [$type, $deck, $player->getId(), LOCATION_DECK, $order, 0, null];
+                $rows[] = [$type, $deck, $player->getId(), LOCATION_DECK, $order, 0];
             }
         }
 
@@ -81,7 +81,6 @@ class Cards extends CachedDB_Manager
             'card_location',
             'card_location_arg',
             'card_facedown',
-            'card_role',
         ])->values($rows);
 
         static::invalidate();
@@ -184,14 +183,115 @@ class Cards extends CachedDB_Manager
     }
 
     /**
-     * PR3 placeholder: empties the lane once a battle resolves to nothing.
-     * PR4's real `ResolveBattle` will empty the lane via actual capture logic
-     * (winner's card to a stack, loser's/tied cards to the Shrine) before
-     * `BattleEnd` ever runs — once that lands, this call becomes dead code.
+     * Forms a stack: the winner's card on top (face-up Captor), the loser's
+     * card beneath (face-down Hostage) — RULES.md §6 ➏. Within a stack,
+     * `facedown` alone distinguishes the two (a Captor is never face-down, a
+     * Hostage always is — RULES.md §6 ➏ is a hard rule, not an implementation
+     * detail, so there is no separate "role" column to keep in sync).
+     * `card_location_arg` under `LOCATION_STACK` is a stack id, monotonically
+     * increasing across the whole game (never reused, never scoped to a lane
+     * number — a player can hold several stacks at once). See doc/SCHEMA.md.
+     *
+     * @return int the new stack's id, e.g. for `ChooseStack` (PR4, [H14]) to
+     *             identify which 2 stacks a Calm double-win just created.
      */
-    public static function clearLane(): void
+    public static function capture(Card $captorCard, Card $hostageCard): int
     {
-        static::getLaneCards()->update('location', LOCATION_SHRINE)->update('locationArg', 0);
+        $stackId = static::getAll()
+            ->where('location', LOCATION_STACK)
+            ->reduce(fn(int $max, Card $c) => max($max, $c->getLocationArg()), 0) + 1;
+
+        $captorCard->setLocation(LOCATION_STACK);
+        $captorCard->setLocationArg($stackId);
+        $captorCard->setFacedown(false);
+
+        $hostageCard->setLocation(LOCATION_STACK);
+        $hostageCard->setLocationArg($stackId);
+        $hostageCard->setFacedown(true);
+
+        return $stackId;
+    }
+
+    /**
+     * Retires cards to the Shrine as Monks (RULES.md §6 ➎ ties, §7, [H14]'s
+     * declined stack) — each card individually, never paired. Monks don't
+     * count towards scoring; only their controller (hence deck-back colour)
+     * remains visible, per `Card::getUiData()`'s redaction.
+     */
+    public static function retireToShrine(Card ...$cards): void
+    {
+        foreach ($cards as $card) {
+            $card->setLocation(LOCATION_SHRINE);
+            $card->setLocationArg(0);
+            $card->setFacedown(true);
+        }
+    }
+
+    /**
+     * Hostages captured by `$playerId` — one stack = one Hostage = 1 Point
+     * (RULES.md §6 ➏, §7). Identified by the stack's Captor (not Hostage) row
+     * — `facedown = false` — so the count is unambiguous even mid-capture,
+     * when a stack briefly has a Captor but no linked Hostage query needed.
+     */
+    public static function getCaptureCount(int $playerId): int
+    {
+        return static::getAll()
+            ->where('controller', $playerId)
+            ->where('location', LOCATION_STACK)
+            ->where('facedown', false)
+            ->count();
+    }
+
+    /**
+     * [H4] Angry is evaluated from the hostage counts *before* the current
+     * Battle's captures — callers must call this before any `capture()` this
+     * Battle, never after. RULES.md §7: "Angry if you have fewer Hostages
+     * than your opponent."
+     */
+    public static function isAngry(int $playerId): bool
+    {
+        return static::getCaptureCount($playerId) < static::getCaptureCount(Players::getOpponentId($playerId));
+    }
+
+    /**
+     * Every player's Calm/Angry at once, for the client's player panels —
+     * `Game::getAllDatas()` and `Notifications::moodChanged()`. Nothing
+     * persists it (no column, no Global): it is re-derived on every read, so
+     * the same [H4] timing rule as `isAngry()` applies to when it's called.
+     *
+     * @return array<int, bool> playerId => is Angry
+     */
+    public static function getAngryByPlayerId(): array
+    {
+        $angry = [];
+        foreach (Players::getAll() as $player) {
+            $angry[$player->getId()] = static::isAngry($player->getId());
+        }
+
+        return $angry;
+    }
+
+    /**
+     * `$playerId`'s captured stacks, oldest first (ascending stack id). Used
+     * by `ChooseStack` ([H14]) to find "the 2 stacks a Calm double-win just
+     * created" — the 2 highest ids, since nothing else creates a stack for
+     * this player between `ResolveBattle` and `ChooseStack` resolving.
+     *
+     * @return Collection<Card> the Captor row of each stack (`facedown = false`).
+     */
+    public static function getStacksFor(int $playerId): Collection
+    {
+        return static::getAll()
+            ->where('controller', $playerId)
+            ->where('location', LOCATION_STACK)
+            ->where('facedown', false)
+            ->sort(fn(Card $a, Card $b) => $a->getLocationArg() <=> $b->getLocationArg());
+    }
+
+    /** @return Collection<Card> both members (Captor + Hostage) of stack `$stackId`. */
+    public static function getStackCards(int $stackId): Collection
+    {
+        return static::getAll()->where('location', LOCATION_STACK)->where('locationArg', $stackId);
     }
 
     // ── READS ─────────────────────────────────────────────────────────────────
@@ -248,6 +348,8 @@ class Cards extends CachedDB_Manager
             'handCounts' => $handCounts,
             'deckCounts' => $deckCounts,
             'lanes'      => static::getLaneCards()->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
+            'stacks'     => static::getAll()->where('location', LOCATION_STACK)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
+            'shrine'     => static::getAll()->where('location', LOCATION_SHRINE)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
         ];
     }
 }
