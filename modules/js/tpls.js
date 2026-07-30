@@ -17,6 +17,17 @@ export function tplHandCard(card) {
         </div>
     `;
 }
+export function tplLaneCard(card, deckColor) {
+    const frontClass = card.type ? `wott-card--${deckColor}-${cardRoleSlug(card.type)}` : `wott-card--${deckColor}-back`;
+    return `
+        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front ${frontClass}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${deckColor}-back"></div>
+            </div>
+        </div>
+    `;
+}
 export function tplCardTooltip(card) {
     const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;
     return `

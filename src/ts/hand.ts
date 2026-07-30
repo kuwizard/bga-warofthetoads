@@ -67,6 +67,10 @@ export class Hand {
         });
     }
 
+    getElement(): HTMLElement {
+        return this.handElement;
+    }
+
     /** Flips the card face-down in place, then slides it into `deckAnchor` — the ReturnCard confirm animation. */
     async animateReturnToDeck(cardId: number, deckAnchor: HTMLElement): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${cardId}`);

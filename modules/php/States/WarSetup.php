@@ -38,6 +38,7 @@ class WarSetup extends GameState
         $attackerId = $players[bga_rand(0, count($players) - 1)]->getId();
 
         Globals::setWar(1);
+        Globals::setBattle(1);
         Globals::setAttackerId($attackerId);
         Globals::setFirstAttackerWar1($attackerId);
 

@@ -1,0 +1,30 @@
+// The 2 shared battle lanes (src/ts/lanes.ts) — one open (face-up), one
+// hidden (face-down), each holding both players' card for the current
+// battle. Flip/slide mechanics are already generic in hand.scss; this file
+// is layout only.
+
+@use 'variables' as v;
+
+#wott-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: v.$gap * 3;
+  align-items: center;
+  padding: v.$gap * 2;
+}
+
+.wott-lane {
+  display: flex;
+  gap: v.$gap * 4;
+}
+
+.wott-lane-slot {
+  width: 130px;
+  aspect-ratio: 25 / 36;
+  border: 2px dashed rgba(0, 0, 0, 0.2);
+  border-radius: v.$radius * 2;
+
+  .wott-card-flip {
+    width: 100%;
+  }
+}

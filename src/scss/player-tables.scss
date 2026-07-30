@@ -1,10 +1,11 @@
 // Per-player zones created in src/ts/Game.ts (`#player-tables`). Own-hand
 // rendering lives in hand.scss — these boxes only ever show a deck now.
 //
-// DOM order is always [opponent, me] (Game.ts::buildPlayerTables) — layout is
-// done entirely in CSS below via the "Player blocks position" preference
-// (--wott-player-tables--stacked etc., toggled in applyLayoutPreferences()),
-// never by rebuilding the markup.
+// DOM order is always [blue, red] (Game.ts::buildPlayerTables) — a colour's
+// table always sits on the same physical side no matter who's viewing.
+// Layout is done entirely in CSS below via the "Player blocks position"
+// preference (--wott-player-tables--stacked etc., toggled in
+// applyLayoutPreferences()), never by rebuilding the markup.
 
 @use 'variables' as v;
 

@@ -26,6 +26,24 @@ export function tplHandCard(card: CardData): string {
     `;
 }
 
+// Same two-sided markup as tplHandCard, reused for a lane card. A redacted
+// card (card.type absent — see Models/Card::getUiData()) never needs its
+// front face rendered for real: the wrapper starts (and, in PR3, stays)
+// flipped until Notifications::cardsRevealed swaps in the true sprite class,
+// so a plain card-back placeholder is all the front face ever shows meanwhile.
+export function tplLaneCard(card: LaneCardData, deckColor: 'blue' | 'red'): string {
+    const frontClass = card.type ? `wott-card--${deckColor}-${cardRoleSlug(card.type)}` : `wott-card--${deckColor}-back`;
+
+    return `
+        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front ${frontClass}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${deckColor}-back"></div>
+            </div>
+        </div>
+    `;
+}
+
 /** Shown via `bga.gameui.addTooltipHtml` on hover — see hand.ts. */
 export function tplCardTooltip(card: CardData): string {
     const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;

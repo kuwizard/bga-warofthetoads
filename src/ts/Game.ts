@@ -1,7 +1,9 @@
 // Import specifiers must end in .js — tsc emits them unchanged, and the browser
 // cannot resolve an extensionless ES module path.
 import { ReturnCard } from "./States/ReturnCard.js";
+import { PlayCards } from "./States/PlayCards.js";
 import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
+import { Lanes } from "./lanes.js";
 
 // "Player blocks position" preference — see gamepreferences.jsonc.
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -11,7 +13,9 @@ export class Game {
     private gamedatas: WarOfTheToadsGamedatas;
 
     private returnCard: ReturnCard;
+    private playCards: PlayCards;
     private hand: Hand;
+    private lanes: Lanes;
 
     /** Table order index (0 or 1) → deck colour. Mirrors Managers/Cards::setupNewGame(). */
     private deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' } = {};
@@ -23,6 +27,12 @@ export class Game {
         // Declare the State classes
         this.returnCard = new ReturnCard(this, bga);
         this.bga.states.register('ReturnCard', this.returnCard);
+
+        // AttackerPlay/DefenderPlay share one handler — RULES.md §6 ➊➋ is the
+        // same physical action for both roles (mirrors PHP's PlayCardsTrait).
+        this.playCards = new PlayCards(this, bga);
+        this.bga.states.register('AttackerPlay', this.playCards);
+        this.bga.states.register('DefenderPlay', this.playCards);
 
         // Uncomment the next line to show debug informations about state changes in the console. Remove before going to production!
         // this.bga.states.logger = console.log;
@@ -45,8 +55,12 @@ export class Game {
         console.log( "Starting game setup" );
         this.gamedatas = gamedatas;
 
-        const playerIds = gamedatas.playerorder.map(id => Number(id));
-        playerIds.forEach((playerId, index) => {
+        // `no` (Managers/Players::getInTableOrder()) is the stable seat order
+        // decks are dealt in. `playerorder` is NOT safe for this: BGA rotates
+        // it to reflect whose turn is next, so deriving colour from it flips
+        // blue/red the moment the active player changes.
+        const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
+        playerIdsInTableOrder.forEach((playerId, index) => {
             this.deckColorByPlayerId[playerId] = index === 0 ? 'blue' : 'red';
         });
 
@@ -55,6 +69,9 @@ export class Game {
 
         this.hand = new Hand(this.bga);
         this.hand.render(gameArea, this.gamedatas.cards.hand);
+
+        this.lanes = new Lanes(this.bga);
+        this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder);
 
         // Container for the per-player zones
         gameArea.insertAdjacentHTML('beforeend', `
@@ -78,14 +95,21 @@ export class Game {
     ///////////////////////////////////////////////////
     //// Utility methods
 
+    /** Stable seat order (Managers/Players::getInTableOrder()) — see setup()'s comment on why `playerorder` can't be used for this. */
+    private getPlayerIdsInTableOrder(): number[] {
+        return Object.entries(this.gamedatas.players)
+            .sort(([, a], [, b]) => a.no - b.no)
+            .map(([id]) => Number(id));
+    }
+
     private buildPlayerTables() {
         const playerTables = document.getElementById('player-tables')!;
         const myId = Number(this.bga.gameui.player_id);
-        const playerIds = this.gamedatas.playerorder.map(id => Number(id));
-        // Opponent(s) first, "me" last — fixed DOM order the layout preferences
-        // below reposition via CSS, never by rebuilding this markup. Falls back
-        // to plain playerorder for a spectator (no id matches myId).
-        const orderedIds = [...playerIds].sort((a, b) => (a === myId ? 1 : 0) - (b === myId ? 1 : 0));
+        // Blue first, red second — fixed DOM order, always the same physical
+        // side for a given colour regardless of who's viewing. The layout
+        // preferences below only ever reposition via CSS `order`, never by
+        // rebuilding this markup.
+        const orderedIds = this.getPlayerIdsInTableOrder();
 
         orderedIds.forEach(playerId => {
             const player = this.gamedatas.players[playerId];
@@ -136,6 +160,20 @@ export class Game {
         this.hand.setSelectedCard(cardId);
     }
 
+    public setLaneCardsSelectable(cardIds: number[], selectable: boolean, onClick?: (cardId: number) => void) {
+        this.lanes.setCardsSelectable(cardIds, selectable, onClick);
+    }
+
+    public async previewPlayCard(cardId: number, faceDown: boolean): Promise<void> {
+        const card = this.gamedatas.cards.hand.find(c => c.id === cardId)!;
+        const myId = Number(this.bga.gameui.player_id);
+        await this.lanes.previewPlay(card, myId, faceDown, this.deckColorByPlayerId[myId]);
+    }
+
+    public async previewUnplayCard(cardId: number, wasFaceDown: boolean): Promise<void> {
+        await this.lanes.previewUnplay(cardId, this.hand.getElement(), wasFaceDown);
+    }
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
@@ -155,6 +193,17 @@ export class Game {
         this.bga.notifications.setupPromiseNotifications({
             // logger: console.log
         });
+    }
+
+    /**
+     * `BattleStart`'s GAME-state entry (RULES.md §5) — see
+     * Notifications::battleStarted(). Clears the previous battle's lane
+     * cards; harmless (a no-op) on the War's first battle, when the lanes are
+     * already empty. `BattleEnd`'s `Cards::clearLane()` is what actually moves
+     * the cards server-side, so this is purely the client catching up visually.
+     */
+    async notif_battleStarted(_args: BattleStartedNotifArgs) {
+        this.lanes.clear();
     }
 
     /**
@@ -214,5 +263,58 @@ export class Game {
                 this.hand.appendCard(args.card);
             }
         }
+    }
+
+    /**
+     * `AttackerPlay`/`DefenderPlay` (RULES.md §6 ➊➋) — see
+     * Notifications::cardsPlayed(). Both cards are already the redacted stub
+     * ([H13]) when they belong to someone else and are face-down; the acting
+     * player's own client just needs its 2 played cards removed from hand.
+     */
+    async notif_cardsPlayed(args: CardsPlayedNotifArgs) {
+        const playerId = Number(args.player_id);
+        const deckColor = this.deckColorByPlayerId[playerId];
+
+        this.gamedatas.cards.hand = this.gamedatas.cards.hand.filter(card =>
+            card.id !== args.faceUpCard.id && card.id !== args.faceDownCard.id
+        );
+        this.gamedatas.cards.handCounts[playerId] = (this.gamedatas.cards.handCounts[playerId] ?? 2) - 2;
+
+        await Promise.all([
+            this.lanes.playCard(args.faceUpCard, deckColor),
+            this.lanes.playCard(args.faceDownCard, deckColor),
+        ]);
+    }
+
+    /**
+     * `DrawCards`'s draw step (RULES.md §6 ➌) — see Notifications::cardsDrawn().
+     * `args.cards` (full data) is present only for the drawing player ([H13]);
+     * everyone else just sees their deck-count reduced.
+     */
+    async notif_cardsDrawn(args: CardsDrawnNotifArgs) {
+        const playerId = Number(args.player_id);
+
+        this.gamedatas.cards.deckCounts[playerId] = (this.gamedatas.cards.deckCounts[playerId] ?? args.count) - args.count;
+        this.gamedatas.cards.handCounts[playerId] = (this.gamedatas.cards.handCounts[playerId] ?? 0) + args.count;
+
+        const deckCountElement = document.getElementById(`wott-deck-count-${playerId}`);
+        if (deckCountElement) {
+            deckCountElement.textContent = `${this.gamedatas.cards.deckCounts[playerId]}`;
+        }
+
+        if (args.cards !== undefined) {
+            args.cards.forEach(card => {
+                this.gamedatas.cards.hand.push(card);
+                this.hand.appendCard(card);
+            });
+        }
+    }
+
+    /** `DrawCards`'s reveal step (RULES.md §6 ➍) — see Notifications::cardsRevealed(). Genuinely public at this point. */
+    async notif_cardsRevealed(args: CardsRevealedNotifArgs) {
+        await Promise.all([
+            this.lanes.revealCard(args.card1),
+            this.lanes.revealCard(args.card2),
+        ]);
     }
 }

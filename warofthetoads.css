@@ -166,6 +166,29 @@
   line-height: 1.4;
 }
 
+#wott-lanes {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  align-items: center;
+  padding: 16px;
+}
+
+.wott-lane {
+  display: flex;
+  gap: 32px;
+}
+
+.wott-lane-slot {
+  width: 130px;
+  aspect-ratio: 25/36;
+  border: 2px dashed rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+}
+.wott-lane-slot .wott-card-flip {
+  width: 100%;
+}
+
 .wott-card {
   aspect-ratio: 25/36;
   background-image: url("img/cards.png");

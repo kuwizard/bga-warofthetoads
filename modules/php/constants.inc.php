@@ -26,17 +26,21 @@
 //
 // PR2 renamed the template's placeholder PlayerTurn (id 10) in place into the
 // real WarSetup — same numeric id, real logic — and deleted the now-dead
-// NextPlayer (its id, 90, stays reserved further down for PR3's BattleEnd,
-// which will reuse the number the same way WarSetup just did). EndScore (98)
-// is still the template placeholder: ReturnCard transitions straight to it
-// for now as a harmless early terminal; PR3 rewires that transition to the
-// real BattleStart and PR7 renames EndScore in place into ComputeScores.
+// NextPlayer. PR3 renamed that same slot (90) in place into the real
+// BattleEnd, and added ST_DEFENDER_SETUP (35): a GAME-type state whose only
+// job is to call changeActivePlayer() between AttackerPlay and DefenderPlay —
+// the framework only allows that call from a GAME-state handler, never from
+// inside an ACTIVE_PLAYER action (verified against bga-imperialsettlers/
+// bga-aceofspades). EndScore (98) is still the template placeholder;
+// BattleEnd transitions to it once a hand drops below 2 cards; PR7 renames
+// EndScore in place into ComputeScores.
 
 const ST_GAME_SETUP  = 1;
 const ST_WAR_SETUP      = 10;
 const ST_RETURN_CARD    = 15;
 const ST_BATTLE_START   = 20;
 const ST_ATTACKER_PLAY  = 30;
+const ST_DEFENDER_SETUP = 35;
 const ST_DEFENDER_PLAY  = 40;
 const ST_DRAW_CARDS     = 50;
 const ST_RESOLVE_TACTICS = 60;
@@ -44,11 +48,11 @@ const ST_SCOUT_REVEAL   = 65;
 const ST_RESOLVE_BATTLE = 70;
 const ST_CHOOSE_STACK   = 75;
 const ST_SIEGE_GUESS    = 80;
+const ST_BATTLE_END     = 90;
 const ST_WAR_END        = 95;
 const ST_GAME_END       = 99;
 
-// Template placeholder states, still wired until PR3 (BattleEnd) / PR7 (ComputeScores).
-const ST_NEXT_PLAYER = 90;
+// Template placeholder state, still wired until PR7 (ComputeScores).
 const ST_END_SCORE   = 98;
 
 // ── Card / token locations ────────────────────────────────────────────────────
@@ -61,6 +65,15 @@ const LOCATION_LANE     = 'lane';
 const LOCATION_STACK    = 'stack';
 const LOCATION_SHRINE   = 'shrine';
 const LOCATION_CASUALTY = 'casualty';
+
+// ── Lane numbers ──────────────────────────────────────────────────────────────
+// Values of `card_location_arg` while `card_location` is LOCATION_LANE.
+// Lane number is derived from a card's facedown status, never chosen
+// independently (IMPLEMENTATION_PLAN.md §2.1: "the board is really one open
+// lane and one hidden lane" until PR5's Trickster swaps them).
+
+const LANE_OPEN   = 1; // face-up card
+const LANE_HIDDEN = 2; // face-down card
 
 // ── Card type ──────────────────────────────────────────────────────────────────
 // Values of the `card_type` column. The 9 card definitions (material.inc.php,

@@ -68,4 +68,16 @@ class Globals
     {
         Game::get()->bga->globals->set('firstAttackerWar1', $playerId);
     }
+
+    // ── BATTLE ────────────────────────────────────────────────────────────────
+
+    public static function getBattle(): int
+    {
+        return (int) Game::get()->bga->globals->get('battle', 1);
+    }
+
+    public static function setBattle(int $battle): void
+    {
+        Game::get()->bga->globals->set('battle', $battle);
+    }
 }

@@ -83,4 +83,26 @@ abstract class Card extends DB_Model
     {
         return $this->band;
     }
+
+    /**
+     * A face-down card's identity must never reach anyone but its controller —
+     * the project's top hidden-information risk (IMPLEMENTATION_PLAN.md §4).
+     * Generic enough to also cover PR4's captured Hostages with no changes:
+     * their controller is the losing player, and neither side should see a
+     * Hostage's identity again once captured.
+     */
+    public function getUiData(?int $currentPlayerId = null): array
+    {
+        if ($this->facedown && $this->controller !== $currentPlayerId) {
+            return [
+                'id'          => $this->id,
+                'controller'  => $this->controller,
+                'location'    => $this->location,
+                'locationArg' => $this->locationArg,
+                'facedown'    => $this->facedown,
+            ];
+        }
+
+        return parent::getUiData($currentPlayerId);
+    }
 }

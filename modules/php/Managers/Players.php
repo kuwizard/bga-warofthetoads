@@ -124,4 +124,16 @@ class Players extends CachedDB_Manager
     {
         return static::getAll()->map(fn(Player $p) => $p->getUiData($currentPlayerId));
     }
+
+    /** This game is fixed 2-player, so "the other one" is always unambiguous. */
+    public static function getOpponentId(int $playerId): int
+    {
+        foreach (static::getInTableOrder() as $player) {
+            if ($player->getId() !== $playerId) {
+                return $player->getId();
+            }
+        }
+
+        throw new \LogicException("No opponent found for player $playerId");
+    }
 }

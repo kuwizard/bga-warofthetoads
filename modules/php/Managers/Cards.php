@@ -108,8 +108,11 @@ class Cards extends CachedDB_Manager
         }
     }
 
-    /** Draws the top `$n` cards of `$playerId`'s deck into their hand (fewer if the deck is short). */
-    public static function drawCards(int $playerId, int $n): void
+    /**
+     * Draws the top `$n` cards of `$playerId`'s deck into their hand (fewer if
+     * the deck is short). @return Collection<Card> the cards drawn.
+     */
+    public static function drawCards(int $playerId, int $n): Collection
     {
         $deck = static::getAll()
             ->where('controller', $playerId)
@@ -117,9 +120,12 @@ class Cards extends CachedDB_Manager
             ->sort(fn(Card $a, Card $b) => $a->getLocationArg() <=> $b->getLocationArg())
             ->toArray();
 
-        foreach (array_slice($deck, 0, $n) as $card) {
+        $drawn = array_slice($deck, 0, $n);
+        foreach ($drawn as $card) {
             $card->setLocation(LOCATION_HAND);
         }
+
+        return new Collection($drawn);
     }
 
     /**
@@ -151,6 +157,41 @@ class Cards extends CachedDB_Manager
             ->where('location', LOCATION_DECK)
             ->sort(fn(Card $a, Card $b) => $b->getLocationArg() <=> $a->getLocationArg())
             ->first();
+    }
+
+    // ── BATTLE ────────────────────────────────────────────────────────────────
+
+    /**
+     * Plays the Attacker's or Defender's 2 cards into the lane — lane number
+     * is derived from facedown status, never chosen independently
+     * (IMPLEMENTATION_PLAN.md §2.1).
+     */
+    public static function playToLane(Card $faceUpCard, Card $faceDownCard): void
+    {
+        $faceUpCard->setLocation(LOCATION_LANE);
+        $faceUpCard->setLocationArg(LANE_OPEN);
+        $faceUpCard->setFacedown(false);
+
+        $faceDownCard->setLocation(LOCATION_LANE);
+        $faceDownCard->setLocationArg(LANE_HIDDEN);
+        $faceDownCard->setFacedown(true);
+    }
+
+    /** @return Collection<Card> */
+    public static function getLaneCards(): Collection
+    {
+        return static::getAll()->where('location', LOCATION_LANE);
+    }
+
+    /**
+     * PR3 placeholder: empties the lane once a battle resolves to nothing.
+     * PR4's real `ResolveBattle` will empty the lane via actual capture logic
+     * (winner's card to a stack, loser's/tied cards to the Shrine) before
+     * `BattleEnd` ever runs — once that lands, this call becomes dead code.
+     */
+    public static function clearLane(): void
+    {
+        static::getLaneCards()->update('location', LOCATION_SHRINE)->update('locationArg', 0);
     }
 
     // ── READS ─────────────────────────────────────────────────────────────────
@@ -206,6 +247,7 @@ class Cards extends CachedDB_Manager
             'hand'       => static::getHand($currentPlayerId)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
             'handCounts' => $handCounts,
             'deckCounts' => $deckCounts,
+            'lanes'      => static::getLaneCards()->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
         ];
     }
 }

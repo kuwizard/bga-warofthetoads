@@ -55,7 +55,7 @@ class ReturnCard extends GameState
 
         $this->returnCard($playerId, $card);
 
-        return $this->gamestate->setPlayerNonMultiactive($playerId, EndScore::class);
+        return $this->gamestate->setPlayerNonMultiactive($playerId, BattleStart::class);
     }
 
     private function returnCard(int $playerId, Card $card): void
@@ -70,7 +70,7 @@ class ReturnCard extends GameState
      * the framework's default "must be currently active" gate (this player
      * just made themselves inactive via actReturnCard); `checkPossibleAction`
      * re-validates it manually instead — which naturally fails once every
-     * player has confirmed and the state has moved on to EndScore, so "only
+     * player has confirmed and the state has moved on to BattleStart, so "only
      * if the other player hasn't decided yet" needs no extra guard.
      */
     #[PossibleAction]
@@ -84,7 +84,7 @@ class ReturnCard extends GameState
         $card->setLocation(LOCATION_HAND);
         Notifications::cardReturnUndone(Players::get($playerId), $card);
 
-        $this->gamestate->setPlayersMultiactive([$playerId], EndScore::class);
+        $this->gamestate->setPlayersMultiactive([$playerId], BattleStart::class);
     }
 
     /**
@@ -99,6 +99,6 @@ class ReturnCard extends GameState
         $card = Cards::getHand($playerId)->first();
         $this->returnCard($playerId, $card);
 
-        return $this->gamestate->setPlayerNonMultiactive($playerId, EndScore::class);
+        return $this->gamestate->setPlayerNonMultiactive($playerId, BattleStart::class);
     }
 }

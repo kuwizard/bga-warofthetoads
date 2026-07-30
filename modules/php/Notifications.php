@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads;
 
+use Bga\Games\WarOfTheToads\Helpers\Collection;
 use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Models\Player;
 
@@ -111,6 +112,66 @@ class Notifications
                     'card' => $card->getUiData($player->getId()),
                 ],
             ],
+        ]);
+    }
+
+    /** `BattleStart`'s GAME-state entry (PR3, RULES.md §5) — no privacy concerns, both know whose turn it is. */
+    public static function battleStarted(int $battleNumber, Player $attacker): void
+    {
+        self::notifyAll('battleStarted', clienttranslate('Battle ${battleNumber}: ${player_name} attacks'), [
+            'player'       => $attacker,
+            'battleNumber' => $battleNumber,
+        ]);
+    }
+
+    /**
+     * `AttackerPlay`/`DefenderPlay` (PR3, RULES.md §6 ➊➋). No `_private` split
+     * needed here — unlike `cardReturned`, there is no identity to hide from
+     * one *specific* player; the face-down card is hidden from everyone but
+     * its own controller, and the controller already knows what they just
+     * played from their own client-side selection, so it doesn't need to be
+     * echoed back to them either. `getUiData()`'s default (no current player)
+     * already yields the redacted stub for the face-down card for this
+     * broadcast, regardless of who ends up reading it.
+     */
+    public static function cardsPlayed(Player $player, Card $faceUpCard, Card $faceDownCard): void
+    {
+        self::notifyAll('cardsPlayed', clienttranslate('${player_name} plays 2 cards'), [
+            'player'       => $player,
+            'faceUpCard'   => $faceUpCard->getUiData(),
+            'faceDownCard' => $faceDownCard->getUiData(),
+        ]);
+    }
+
+    /**
+     * `DrawCards`'s draw step (PR3, RULES.md §6 ➌) — same public/private split
+     * as `cardReturnUndone`: everyone else only learns the count for their
+     * deck-count display, the drawing player's own client gets the full cards.
+     */
+    public static function cardsDrawn(Player $player, Collection $cards): void
+    {
+        self::notifyAll('cardsDrawn', clienttranslate('${player_name} draws ${count} card(s)'), [
+            'player'         => $player,
+            'count'          => $cards->count(),
+            '_merge_private' => true,
+            '_private'       => [
+                $player->getId() => [
+                    'cards' => $cards->map(fn(Card $c) => $c->getUiData($player->getId()))->toArray(),
+                ],
+            ],
+        ]);
+    }
+
+    /**
+     * `DrawCards`'s reveal step (PR3, RULES.md §6 ➍) — both hidden cards are
+     * flipped face-up server-side before this is called, so `getUiData()` no
+     * longer redacts either one; genuinely public at this point.
+     */
+    public static function cardsRevealed(Card $card1, Card $card2): void
+    {
+        self::notifyAll('cardsRevealed', clienttranslate('The hidden cards are revealed'), [
+            'card1' => $card1->getUiData(),
+            'card2' => $card2->getUiData(),
         ]);
     }
 }

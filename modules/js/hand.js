@@ -43,6 +43,9 @@ export class Hand {
             cardElement.classList.toggle('wott-card--selected', cardElement.dataset.cardId === String(cardId));
         });
     }
+    getElement() {
+        return this.handElement;
+    }
     async animateReturnToDeck(cardId, deckAnchor) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
         if (!cardElement) {
