@@ -28,6 +28,7 @@ namespace Bga\Games\WarOfTheToads;
 require_once dirname(__FILE__) . '/constants.inc.php';
 
 use Bga\Games\WarOfTheToads\Core\DebugTrait;
+use Bga\Games\WarOfTheToads\Core\Globals;
 use Bga\Games\WarOfTheToads\Core\Stats;
 use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
@@ -92,9 +93,11 @@ class Game extends \Bga\GameFramework\Table
     protected function getAllDatas(int $currentPlayerId): array
     {
         return [
-            'players' => Players::getUiData($currentPlayerId)->toAssoc(),
-            'cards'   => Cards::getUiData($currentPlayerId),
-            'angry'   => Cards::getAngryByPlayerId(),
+            'players'    => Players::getUiData($currentPlayerId)->toAssoc(),
+            'cards'      => Cards::getUiData($currentPlayerId),
+            'angry'      => Cards::getAngryByPlayerId(),
+            // So an F5 mid-battle still renders the lanes' attack-direction arrows.
+            'attackerId' => Globals::getAttackerId(),
         ];
     }
 

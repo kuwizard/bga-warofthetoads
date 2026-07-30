@@ -61,6 +61,7 @@ type AngryByPlayerId = { [playerId: number]: boolean };
 interface WarOfTheToadsGamedatas extends Gamedatas<WarOfTheToadsPlayer> {
     cards: CardsUiData;
     angry: AngryByPlayerId;
+    attackerId: number;
 }
 
 /*
@@ -177,4 +178,53 @@ interface StackKeptNotifArgs {
 // Notifications::moodChanged().
 interface MoodChangedNotifArgs {
     angry: AngryByPlayerId;
+}
+
+// ResolveTactics (PR5, RULES.md §6 ➍) — one per TACTIC_EVENT_* in constants.inc.php.
+
+interface TacticBlockedNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    targetId: number;
+}
+
+interface TacticLanesSwitchedNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    targetId: number;
+    lanes: { [cardId: number]: number };
+}
+
+// `strengths` covers all 4 lane cards — `null` is a Siege Cannon, [H16].
+interface TacticStrengthNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    targetId: number;
+    delta: string;
+    strengths: { [cardId: number]: number | null };
+}
+
+interface TacticTieBreakerNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    targetId: number;
+}
+
+interface TacticAngryNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    angry: AngryByPlayerId;
+}
+
+interface TacticNoEffectNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardId: number;
+    targetId: number | null;
+    reason: string;
 }

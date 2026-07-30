@@ -35,11 +35,12 @@ export function tplLaneCard(card: LaneCardData, deckColor: 'blue' | 'red'): stri
     const frontClass = card.type ? `wott-card--${deckColor}-${cardRoleSlug(card.type)}` : `wott-card--${deckColor}-back`;
 
     return `
-        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}">
+        <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}" data-controller="${card.controller}">
             <div class="wott-card-flip__inner">
                 <div class="wott-card wott-card-flip__face wott-card-flip__face--front ${frontClass}"></div>
                 <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${deckColor}-back"></div>
             </div>
+            <div class="wott-card__strength" id="wott-card-strength-${card.id}"></div>
         </div>
     `;
 }

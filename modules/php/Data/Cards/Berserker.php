@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads\Data\Cards;
 
+use Bga\Games\WarOfTheToads\Models\BattleContext;
 use Bga\Games\WarOfTheToads\Models\Card;
 
 /** RULES.md §3 — no Special Attribute. Tactic: During Battle. */
@@ -16,5 +17,11 @@ class Berserker extends Card
         $this->strength    = 5;
         $this->band        = TACTIC_BAND_DURING;
         $this->description = clienttranslate('You become Angry: if you win both lanes, capture both');
+    }
+
+    // [H15] Angry for this Battle only, for its controller only.
+    public function applyTactic(BattleContext $context): void
+    {
+        $context->setAngry($this, $this->getController());
     }
 }

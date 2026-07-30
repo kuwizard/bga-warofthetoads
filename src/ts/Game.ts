@@ -90,7 +90,7 @@ export class Game {
         this.playerPanels = new PlayerPanels(this.bga);
 
         this.hand.render(gameArea, this.gamedatas.cards);
-        this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder);
+        this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
         this.shrine.render(gameArea, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
         this.playerTables.render(

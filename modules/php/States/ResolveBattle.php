@@ -10,6 +10,7 @@ use Bga\Games\WarOfTheToads\Core\Globals;
 use Bga\Games\WarOfTheToads\Game;
 use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
+use Bga\Games\WarOfTheToads\Models\BattleContext;
 use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Notifications;
 
@@ -36,12 +37,13 @@ class ResolveBattle extends GameState
     {
         $attackerId = Globals::getAttackerId();
         $defenderId = Players::getOpponentId($attackerId);
+        $context = BattleContext::fromArray(Globals::getBattleContext());
 
         // [H4]: Angry/Calm reads the standing totals from BEFORE this
         // Battle's captures — must be read before any Cards::capture() below.
         $isAngry = [
-            $attackerId => Cards::isAngry($attackerId),
-            $defenderId => Cards::isAngry($defenderId),
+            $attackerId => Cards::isAngry($attackerId) || $context->isAngryOverridden($attackerId),
+            $defenderId => Cards::isAngry($defenderId) || $context->isAngryOverridden($defenderId),
         ];
 
         /** @var array<int, array{0: Card, 1: Card}[]> playerId => its lane wins as [winner, loser] pairs */
@@ -49,7 +51,7 @@ class ResolveBattle extends GameState
 
         foreach ([LANE_OPEN, LANE_HIDDEN] as $lane) {
             [$card1, $card2] = Cards::getLaneCards()->where('locationArg', $lane)->toArray();
-            $result = static::resolveLane($card1, $card2, $attackerId);
+            $result = $this->resolveLane($context, $card1, $card2, $attackerId);
 
             if ($result === null) {
                 Cards::retireToShrine($card1, $card2);
@@ -107,7 +109,7 @@ class ResolveBattle extends GameState
      * unless facing a Saboteur. Otherwise an Assassin unconditionally beats a
      * General (either card); everything else is a plain Strength comparison.
      */
-    private static function resolveLane(Card $card1, Card $card2, int $attackerId): ?array
+    private function resolveLane(BattleContext $context, Card $card1, Card $card2, int $attackerId): ?array
     {
         $attackerCard = $card1->getController() === $attackerId ? $card1 : $card2;
         $defenderCard = $card1->getController() === $attackerId ? $card2 : $card1;
@@ -130,10 +132,18 @@ class ResolveBattle extends GameState
             return [$defenderCard, $attackerCard];
         }
 
-        $cmp = $attackerCard->getStrength() <=> $defenderCard->getStrength();
-        if ($cmp === 0) {
+        $cmp = $context->getStrength($attackerCard) <=> $context->getStrength($defenderCard);
+        if ($cmp !== 0) {
+            return $cmp > 0 ? [$attackerCard, $defenderCard] : [$defenderCard, $attackerCard];
+        }
+
+        // [H18] a Saboteur on each side cancels out and the tie stands.
+        $attackerBreaks = $context->hasTieBreaker($attackerCard);
+        $defenderBreaks = $context->hasTieBreaker($defenderCard);
+        if ($attackerBreaks === $defenderBreaks) {
             return null;
         }
-        return $cmp > 0 ? [$attackerCard, $defenderCard] : [$defenderCard, $attackerCard];
+
+        return $attackerBreaks ? [$attackerCard, $defenderCard] : [$defenderCard, $attackerCard];
     }
 }

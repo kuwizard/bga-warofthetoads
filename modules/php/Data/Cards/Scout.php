@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads\Data\Cards;
 
+use Bga\Games\WarOfTheToads\Models\BattleContext;
 use Bga\Games\WarOfTheToads\Models\Card;
 
 /** RULES.md §3 — no Special Attribute. Tactic: Start of Battle. */
@@ -16,5 +17,11 @@ class Scout extends Card
         $this->strength    = 2;
         $this->band        = TACTIC_BAND_START;
         $this->description = clienttranslate('+1 to your Ally and opponent shows 3 cards in their hand');
+    }
+
+    // The "shows 3 cards" half needs player input — PR6's ScoutReveal, [H6].
+    public function applyTactic(BattleContext $context): void
+    {
+        $context->addStrength($this, $context->getAlly($this), 1.0);
     }
 }

@@ -18,6 +18,9 @@ const TRANSITION_FALLBACK_MS = 2000; // mirrors hand.ts
 export class Lanes {
     private lanesElement!: HTMLElement;
     private deckColorByPlayerId!: { [playerId: number]: 'blue' | 'red' };
+    private playerIdsInTableOrder!: number[];
+
+    private printedStrengthByCardId = new Map<number, number | null>();
 
     constructor(
         private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
@@ -26,12 +29,13 @@ export class Lanes {
     }
 
     /** `playerIdsInTableOrder` fixes each slot's physical side (blue's slot always first/left) — see Game.ts::getPlayerIdsInTableOrder(). */
-    render(gameArea: HTMLElement, lanes: LaneCardData[], deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' }, playerIdsInTableOrder: number[]): void {
+    render(gameArea: HTMLElement, lanes: LaneCardData[], deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' }, playerIdsInTableOrder: number[], attackerId: number): void {
         this.deckColorByPlayerId = deckColorByPlayerId;
+        this.playerIdsInTableOrder = playerIdsInTableOrder;
 
         const slotsHtml = (lane: number) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
-            .join('');
+            .join('<div class="wott-lane-arrow"><span class="wott-lane-arrow__right">➜</span><span class="wott-lane-arrow__left">➜</span></div>');
 
         gameArea.insertAdjacentHTML('beforeend', `
             <div id="wott-lanes">
@@ -40,13 +44,22 @@ export class Lanes {
             </div>
         `);
         this.lanesElement = document.getElementById('wott-lanes')!;
+        this.setAttacker(attackerId);
 
         // F5 mid-battle: place whatever is already in the lanes, no animation.
         lanes.forEach(card => this.createCardElement(card, this.slotFor(card), deckColorByPlayerId[card.controller]));
     }
 
-    async notif_battleStarted(_args: BattleStartedNotifArgs): Promise<void> {
+    async notif_battleStarted(args: BattleStartedNotifArgs): Promise<void> {
+        this.setAttacker(Number(args.player_id));
         this.clear();
+    }
+
+    private setAttacker(attackerId: number): void {
+        const attacksLeft = attackerId !== this.playerIdsInTableOrder[0];
+        this.lanesElement.querySelectorAll('.wott-lane-arrow').forEach(arrow => {
+            arrow.classList.toggle('wott-lane-arrow--left', attacksLeft);
+        });
     }
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
@@ -66,6 +79,70 @@ export class Lanes {
             this.revealCard(args.card1),
             this.revealCard(args.card2),
         ]);
+    }
+
+    // ── Tactics (PR5, RULES.md §6 ➍) ──────────────────────────────────────────
+
+    async notif_tacticBlocked(args: TacticBlockedNotifArgs): Promise<void> {
+        document.getElementById(`wott-card-${args.targetId}`)?.classList.add('wott-card--blocked');
+        await this.flashTactic(args.cardId);
+    }
+
+    async notif_tacticLanesSwitched(args: TacticLanesSwitchedNotifArgs): Promise<void> {
+        await this.flashTactic(args.cardId);
+        await this.applyLanes(args.lanes);
+    }
+
+    async notif_tacticStrength(args: TacticStrengthNotifArgs): Promise<void> {
+        this.setStrengths(args.strengths);
+        await this.flashTactic(args.cardId);
+    }
+
+    async notif_tacticTieBreaker(args: TacticTieBreakerNotifArgs): Promise<void> {
+        document.getElementById(`wott-card-${args.targetId}`)?.classList.add('wott-card--tie-breaker');
+        await this.flashTactic(args.cardId);
+    }
+
+    async notif_tacticNoEffect(args: TacticNoEffectNotifArgs): Promise<void> {
+        await this.flashTactic(args.cardId);
+    }
+
+    private setStrengths(strengthByCardId: { [cardId: number]: number | null }): void {
+        Object.entries(strengthByCardId).forEach(([cardId, strength]) => {
+            const badge = document.getElementById(`wott-card-strength-${cardId}`);
+            if (!badge) {
+                return;
+            }
+
+            const differsFromPrinted = strength !== null && strength !== this.printedStrengthByCardId.get(Number(cardId));
+            badge.textContent = differsFromPrinted ? String(strength) : '';
+            badge.classList.toggle('wott-card__strength--shown', differsFromPrinted);
+        });
+    }
+
+    private async applyLanes(laneByCardId: { [cardId: number]: number }): Promise<void> {
+        const moves: { element: HTMLElement, container: HTMLElement }[] = [];
+
+        Object.entries(laneByCardId).forEach(([cardId, lane]) => {
+            const element = document.getElementById(`wott-card-${cardId}`);
+            const container = document.getElementById(`wott-lane-slot-${lane}-${element?.dataset.controller}`);
+            if (element && container && element.parentElement !== container) {
+                moves.push({ element, container });
+            }
+        });
+
+        await this.slideAllIntoPlace(moves);
+    }
+
+    private async flashTactic(cardId: number): Promise<void> {
+        const cardElement = document.getElementById(`wott-card-${cardId}`);
+        if (!cardElement) {
+            return;
+        }
+
+        cardElement.classList.add('wott-card--tactic');
+        await this.waitForAnimationEnd(cardElement);
+        cardElement.classList.remove('wott-card--tactic');
     }
 
     /**
@@ -144,6 +221,7 @@ export class Lanes {
         const frontFace = cardElement.querySelector<HTMLElement>('.wott-card-flip__face--front')!;
         frontFace.className = `wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${card.type ? card.type.replace(/_/g, '-') : 'back'}`;
         this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+        this.printedStrengthByCardId.set(card.id, card.strength);
 
         await this.flip(cardElement, false);
     }
@@ -153,6 +231,7 @@ export class Lanes {
         this.lanesElement.querySelectorAll('.wott-lane-slot').forEach(slot => {
             slot.innerHTML = '';
         });
+        this.printedStrengthByCardId.clear();
     }
 
     private slotFor(card: LaneCardData): HTMLElement {
@@ -164,9 +243,10 @@ export class Lanes {
         const cardElement = document.getElementById(`wott-card-${card.id}`)!;
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
 
-        // A redacted card (no `name`) has nothing meaningful to show in a tooltip.
+        // A redacted card (no `name`) has nothing to show; revealCard fills it in later.
         if (card.name !== undefined) {
             this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card as CardData));
+            this.printedStrengthByCardId.set(card.id, card.strength ?? null);
         }
 
         return cardElement;
@@ -181,23 +261,54 @@ export class Lanes {
     }
 
     /** Same technique as hand.ts's private `slideIntoPlace` — see there for the full FLIP-technique explanation. */
-    private async slideIntoPlace(cardElement: HTMLElement, container: HTMLElement): Promise<void> {
-        const fromRect = cardElement.getBoundingClientRect();
-        container.appendChild(cardElement);
-        const toRect = cardElement.getBoundingClientRect();
+    private slideIntoPlace(cardElement: HTMLElement, container: HTMLElement): Promise<void> {
+        return this.slideAllIntoPlace([{ element: cardElement, container }]);
+    }
 
-        cardElement.classList.add('wott-card-slide');
-        cardElement.style.setProperty('--slide-dx', `${fromRect.left - toRect.left}px`);
-        cardElement.style.setProperty('--slide-dy', `${fromRect.top - toRect.top}px`);
-        cardElement.getBoundingClientRect(); // force layout before enabling the transition below
+    // Each FLIP phase runs across the whole group before the next starts, so cards can swap places.
+    private async slideAllIntoPlace(moves: { element: HTMLElement, container: HTMLElement }[]): Promise<void> {
+        if (moves.length === 0) {
+            return;
+        }
 
-        const donePromise = this.waitForTransitionEnd(cardElement, 'transform');
-        cardElement.classList.add('wott-card-slide--animating');
-        cardElement.style.removeProperty('--slide-dx');
-        cardElement.style.removeProperty('--slide-dy');
-        await donePromise;
+        const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
+        moves.forEach(({ element, container }) => container.appendChild(element));
 
-        cardElement.classList.remove('wott-card-slide', 'wott-card-slide--animating');
+        moves.forEach(({ element }, index) => {
+            const toRect = element.getBoundingClientRect();
+            element.classList.add('wott-card-slide');
+            element.style.setProperty('--slide-dx', `${fromRects[index].left - toRect.left}px`);
+            element.style.setProperty('--slide-dy', `${fromRects[index].top - toRect.top}px`);
+            element.getBoundingClientRect(); // force layout before enabling the transition below
+        });
+
+        await Promise.all(moves.map(({ element }) => {
+            const donePromise = this.waitForTransitionEnd(element, 'transform');
+            element.classList.add('wott-card-slide--animating');
+            element.style.removeProperty('--slide-dx');
+            element.style.removeProperty('--slide-dy');
+            return donePromise;
+        }));
+
+        moves.forEach(({ element }) => element.classList.remove('wott-card-slide', 'wott-card-slide--animating'));
+    }
+
+    private waitForAnimationEnd(element: HTMLElement): Promise<void> {
+        return new Promise(resolve => {
+            const handler = (event: AnimationEvent) => {
+                if (event.target !== element) {
+                    return;
+                }
+                element.removeEventListener('animationend', handler);
+                clearTimeout(fallback);
+                resolve();
+            };
+            const fallback = setTimeout(() => {
+                element.removeEventListener('animationend', handler);
+                resolve();
+            }, TRANSITION_FALLBACK_MS);
+            element.addEventListener('animationend', handler);
+        });
     }
 
     private waitForTransitionEnd(element: HTMLElement, propertyName: string): Promise<void> {

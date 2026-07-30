@@ -42,6 +42,6 @@ class WarSetup extends GameState
         Globals::setAttackerId($attackerId);
         Globals::setFirstAttackerWar1($attackerId);
 
-        return ReturnCard::class;
+        return DEV_FULL_HANDS ? BattleStart::class : ReturnCard::class;
     }
 }

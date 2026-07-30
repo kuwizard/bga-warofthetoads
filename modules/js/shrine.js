@@ -152,7 +152,8 @@ export class Shrine {
         }
         else if (existingElement) {
             container.appendChild(existingElement);
-            existingElement.classList.remove('wott-selectable', 'wott-card--selected');
+            existingElement.classList.remove('wott-selectable', 'wott-card--selected', 'wott-card--blocked', 'wott-card--tie-breaker');
+            existingElement.querySelector('.wott-card__strength')?.remove();
             return existingElement;
         }
         container.insertAdjacentHTML('beforeend', tplLaneCard(card, deckColor));

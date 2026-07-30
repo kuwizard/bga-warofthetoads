@@ -48,6 +48,12 @@ class Cards extends CachedDB_Manager
         return new $class($row);
     }
 
+    // Never call a setter on the result — DB_Model::setXxx() would UPDATE the row sharing its card_id.
+    public static function detachedFromTable(array $row): Card
+    {
+        return static::cast($row);
+    }
+
     // ── SETUP ─────────────────────────────────────────────────────────────────
 
     /**
@@ -85,9 +91,10 @@ class Cards extends CachedDB_Manager
 
         static::invalidate();
 
+        $dealCount = DEV_FULL_HANDS ? count(self::$map) : 5;
         foreach ($players as $player) {
             static::shuffleDeck($player->getId());
-            static::drawCards($player->getId(), 5);
+            static::drawCards($player->getId(), $dealCount);
         }
     }
 
@@ -182,6 +189,13 @@ class Cards extends CachedDB_Manager
         return static::getAll()->where('location', LOCATION_LANE);
     }
 
+    public static function applyLanes(array $laneByCardId): void
+    {
+        foreach ($laneByCardId as $cardId => $lane) {
+            static::get((int) $cardId)?->setLocationArg($lane);
+        }
+    }
+
     /**
      * Forms a stack: the winner's card on top (face-up Captor), the loser's
      * card beneath (face-down Hostage) — RULES.md §6 ➏. Within a stack,
@@ -269,6 +283,30 @@ class Cards extends CachedDB_Manager
         }
 
         return $angry;
+    }
+
+    // [H1]/[H2] "your Flags" is ruled on here and nowhere else — General A's only multiplier.
+    public static function flagsFor(int $playerId): int
+    {
+        return static::getAll()
+            ->where('location', LOCATION_SHRINE)
+            ->where('deck', static::getDeckColorFor($playerId))
+            ->count();
+    }
+
+    public static function getDeckColorFor(int $playerId): string
+    {
+        // [H2] puts both Casualties in the Shrine, so only cards outside it answer this.
+        $cardInPlay = static::getAll()
+            ->where('controller', $playerId)
+            ->where('location', [LOCATION_DECK, LOCATION_HAND, LOCATION_LANE, LOCATION_STACK])
+            ->first();
+
+        if ($cardInPlay === null) {
+            throw new \LogicException("Player $playerId controls no card outside the Shrine");
+        }
+
+        return $cardInPlay->getDeck();
     }
 
     /**

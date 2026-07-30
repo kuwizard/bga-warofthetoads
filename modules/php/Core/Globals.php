@@ -80,4 +80,16 @@ class Globals
     {
         Game::get()->bga->globals->set('battle', $battle);
     }
+
+    // ── BATTLE CONTEXT ────────────────────────────────────────────────────────
+
+    public static function getBattleContext(): ?array
+    {
+        return Game::get()->bga->globals->get('battleContext', null);
+    }
+
+    public static function setBattleContext(?array $context): void
+    {
+        Game::get()->bga->globals->set('battleContext', $context);
+    }
 }

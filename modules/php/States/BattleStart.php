@@ -32,6 +32,9 @@ class BattleStart extends GameState
         $attacker = Players::get(Globals::getAttackerId());
         $this->gamestate->changeActivePlayer($attacker->getId());
 
+        // [H15]'s Angry override must not survive into the next Battle.
+        Globals::setBattleContext(null);
+
         Notifications::battleStarted(Globals::getBattle(), $attacker);
 
         return AttackerPlay::class;

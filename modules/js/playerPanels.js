@@ -13,6 +13,9 @@ export class PlayerPanels {
     notif_moodChanged(args) {
         this.setMoods(args.angry);
     }
+    notif_tacticAngry(args) {
+        this.setMoods(args.angry);
+    }
     setMoods(angryByPlayerId) {
         Object.entries(angryByPlayerId).forEach(([playerId, angry]) => {
             const element = document.getElementById(`wott-mood-${playerId}`);

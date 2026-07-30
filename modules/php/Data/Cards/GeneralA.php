@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Bga\Games\WarOfTheToads\Data\Cards;
 
+use Bga\Games\WarOfTheToads\Models\BattleContext;
 use Bga\Games\WarOfTheToads\Models\Card;
 
 /**
@@ -22,5 +23,18 @@ class GeneralA extends Card
         $this->specialAttribute = SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN;
         $this->band             = TACTIC_BAND_START;
         $this->description      = clienttranslate('+1 to your Ally for each of your Flags in the Shrine');
+    }
+
+    public function applyTactic(BattleContext $context): void
+    {
+        // [H1]/[H2] "your Flags" is ruled on once, in Cards::flagsFor().
+        $flags = $context->getFlagCount($this->getController());
+
+        if ($flags === 0) {
+            $context->noEffect($this, TACTIC_NO_EFFECT_NO_TARGET);
+            return;
+        }
+
+        $context->addStrength($this, $context->getAlly($this), (float) $flags);
     }
 }

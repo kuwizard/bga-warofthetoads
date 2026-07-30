@@ -19,6 +19,10 @@
  * See doc/IMPLEMENTATION_PLAN.md §2 for the design these mirror.
  */
 
+// ── TEMPORARY: deals the whole deck and skips ReturnCard. Revert before committing ──
+
+const DEV_FULL_HANDS = true;
+
 // ── State ids ─────────────────────────────────────────────────────────────────
 // Passed to the GameState constructor. 1 (gameSetup) and 99 (gameEnd) are
 // reserved by the framework. 98 is the conventional slot for score computation,
@@ -115,6 +119,19 @@ const TACTIC_BAND_BLOCK  = 'block';
 const TACTIC_BAND_START  = 'start';
 const TACTIC_BAND_DURING = 'during';
 const TACTIC_BAND_AFTER  = 'after';
+
+// ── Tactic events: Models/BattleContext's event log, notified by ResolveTactics ──
+
+const TACTIC_EVENT_BLOCKED        = 'blocked';        // Bodyguard
+const TACTIC_EVENT_LANES_SWITCHED = 'lanesSwitched';  // Trickster
+const TACTIC_EVENT_STRENGTH       = 'strength';       // Scout, both Generals, Assassin
+const TACTIC_EVENT_TIE_BREAKER    = 'tieBreaker';     // Saboteur
+const TACTIC_EVENT_ANGRY          = 'angry';          // Berserker, [H15]
+const TACTIC_EVENT_NO_EFFECT      = 'noEffect';       // reason below
+
+const TACTIC_NO_EFFECT_BLOCKED     = 'blocked';     // blocked by a Bodyguard
+const TACTIC_NO_EFFECT_NO_TARGET   = 'noTarget';    // [H5]'s tie, [H9]'s Trickster
+const TACTIC_NO_EFFECT_NO_STRENGTH = 'noStrength';  // [H16] the Siege Cannon
 
 // ── Game options ──────────────────────────────────────────────────────────────
 // This game has no variants — gameoptions.jsonc stays empty, nothing to declare.

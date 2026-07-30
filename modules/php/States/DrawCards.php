@@ -10,16 +10,9 @@ use Bga\Games\WarOfTheToads\Core\Globals;
 use Bga\Games\WarOfTheToads\Game;
 use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
-use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Notifications;
 
-/**
- * RULES.md §6 ➌➍ — both players draw back up to hand size (2, or 1 if only 1
- * remains — already handled by `Cards::drawCards()`'s "draw fewer if the deck
- * is short" behaviour), then the 2 face-down lane cards are revealed
- * simultaneously. No Tactic activates on this reveal yet — that pipeline is
- * PR5's `ResolveTactics`; here the identity just becomes public.
- */
+// RULES.md §6 ➌ — Cards::drawCards() already draws fewer when the deck is short.
 class DrawCards extends GameState
 {
     function __construct(
@@ -43,11 +36,6 @@ class DrawCards extends GameState
             }
         }
 
-        [$card1, $card2] = Cards::getLaneCards()->filter(fn(Card $c) => $c->isFacedown())->toArray();
-        $card1->setFacedown(false);
-        $card2->setFacedown(false);
-        Notifications::cardsRevealed($card1, $card2);
-
-        return ResolveBattle::class;
+        return ResolveTactics::class;
     }
 }

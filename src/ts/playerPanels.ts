@@ -28,6 +28,11 @@ export class PlayerPanels {
         this.setMoods(args.angry);
     }
 
+    // [H15] BattleEnd's own moodChanged reverts this — nothing persists the override.
+    notif_tacticAngry(args: TacticAngryNotifArgs): void {
+        this.setMoods(args.angry);
+    }
+
     private setMoods(angryByPlayerId: AngryByPlayerId): void {
         Object.entries(angryByPlayerId).forEach(([playerId, angry]) => {
             const element = document.getElementById(`wott-mood-${playerId}`);

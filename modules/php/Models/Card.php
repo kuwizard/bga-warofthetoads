@@ -82,6 +82,11 @@ abstract class Card extends DB_Model
         return $this->band;
     }
 
+    // Must read and write $context only — no Manager, Notification or Global.
+    public function applyTactic(BattleContext $context): void
+    {
+    }
+
     /**
      * A face-down card's identity must never reach anyone but its controller —
      * the project's top hidden-information risk (IMPLEMENTATION_PLAN.md §4).

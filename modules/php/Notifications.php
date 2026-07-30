@@ -175,6 +175,90 @@ class Notifications
         ]);
     }
 
+    // ── TACTICS: one method per TACTIC_EVENT_*, sent from States/ResolveTactics ──
+
+    public static function tacticBlocked(Player $player, Card $card, Card $target): void
+    {
+        self::notifyAll('tacticBlocked', clienttranslate('${player_name} plays ${cardName} and blocks the opposing ${targetName}'), [
+            'player'     => $player,
+            'i18n'       => ['cardName', 'targetName'],
+            'cardName'   => $card->getName(),
+            'targetName' => $target->getName(),
+            'cardId'     => $card->getId(),
+            'targetId'   => $target->getId(),
+        ]);
+    }
+
+    public static function tacticLanesSwitched(Player $player, Card $card, Card $target, array $laneByCardId): void
+    {
+        self::notifyAll('tacticLanesSwitched', clienttranslate('${player_name} plays ${cardName} and switches lanes with ${targetName}'), [
+            'player'     => $player,
+            'i18n'       => ['cardName', 'targetName'],
+            'cardName'   => $card->getName(),
+            'targetName' => $target->getName(),
+            'cardId'     => $card->getId(),
+            'targetId'   => $target->getId(),
+            'lanes'      => $laneByCardId,
+        ]);
+    }
+
+    public static function tacticStrength(Player $player, Card $card, Card $target, float $delta, array $strengthByCardId): void
+    {
+        self::notifyAll('tacticStrength', clienttranslate('${player_name} plays ${cardName}: ${targetName} gains ${delta} Strength'), [
+            'player'     => $player,
+            'i18n'       => ['cardName', 'targetName'],
+            'cardName'   => $card->getName(),
+            'targetName' => $target->getName(),
+            'cardId'     => $card->getId(),
+            'targetId'   => $target->getId(),
+            'delta'      => rtrim(rtrim(number_format($delta, 1, '.', ''), '0'), '.'),
+            'strengths'  => $strengthByCardId,
+        ]);
+    }
+
+    public static function tacticTieBreaker(Player $player, Card $card, Card $target): void
+    {
+        self::notifyAll('tacticTieBreaker', clienttranslate('${player_name} plays ${cardName}: ${targetName} now breaks ties'), [
+            'player'     => $player,
+            'i18n'       => ['cardName', 'targetName'],
+            'cardName'   => $card->getName(),
+            'targetName' => $target->getName(),
+            'cardId'     => $card->getId(),
+            'targetId'   => $target->getId(),
+        ]);
+    }
+
+    public static function tacticAngry(Player $player, Card $card, array $angryByPlayerId): void
+    {
+        self::notifyAll('tacticAngry', clienttranslate('${player_name} plays ${cardName} and becomes Angry for this Battle'), [
+            'player'   => $player,
+            'i18n'     => ['cardName'],
+            'cardName' => $card->getName(),
+            'cardId'   => $card->getId(),
+            'angry'    => $angryByPlayerId,
+        ]);
+    }
+
+    public static function tacticNoEffect(Player $player, Card $card, string $reason, ?Card $target): void
+    {
+        // One complete sentence per reason — never a fragment other languages must reassemble.
+        $messageByReason = [
+            TACTIC_NO_EFFECT_BLOCKED     => clienttranslate('${player_name} plays ${cardName}, but its Tactic is blocked'),
+            TACTIC_NO_EFFECT_NO_TARGET   => clienttranslate('${player_name} plays ${cardName}, but its Tactic has no effect'),
+            TACTIC_NO_EFFECT_NO_STRENGTH => clienttranslate('${player_name} plays ${cardName}, but ${targetName} cannot gain Strength bonuses'),
+        ];
+
+        self::notifyAll('tacticNoEffect', $messageByReason[$reason], [
+            'player'     => $player,
+            'i18n'       => ['cardName', 'targetName'],
+            'cardName'   => $card->getName(),
+            'targetName' => $target?->getName() ?? '',
+            'cardId'     => $card->getId(),
+            'targetId'   => $target?->getId(),
+            'reason'     => $reason,
+        ]);
+    }
+
     /**
      * `ResolveBattle` (PR4, RULES.md §6 ➎): equal Strength, no winner — both
      * cards retire to the Shrine as Monks. Called after `Cards::retireToShrine()`,
