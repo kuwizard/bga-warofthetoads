@@ -7,12 +7,6 @@ import { tplLaneCard, tplCardTooltip } from "./tpls.js";
  * and declined cards (Monks). Calm/Angry is never computed here — it's fully
  * server-derived ([H4]) — the visible stack count already conveys the same
  * "who's ahead" information the physical Shrine's flip/rotate does.
- *
- * Owns the `lanes`/`stacks`/`shrine` slices of `Game`'s `gamedatas.cards` (the
- * `cards` object is shared by reference, set once in `render()`) — every
- * `ResolveBattle`/`ChooseStack` notification is handled entirely here, cache
- * mutation and DOM update together, so `Game.ts`'s `notif_xxx` methods stay
- * 1-line delegates.
  */
 export class Shrine {
     private cards!: CardsUiData;
@@ -69,7 +63,7 @@ export class Shrine {
     }
 
     /** `ResolveBattle`'s tie branch (RULES.md §6 ➎, [H16]) — Notifications::laneTied(). */
-    onLaneTied(args: LaneTiedNotifArgs): void {
+    notif_laneTied(args: LaneTiedNotifArgs): void {
         [args.card1, args.card2].forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
@@ -78,17 +72,16 @@ export class Shrine {
     }
 
     /** `ResolveBattle`'s single-lane-win branch (RULES.md §6 ➎) — Notifications::hostageCaptured(). */
-    onHostageCaptured(args: HostageCapturedNotifArgs): void {
+    notif_hostageCaptured(args: HostageCapturedNotifArgs): void {
         this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
     }
 
     /** `ResolveBattle`'s double-win-while-Angry branch (§7, [H4]) — Notifications::leapFrog(). */
-    onLeapFrog(args: LeapFrogNotifArgs): void {
+    notif_leapFrog(args: LeapFrogNotifArgs): void {
         this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
 
-    /** `ResolveBattle`'s double-win-while-Calm branch ([H14]) — Notifications::doubleWinCalm(); see onStackKept() for the other stack. */
-    onDoubleWinCalm(args: DoubleWinCalmNotifArgs): void {
+    notif_doubleWinCalm(args: DoubleWinCalmNotifArgs): void {
         this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
 
@@ -99,7 +92,7 @@ export class Shrine {
      * likewise updated to the redacted-stub shape a fresh page load would
      * produce.
      */
-    onStackKept(args: StackKeptNotifArgs): void {
+    notif_stackKept(args: StackKeptNotifArgs): void {
         const playerId = Number(args.player_id);
 
         const declinedCards = this.cards.stacks.filter(card => card.locationArg === args.declinedStackId);

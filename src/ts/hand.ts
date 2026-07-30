@@ -1,4 +1,5 @@
 import { tplHandCard, tplCardTooltip } from "./tpls.js";
+import { PlayerTables } from "./playerTables.js";
 
 export const HAND_POSITION_PREF_ID = 103;
 
@@ -15,17 +16,84 @@ const TRANSITION_FALLBACK_MS = 2000;
  * don't already see from `wott-deck-count`.
  */
 export class Hand {
+    private cards!: CardsUiData;
     private gameArea!: HTMLElement;
     private handElement!: HTMLElement;
 
-    constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
+    constructor(
+        private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
+        private playerTables: PlayerTables,
+    ) {
     }
 
-    render(gameArea: HTMLElement, cards: CardData[]): void {
+    render(gameArea: HTMLElement, cards: CardsUiData): void {
+        this.cards = cards;
         this.gameArea = gameArea;
         gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div>`);
         this.handElement = document.getElementById('wott-my-hand')!;
-        cards.forEach(card => this.appendCard(card));
+        cards.hand.forEach(card => this.appendCard(card));
+    }
+
+    async notif_cardReturned(args: CardReturnedNotifArgs): Promise<void> {
+        const playerId = Number(args.player_id);
+
+        this.playerTables.adjustDeckCount(playerId, 1);
+        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
+
+        // [H13]: only the returning player's own client is sent `card_id`.
+        if (args.card_id === undefined) {
+            return;
+        }
+
+        this.cards.hand = this.cards.hand.filter(card => card.id !== args.card_id);
+
+        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        if (deckAnchor) {
+            await this.animateReturnToDeck(args.card_id, deckAnchor);
+        } else {
+            this.removeCard(args.card_id);
+        }
+    }
+
+    async notif_cardReturnUndone(args: CardReturnUndoneNotifArgs): Promise<void> {
+        const playerId = Number(args.player_id);
+
+        this.playerTables.adjustDeckCount(playerId, -1);
+        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + 1;
+
+        if (args.card === undefined) {
+            return;
+        }
+
+        this.cards.hand.push(args.card);
+
+        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        if (deckAnchor) {
+            await this.animateUndoReturn(args.card, deckAnchor);
+        } else {
+            this.appendCard(args.card);
+        }
+    }
+
+    async notif_cardsDrawn(args: CardsDrawnNotifArgs): Promise<void> {
+        const playerId = Number(args.player_id);
+
+        this.playerTables.adjustDeckCount(playerId, -args.count);
+        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
+
+        args.cards?.forEach(card => {
+            this.cards.hand.push(card);
+            this.appendCard(card);
+        });
+    }
+
+    onCardsPlayed(playerId: number, cardIds: number[]): void {
+        this.cards.hand = this.cards.hand.filter(card => !cardIds.includes(card.id));
+        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? cardIds.length) - cardIds.length;
+    }
+
+    getCard(cardId: number): CardData | undefined {
+        return this.cards.hand.find(card => card.id === cardId);
     }
 
     setPosition(position: 'top' | 'bottom'): void {
@@ -36,8 +104,7 @@ export class Hand {
         }
     }
 
-    /** Also used to restore a card whose return was undone — see Game.ts::notif_cardReturnUndone. */
-    appendCard(card: CardData): void {
+    private appendCard(card: CardData): void {
         this.createCardElement(card, this.handElement);
     }
 
@@ -47,7 +114,7 @@ export class Hand {
         return document.getElementById(`wott-card-${card.id}`)!;
     }
 
-    removeCard(cardId: number): void {
+    private removeCard(cardId: number): void {
         document.getElementById(`wott-card-${cardId}`)?.remove();
     }
 
@@ -72,7 +139,7 @@ export class Hand {
     }
 
     /** Flips the card face-down in place, then slides it into `deckAnchor` — the ReturnCard confirm animation. */
-    async animateReturnToDeck(cardId: number, deckAnchor: HTMLElement): Promise<void> {
+    private async animateReturnToDeck(cardId: number, deckAnchor: HTMLElement): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
         if (!cardElement) {
             return;
@@ -88,7 +155,7 @@ export class Hand {
     }
 
     /** Reverses animateReturnToDeck — slides the card out of `deckAnchor` into the hand, then flips it face-up. */
-    async animateUndoReturn(card: CardData, deckAnchor: HTMLElement): Promise<void> {
+    private async animateUndoReturn(card: CardData, deckAnchor: HTMLElement): Promise<void> {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
 

@@ -10,7 +10,7 @@ export class PlayerPanels {
         });
         this.setMoods(angryByPlayerId);
     }
-    onMoodChanged(args) {
+    notif_moodChanged(args) {
         this.setMoods(args.angry);
     }
     setMoods(angryByPlayerId) {

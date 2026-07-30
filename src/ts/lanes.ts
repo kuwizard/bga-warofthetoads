@@ -1,4 +1,5 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
+import { Hand } from "./hand.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
 // numbers since `Card::getUiData()`'s `locationArg` is the only place they
@@ -16,12 +17,18 @@ const TRANSITION_FALLBACK_MS = 2000; // mirrors hand.ts
  */
 export class Lanes {
     private lanesElement!: HTMLElement;
+    private deckColorByPlayerId!: { [playerId: number]: 'blue' | 'red' };
 
-    constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
+    constructor(
+        private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
+        private hand: Hand,
+    ) {
     }
 
     /** `playerIdsInTableOrder` fixes each slot's physical side (blue's slot always first/left) — see Game.ts::getPlayerIdsInTableOrder(). */
     render(gameArea: HTMLElement, lanes: LaneCardData[], deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' }, playerIdsInTableOrder: number[]): void {
+        this.deckColorByPlayerId = deckColorByPlayerId;
+
         const slotsHtml = (lane: number) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
             .join('');
@@ -38,6 +45,29 @@ export class Lanes {
         lanes.forEach(card => this.createCardElement(card, this.slotFor(card), deckColorByPlayerId[card.controller]));
     }
 
+    async notif_battleStarted(_args: BattleStartedNotifArgs): Promise<void> {
+        this.clear();
+    }
+
+    async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
+        const playerId = Number(args.player_id);
+        const deckColor = this.deckColorByPlayerId[playerId];
+
+        this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
+
+        await Promise.all([
+            this.playCard(args.faceUpCard, deckColor),
+            this.playCard(args.faceDownCard, deckColor),
+        ]);
+    }
+
+    async notif_cardsRevealed(args: CardsRevealedNotifArgs): Promise<void> {
+        await Promise.all([
+            this.revealCard(args.card1),
+            this.revealCard(args.card2),
+        ]);
+    }
+
     /**
      * Places a just-played card into its lane slot. If the card still has a
      * DOM element in the acting player's own hand (never true for the
@@ -45,7 +75,7 @@ export class Lanes {
      * slides it via the same FLIP technique as hand.ts::animateReturnToDeck;
      * otherwise the card simply appears, already face-down if `facedown`.
      */
-    async playCard(card: LaneCardData, deckColor: 'blue' | 'red'): Promise<void> {
+    private async playCard(card: LaneCardData, deckColor: 'blue' | 'red'): Promise<void> {
         const slot = this.slotFor(card);
         const existingElement = document.getElementById(`wott-card-${card.id}`);
 
@@ -81,13 +111,13 @@ export class Lanes {
         await this.playCard(laneCard, deckColor);
     }
 
-    async previewUnplay(cardId: number, handElement: HTMLElement, wasFaceDown: boolean): Promise<void> {
+    async previewUnplay(cardId: number, wasFaceDown: boolean): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
         if (!cardElement) {
             return;
         }
 
-        await this.slideIntoPlace(cardElement, handElement);
+        await this.slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
             await this.flip(cardElement, false);
         }
@@ -105,7 +135,7 @@ export class Lanes {
     }
 
     /** Swaps in the real front-face sprite and un-flips — Notifications::cardsRevealed(), genuinely public at this point. */
-    async revealCard(card: CardData): Promise<void> {
+    private async revealCard(card: CardData): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${card.id}`);
         if (!cardElement) {
             return;
@@ -119,7 +149,7 @@ export class Lanes {
     }
 
     /** RULES.md §6 (end) — the lane empties between battles; PR4's real capture animation replaces this. */
-    clear(): void {
+    private clear(): void {
         this.lanesElement.querySelectorAll('.wott-lane-slot').forEach(slot => {
             slot.innerHTML = '';
         });

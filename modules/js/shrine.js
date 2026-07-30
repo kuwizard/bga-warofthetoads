@@ -36,23 +36,23 @@ export class Shrine {
         cards.shrine.forEach(card => this.placeMonk(card, deckColorByPlayerId[card.controller]));
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
-    onLaneTied(args) {
+    notif_laneTied(args) {
         [args.card1, args.card2].forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
             this.placeMonk(card, this.deckColorByPlayerId[card.controller]);
         });
     }
-    onHostageCaptured(args) {
+    notif_hostageCaptured(args) {
         this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
     }
-    onLeapFrog(args) {
+    notif_leapFrog(args) {
         this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
-    onDoubleWinCalm(args) {
+    notif_doubleWinCalm(args) {
         this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
-    onStackKept(args) {
+    notif_stackKept(args) {
         const playerId = Number(args.player_id);
         const declinedCards = this.cards.stacks.filter(card => card.locationArg === args.declinedStackId);
         declinedCards.forEach(card => {

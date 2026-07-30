@@ -24,7 +24,7 @@ export class PlayerPanels {
     }
 
     /** Notifications::moodChanged() — both players' state, once per Battle. */
-    onMoodChanged(args: MoodChangedNotifArgs): void {
+    notif_moodChanged(args: MoodChangedNotifArgs): void {
         this.setMoods(args.angry);
     }
 

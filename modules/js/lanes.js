@@ -3,10 +3,12 @@ const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 const TRANSITION_FALLBACK_MS = 2000;
 export class Lanes {
-    constructor(bga) {
+    constructor(bga, hand) {
         this.bga = bga;
+        this.hand = hand;
     }
     render(gameArea, lanes, deckColorByPlayerId, playerIdsInTableOrder) {
+        this.deckColorByPlayerId = deckColorByPlayerId;
         const slotsHtml = (lane) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
             .join('');
@@ -18,6 +20,24 @@ export class Lanes {
         `);
         this.lanesElement = document.getElementById('wott-lanes');
         lanes.forEach(card => this.createCardElement(card, this.slotFor(card), deckColorByPlayerId[card.controller]));
+    }
+    async notif_battleStarted(_args) {
+        this.clear();
+    }
+    async notif_cardsPlayed(args) {
+        const playerId = Number(args.player_id);
+        const deckColor = this.deckColorByPlayerId[playerId];
+        this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
+        await Promise.all([
+            this.playCard(args.faceUpCard, deckColor),
+            this.playCard(args.faceDownCard, deckColor),
+        ]);
+    }
+    async notif_cardsRevealed(args) {
+        await Promise.all([
+            this.revealCard(args.card1),
+            this.revealCard(args.card2),
+        ]);
     }
     async playCard(card, deckColor) {
         const slot = this.slotFor(card);
@@ -47,12 +67,12 @@ export class Lanes {
         };
         await this.playCard(laneCard, deckColor);
     }
-    async previewUnplay(cardId, handElement, wasFaceDown) {
+    async previewUnplay(cardId, wasFaceDown) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
         if (!cardElement) {
             return;
         }
-        await this.slideIntoPlace(cardElement, handElement);
+        await this.slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
             await this.flip(cardElement, false);
         }
