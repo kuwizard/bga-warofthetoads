@@ -17,7 +17,6 @@ const TRANSITION_FALLBACK_MS = 2000; // mirrors hand.ts
  */
 export class Lanes {
     private lanesElement!: HTMLElement;
-    private deckColorByPlayerId!: { [playerId: number]: 'blue' | 'red' };
     private playerIdsInTableOrder!: number[];
 
     private printedStrengthByCardId = new Map<number, number | null>();
@@ -29,8 +28,7 @@ export class Lanes {
     }
 
     /** `playerIdsInTableOrder` fixes each slot's physical side (blue's slot always first/left) — see Game.ts::getPlayerIdsInTableOrder(). */
-    render(gameArea: HTMLElement, lanes: LaneCardData[], deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' }, playerIdsInTableOrder: number[], attackerId: number): void {
-        this.deckColorByPlayerId = deckColorByPlayerId;
+    render(gameArea: HTMLElement, lanes: LaneCardData[], playerIdsInTableOrder: number[], attackerId: number): void {
         this.playerIdsInTableOrder = playerIdsInTableOrder;
 
         const slotsHtml = (lane: number) => playerIdsInTableOrder
@@ -47,7 +45,7 @@ export class Lanes {
         this.setAttacker(attackerId);
 
         // F5 mid-battle: place whatever is already in the lanes, no animation.
-        lanes.forEach(card => this.createCardElement(card, this.slotFor(card), deckColorByPlayerId[card.controller]));
+        lanes.forEach(card => this.createCardElement(card, this.slotFor(card)));
     }
 
     async notif_battleStarted(args: BattleStartedNotifArgs): Promise<void> {
@@ -64,13 +62,12 @@ export class Lanes {
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
-        const deckColor = this.deckColorByPlayerId[playerId];
 
         this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
 
         await Promise.all([
-            this.playCard(args.faceUpCard, deckColor),
-            this.playCard(args.faceDownCard, deckColor),
+            this.playCard(args.faceUpCard),
+            this.playCard(args.faceDownCard),
         ]);
     }
 
@@ -152,12 +149,12 @@ export class Lanes {
      * slides it via the same FLIP technique as hand.ts::animateReturnToDeck;
      * otherwise the card simply appears, already face-down if `facedown`.
      */
-    private async playCard(card: LaneCardData, deckColor: 'blue' | 'red'): Promise<void> {
+    private async playCard(card: LaneCardData): Promise<void> {
         const slot = this.slotFor(card);
         const existingElement = document.getElementById(`wott-card-${card.id}`);
 
         if (!existingElement) {
-            this.createCardElement(card, slot, deckColor);
+            this.createCardElement(card, slot);
             return;
         }
 
@@ -177,7 +174,7 @@ export class Lanes {
         await this.slideIntoPlace(existingElement, slot);
     }
 
-    async previewPlay(card: CardData, controller: number, faceDown: boolean, deckColor: 'blue' | 'red'): Promise<void> {
+    async previewPlay(card: CardData, controller: number, faceDown: boolean): Promise<void> {
         const laneCard: LaneCardData = {
             ...card,
             controller,
@@ -185,7 +182,7 @@ export class Lanes {
             locationArg: faceDown ? LANE_HIDDEN : LANE_OPEN,
             facedown: faceDown,
         };
-        await this.playCard(laneCard, deckColor);
+        await this.playCard(laneCard);
     }
 
     async previewUnplay(cardId: number, wasFaceDown: boolean): Promise<void> {
@@ -238,8 +235,8 @@ export class Lanes {
         return document.getElementById(`wott-lane-slot-${card.locationArg}-${card.controller}`)!;
     }
 
-    private createCardElement(card: LaneCardData, container: HTMLElement, deckColor: 'blue' | 'red'): HTMLElement {
-        container.insertAdjacentHTML('beforeend', tplLaneCard(card, deckColor));
+    private createCardElement(card: LaneCardData, container: HTMLElement): HTMLElement {
+        container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`)!;
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
 

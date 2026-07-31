@@ -58,6 +58,10 @@
   z-index: -1;
 }
 
+.wott-deck--swapping {
+  z-index: 10;
+}
+
 .wott-deck-count {
   position: absolute;
   right: 4px;
@@ -119,6 +123,7 @@
   padding: 16px;
   background: hsla(0, 0%, 100%, 0.75);
   border-radius: 12px;
+  min-height: 187.2px;
 }
 #wott-my-hand .wott-card-flip {
   width: 130px;
@@ -348,6 +353,18 @@
 }
 .wott-monks .wott-card-flip {
   width: 60px;
+}
+
+.wott-casualties {
+  display: flex;
+  gap: 8px;
+}
+.wott-casualties .wott-casualty-slot {
+  width: 60px;
+  aspect-ratio: 25/36;
+}
+.wott-casualties .wott-casualty-slot .wott-card-flip {
+  width: 100%;
 }
 
 .wott-card {

@@ -23,21 +23,7 @@
 
 const DEV_FULL_HANDS = true;
 
-// ── State ids ─────────────────────────────────────────────────────────────────
-// Passed to the GameState constructor. 1 (gameSetup) and 99 (gameEnd) are
-// reserved by the framework. 98 is the conventional slot for score computation,
-// since argGameEnd()/stGameEnd() are final and cannot be overridden.
-//
-// PR2 renamed the template's placeholder PlayerTurn (id 10) in place into the
-// real WarSetup — same numeric id, real logic — and deleted the now-dead
-// NextPlayer. PR3 renamed that same slot (90) in place into the real
-// BattleEnd, and added ST_DEFENDER_SETUP (35): a GAME-type state whose only
-// job is to call changeActivePlayer() between AttackerPlay and DefenderPlay —
-// the framework only allows that call from a GAME-state handler, never from
-// inside an ACTIVE_PLAYER action (verified against bga-imperialsettlers/
-// bga-aceofspades). EndScore (98) is still the template placeholder;
-// BattleEnd transitions to it once a hand drops below 2 cards; PR7 renames
-// EndScore in place into ComputeScores.
+// ── State ids — 1/99 are framework-reserved; 98 is the score slot (argGameEnd/stGameEnd are final); rename history: doc/IMPLEMENTATION_PLAN.md §2.2 ──
 
 const ST_GAME_SETUP  = 1;
 const ST_WAR_SETUP      = 10;

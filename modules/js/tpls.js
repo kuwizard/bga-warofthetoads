@@ -18,6 +18,9 @@ export function tplHandCard(card) {
     `;
 }
 export function tplLaneCard(card, deckColor) {
+    if (deckColor !== 'blue' && deckColor !== 'red') {
+        console.error('wott: card has no deck colour', card);
+    }
     const frontClass = card.type ? `wott-card--${deckColor}-${cardRoleSlug(card.type)}` : `wott-card--${deckColor}-back`;
     return `
         <div class="wott-card-flip" id="wott-card-${card.id}" data-card-id="${card.id}" data-controller="${card.controller}">

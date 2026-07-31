@@ -98,6 +98,8 @@ class Game extends \Bga\GameFramework\Table
             'angry'      => Cards::getAngryByPlayerId(),
             // So an F5 mid-battle still renders the lanes' attack-direction arrows.
             'attackerId' => Globals::getAttackerId(),
+            // Current-war deck colour per player — diverges from table order after the 2nd-War swap.
+            'deckColors' => Cards::getDeckColorByPlayerId(),
         ];
     }
 

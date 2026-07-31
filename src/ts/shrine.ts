@@ -10,16 +10,14 @@ import { tplLaneCard, tplCardTooltip } from "./tpls.js";
  */
 export class Shrine {
     private cards!: CardsUiData;
-    private deckColorByPlayerId!: { [playerId: number]: 'blue' | 'red' };
     private stackColumns: { [playerId: number]: HTMLElement } = {};
     private monksElement!: HTMLElement;
 
     constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
 
-    render(gameArea: HTMLElement, cards: CardsUiData, deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' }, playerIdsInTableOrder: number[]): void {
+    render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[]): void {
         this.cards = cards;
-        this.deckColorByPlayerId = deckColorByPlayerId;
 
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
@@ -29,10 +27,15 @@ export class Shrine {
             `)
             .join('');
 
+        const casualtySlotsHtml = playerIdsInTableOrder
+            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
+            .join('');
+
         gameArea.insertAdjacentHTML('beforeend', `
             <div id="wott-shrine">
                 ${columnsHtml}
                 <div class="wott-monks" id="wott-monks"></div>
+                <div class="wott-casualties" id="wott-casualties">${casualtySlotsHtml}</div>
             </div>
         `);
 
@@ -58,7 +61,8 @@ export class Shrine {
         [...cards.stacks]
             .sort((a, b) => a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown))
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.shrine.forEach(card => this.placeMonk(card, deckColorByPlayerId[card.controller]));
+        cards.shrine.forEach(card => this.placeMonk(card));
+        cards.casualties.forEach(card => this.placeCasualty(card));
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
 
@@ -67,7 +71,7 @@ export class Shrine {
         [args.card1, args.card2].forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
-            this.placeMonk(card, this.deckColorByPlayerId[card.controller]);
+            this.placeMonk(card);
         });
     }
 
@@ -103,12 +107,32 @@ export class Shrine {
                 location: 'shrine',
                 locationArg: 0,
                 facedown: true,
+                deck: card.deck,
             });
         });
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
 
         this.retireStack(args.declinedStackId, declinedCards);
         this.refreshStackCount(playerId, this.cards.stacks);
+    }
+
+    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub appears directly here.
+    notif_casualtySet(args: CasualtySetNotifArgs): void {
+        if (args.card.type !== undefined) {
+            return;
+        }
+
+        this.cards.casualties.push(args.card);
+        this.placeCasualty(args.card);
+    }
+
+    notif_warStarted(_args: WarStartedNotifArgs): void {
+        this.cards.stacks = [];
+        this.cards.shrine = [];
+
+        document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
+        this.monksElement.innerHTML = '';
+        Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
     }
 
     /** ChooseStack ([H14]): the given player's 2 highest-id captured stacks — mirrors Cards::getStacksFor()'s array_slice(-2). */
@@ -182,12 +206,19 @@ export class Shrine {
             stackElement = document.getElementById(`wott-stack-${card.locationArg}`)!;
         }
 
-        this.placeCard(card, stackElement, this.deckColorByPlayerId[card.controller]);
+        this.placeCard(card, stackElement);
     }
 
     /** A tied or declined card retiring to the shared Monk pile. */
-    private placeMonk(card: StackCardData, deckColor: 'blue' | 'red'): void {
-        this.placeCard(card, this.monksElement, deckColor);
+    private placeMonk(card: StackCardData): void {
+        this.placeCard(card, this.monksElement);
+    }
+
+    private placeCasualty(card: StackCardData): void {
+        const slot = document.getElementById(`wott-casualty-slot-${card.controller}`);
+        if (slot) {
+            this.placeCard(card, slot);
+        }
     }
 
     /**
@@ -205,8 +236,9 @@ export class Shrine {
                 location: 'shrine',
                 locationArg: 0,
                 facedown: true,
+                deck: card.deck,
             };
-            this.placeMonk(stub, this.deckColorByPlayerId[card.controller]);
+            this.placeMonk(stub);
         });
         document.getElementById(`wott-stack-${stackId}`)?.remove();
     }
@@ -234,7 +266,7 @@ export class Shrine {
      * reparent-don't-recreate approach for the one case where recreating
      * really is required.
      */
-    private placeCard(card: StackCardData, container: HTMLElement, deckColor: 'blue' | 'red'): HTMLElement {
+    private placeCard(card: StackCardData, container: HTMLElement): HTMLElement {
         const existingElement = document.getElementById(`wott-card-${card.id}`);
 
         if (existingElement && card.facedown) {
@@ -246,7 +278,7 @@ export class Shrine {
             return existingElement;
         }
 
-        container.insertAdjacentHTML('beforeend', tplLaneCard(card, deckColor));
+        container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`)!;
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
 

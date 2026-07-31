@@ -6,7 +6,7 @@ interface WarOfTheToadsPlayer extends Player {
 interface CardData {
     id: number;
     type: string;
-    deck: string;
+    deck: 'blue' | 'red';
     controller: number;
     location: string;
     locationArg: number;
@@ -27,20 +27,18 @@ interface CardsUiData {
     lanes: LaneCardData[];
     stacks: StackCardData[];
     shrine: StackCardData[];
+    casualties: StackCardData[];
 }
 
-// Mirrors Models/Card::getUiData() for a lane card. Every field past
-// `facedown` is absent when the card is a hidden card belonging to another
-// player — the redaction that protects the project's top risk (a face-down
-// card's identity leaking into the network payload). See Card::getUiData().
+// Mirrors Models/Card::getUiData()'s redacted lane/stack shape: `deck` survives redaction (a card's physical back, [H2]); every other field past `facedown` is absent for another player's hidden card.
 interface LaneCardData {
     id: number;
     controller: number;
     location: string;
     locationArg: number;
     facedown: boolean;
+    deck: 'blue' | 'red';
     type?: string;
-    deck?: string;
     name?: string;
     description?: string;
     strength?: number | null;
@@ -62,6 +60,8 @@ interface WarOfTheToadsGamedatas extends Gamedatas<WarOfTheToadsPlayer> {
     cards: CardsUiData;
     angry: AngryByPlayerId;
     attackerId: number;
+    // Current-war deck colour per player (Globals::getDeckColorByPlayerId()) — diverges from table order after the 2nd-War swap.
+    deckColors: { [playerId: number]: 'blue' | 'red' };
 }
 
 /*
@@ -269,4 +269,28 @@ interface SiegeGuessFizzlesNotifArgs {
     player_id2: number;
     player_name2: string;
     cardName: string;
+}
+
+// War transition (PR 7a, RULES.md §8/§9) — see Notifications.php.
+
+// A win carries player_id/player_name/count/count2; a Stalemate carries only war/count.
+interface WarEndedNotifArgs {
+    war: number;
+    count: number;
+    count2?: number;
+    player_id?: number;
+    player_name?: string;
+}
+
+// `card` is the redacted stub for everyone; _merge_private upgrades it to full CardData on the owner's client only.
+interface CasualtySetNotifArgs {
+    player_id: number;
+    player_name: string;
+    card: StackCardData;
+}
+
+interface WarStartedNotifArgs {
+    war: number;
+    deckColors: { [playerId: number]: 'blue' | 'red' };
+    deckCounts: { [playerId: number]: number };
 }

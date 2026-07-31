@@ -26,12 +26,12 @@ export function tplHandCard(card: CardData): string {
     `;
 }
 
-// Same two-sided markup as tplHandCard, reused for a lane card. A redacted
-// card (card.type absent — see Models/Card::getUiData()) never needs its
-// front face rendered for real: the wrapper starts (and, in PR3, stays)
-// flipped until Notifications::cardsRevealed swaps in the true sprite class,
-// so a plain card-back placeholder is all the front face ever shows meanwhile.
 export function tplLaneCard(card: LaneCardData, deckColor: 'blue' | 'red'): string {
+    // A missing colour would silently fall through to the sprite's 0% 0% cell — a blue Assassin.
+    if (deckColor !== 'blue' && deckColor !== 'red') {
+        console.error('wott: card has no deck colour', card);
+    }
+
     const frontClass = card.type ? `wott-card--${deckColor}-${cardRoleSlug(card.type)}` : `wott-card--${deckColor}-back`;
 
     return `

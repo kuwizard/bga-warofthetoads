@@ -72,3 +72,18 @@
     width: 60px;
   }
 }
+
+// RULES.md §9 step 1 — the two Casualties, face-down beside the Shrine.
+.wott-casualties {
+  display: flex;
+  gap: v.$gap;
+
+  .wott-casualty-slot {
+    width: 60px;
+    aspect-ratio: 25 / 36;
+
+    .wott-card-flip {
+      width: 100%;
+    }
+  }
+}

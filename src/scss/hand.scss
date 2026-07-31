@@ -2,7 +2,12 @@
 // Imperial Settlers style. The opponent's hand is never rendered, so there is
 // nothing to style for it here.
 
+@use 'sass:math';
 @use 'variables' as v;
+
+$hand-card-width: 130px;
+// Reserved even while the hand is empty, so the board below never jumps.
+$hand-card-height: math.div($hand-card-width * 36, 25);
 
 #wott-my-hand {
   display: flex;
@@ -12,9 +17,10 @@
   padding: v.$gap * 2;
   background: hsla(0, 0%, 100%, 0.75);
   border-radius: v.$radius * 2;
+  min-height: $hand-card-height;
 
   .wott-card-flip {
-    width: 130px;
+    width: $hand-card-width;
   }
 }
 

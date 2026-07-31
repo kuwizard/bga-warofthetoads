@@ -103,6 +103,8 @@ abstract class Card extends DB_Model
                 'location'    => $this->location,
                 'locationArg' => $this->locationArg,
                 'facedown'    => $this->facedown,
+                // The printed colour is the card's physical back — public even face-down, and how [H2]'s Monks/Casualties are told apart.
+                'deck'        => $this->deck,
             ];
         }
 

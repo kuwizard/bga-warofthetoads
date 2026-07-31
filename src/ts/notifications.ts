@@ -7,6 +7,7 @@ const NOTIF_MIN_DURATION = 1200;
 export const textOnlyNotifHandlers = {
     notif_scoutNothingToShow: (_args: ScoutNothingToShowNotifArgs) => {},
     notif_siegeGuessFizzles: (_args: SiegeGuessFizzlesNotifArgs) => {},
+    notif_warEnded: (_args: WarEndedNotifArgs) => {},
 };
 
 let rawLog: string | undefined;

@@ -10,15 +10,8 @@ use Bga\Games\WarOfTheToads\Core\Globals;
 use Bga\Games\WarOfTheToads\Game;
 use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
+use Bga\Games\WarOfTheToads\Notifications;
 
-/**
- * Entered once, right after `Game::setupNewGame()` — before any client has
- * loaded the table, so nothing here needs a notification (RULES.md §4, §5).
- *
- * Builds both decks, shuffles them, deals 5 cards each, and picks the 1st
- * War's first Attacker at random ([H12] — the rulebook's "whoever most
- * recently drank pondwater" has no digital equivalent).
- */
 class WarSetup extends GameState
 {
     function __construct(
@@ -32,15 +25,31 @@ class WarSetup extends GameState
 
     public function onEnteringState()
     {
-        Cards::setupNewGame();
-
         $players = Players::getInTableOrder();
-        $attackerId = $players[bga_rand(0, count($players) - 1)]->getId();
 
-        Globals::setWar(1);
+        if (Globals::getWar() === 1) {
+            Cards::setupNewGame();
+            $attackerId = $players[bga_rand(0, count($players) - 1)]->getId();
+            Globals::setFirstAttackerWar1($attackerId);
+        } else {
+            Cards::reconstructDecksForSecondWar();
+            $attackerId = Players::getOpponentId(Globals::getFirstAttackerWar1());
+        }
+
         Globals::setBattle(1);
         Globals::setAttackerId($attackerId);
-        Globals::setFirstAttackerWar1($attackerId);
+
+        // The 1st War is set up before any client has loaded the table — only the 2nd is watched live.
+        if (Globals::getWar() === 2) {
+            Notifications::warStarted(2, Cards::getDeckColorByPlayerId(), Cards::getDeckCountsByPlayerId());
+            Notifications::moodChanged(Cards::getAngryByPlayerId());
+
+            foreach ($players as $player) {
+                Cards::shuffleDeck($player->getId());
+                $dealCount = DEV_FULL_HANDS ? Cards::getDeckCount($player->getId()) : 5;
+                Notifications::cardsDrawn($player, Cards::drawCards($player->getId(), $dealCount));
+            }
+        }
 
         return DEV_FULL_HANDS ? BattleStart::class : ReturnCard::class;
     }

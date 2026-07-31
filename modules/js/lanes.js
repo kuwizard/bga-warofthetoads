@@ -8,8 +8,7 @@ export class Lanes {
         this.hand = hand;
         this.printedStrengthByCardId = new Map();
     }
-    render(gameArea, lanes, deckColorByPlayerId, playerIdsInTableOrder, attackerId) {
-        this.deckColorByPlayerId = deckColorByPlayerId;
+    render(gameArea, lanes, playerIdsInTableOrder, attackerId) {
         this.playerIdsInTableOrder = playerIdsInTableOrder;
         const slotsHtml = (lane) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
@@ -22,7 +21,7 @@ export class Lanes {
         `);
         this.lanesElement = document.getElementById('wott-lanes');
         this.setAttacker(attackerId);
-        lanes.forEach(card => this.createCardElement(card, this.slotFor(card), deckColorByPlayerId[card.controller]));
+        lanes.forEach(card => this.createCardElement(card, this.slotFor(card)));
     }
     async notif_battleStarted(args) {
         this.setAttacker(Number(args.player_id));
@@ -36,11 +35,10 @@ export class Lanes {
     }
     async notif_cardsPlayed(args) {
         const playerId = Number(args.player_id);
-        const deckColor = this.deckColorByPlayerId[playerId];
         this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
         await Promise.all([
-            this.playCard(args.faceUpCard, deckColor),
-            this.playCard(args.faceDownCard, deckColor),
+            this.playCard(args.faceUpCard),
+            this.playCard(args.faceDownCard),
         ]);
     }
     async notif_cardsRevealed(args) {
@@ -99,11 +97,11 @@ export class Lanes {
         await this.waitForAnimationEnd(cardElement);
         cardElement.classList.remove('wott-card--tactic');
     }
-    async playCard(card, deckColor) {
+    async playCard(card) {
         const slot = this.slotFor(card);
         const existingElement = document.getElementById(`wott-card-${card.id}`);
         if (!existingElement) {
-            this.createCardElement(card, slot, deckColor);
+            this.createCardElement(card, slot);
             return;
         }
         existingElement.classList.remove('wott-selectable', 'wott-card--selected');
@@ -117,7 +115,7 @@ export class Lanes {
         }
         await this.slideIntoPlace(existingElement, slot);
     }
-    async previewPlay(card, controller, faceDown, deckColor) {
+    async previewPlay(card, controller, faceDown) {
         const laneCard = {
             ...card,
             controller,
@@ -125,7 +123,7 @@ export class Lanes {
             locationArg: faceDown ? LANE_HIDDEN : LANE_OPEN,
             facedown: faceDown,
         };
-        await this.playCard(laneCard, deckColor);
+        await this.playCard(laneCard);
     }
     async previewUnplay(cardId, wasFaceDown) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
@@ -167,8 +165,8 @@ export class Lanes {
     slotFor(card) {
         return document.getElementById(`wott-lane-slot-${card.locationArg}-${card.controller}`);
     }
-    createCardElement(card, container, deckColor) {
-        container.insertAdjacentHTML('beforeend', tplLaneCard(card, deckColor));
+    createCardElement(card, container) {
+        container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`);
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
         if (card.name !== undefined) {

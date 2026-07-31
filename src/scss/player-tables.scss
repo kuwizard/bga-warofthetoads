@@ -78,6 +78,11 @@
   z-index: -1;
 }
 
+// Lifted only while the two piles cross during the §9 swap — .wott-deck's own `z-index: 0` would let the far table paint over the traveller.
+.wott-deck--swapping {
+  z-index: 10;
+}
+
 .wott-deck-count {
   position: absolute;
   right: 4px;

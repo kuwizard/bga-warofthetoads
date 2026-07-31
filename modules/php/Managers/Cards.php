@@ -170,6 +170,45 @@ class Cards extends CachedDB_Manager
             ->first();
     }
 
+    // ── WAR TRANSITION (RULES.md §9) ──────────────────────────────────────────
+
+    public static function setAsideAsCasualty(Card $card): void
+    {
+        $card->setLocation(LOCATION_CASUALTY);
+        $card->setLocationArg(0);
+        $card->setFacedown(true);
+    }
+
+    // Pre-swap, `card_controller` still names the 1st-War holder of `card_deck` on every card — so each colour's new controller is that holder's opponent.
+    public static function reconstructDecksForSecondWar(): void
+    {
+        $controllerByDeck = [];
+        foreach (static::getAll() as $card) {
+            $controllerByDeck[$card->getDeck()] ??= Players::getOpponentId($card->getController());
+        }
+
+        foreach (static::getAll() as $card) {
+            if ($card->getLocation() === LOCATION_CASUALTY) {
+                continue;
+            }
+
+            $card->setController($controllerByDeck[$card->getDeck()]);
+            $card->setLocation(LOCATION_DECK);
+            $card->setLocationArg(0);
+            $card->setFacedown(true);
+        }
+    }
+
+    public static function getDeckCountsByPlayerId(): array
+    {
+        $counts = [];
+        foreach (Players::getAll() as $player) {
+            $counts[$player->getId()] = static::getDeckCount($player->getId());
+        }
+
+        return $counts;
+    }
+
     // ── BATTLE ────────────────────────────────────────────────────────────────
 
     /**
@@ -290,13 +329,23 @@ class Cards extends CachedDB_Manager
         return $angry;
     }
 
-    // [H1]/[H2] "your Flags" is ruled on here and nowhere else — General A's only multiplier.
+    // [H1]/[H2] "your Flags" is ruled on here and nowhere else — a Casualty sits exactly where Monks sit, so it counts too.
     public static function flagsFor(int $playerId): int
     {
         return static::getAll()
-            ->where('location', LOCATION_SHRINE)
+            ->where('location', [LOCATION_SHRINE, LOCATION_CASUALTY])
             ->where('deck', static::getDeckColorFor($playerId))
             ->count();
+    }
+
+    public static function getDeckColorByPlayerId(): array
+    {
+        $colors = [];
+        foreach (Players::getAll() as $player) {
+            $colors[$player->getId()] = static::getDeckColorFor($player->getId());
+        }
+
+        return $colors;
     }
 
     public static function getDeckColorFor(int $playerId): string
@@ -393,6 +442,7 @@ class Cards extends CachedDB_Manager
             'lanes'      => static::getLaneCards()->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
             'stacks'     => static::getAll()->where('location', LOCATION_STACK)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
             'shrine'     => static::getAll()->where('location', LOCATION_SHRINE)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
+            'casualties' => static::getAll()->where('location', LOCATION_CASUALTY)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
         ];
     }
 }

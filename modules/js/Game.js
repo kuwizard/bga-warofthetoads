@@ -13,7 +13,6 @@ import { notificationOptions, textOnlyNotifHandlers } from "./notifications.js";
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
 export class Game {
     constructor(bga) {
-        this.deckColorByPlayerId = {};
         debug('warofthetoads constructor');
         this.bga = bga;
         this.bga.states.logger = stateLogger;
@@ -32,9 +31,6 @@ export class Game {
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
-        playerIdsInTableOrder.forEach((playerId, index) => {
-            this.deckColorByPlayerId[playerId] = index === 0 ? 'blue' : 'red';
-        });
         const gameArea = this.bga.gameArea.getElement();
         gameArea.classList.add('wott-game-area');
         this.playerTables = new PlayerTables();
@@ -43,10 +39,10 @@ export class Game {
         this.shrine = new Shrine(this.bga);
         this.playerPanels = new PlayerPanels(this.bga);
         this.hand.render(gameArea, this.gamedatas.cards);
-        this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
-        this.shrine.render(gameArea, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder);
+        this.lanes.render(gameArea, this.gamedatas.cards.lanes, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
+        this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
-        this.playerTables.render(gameArea, this.gamedatas.players, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder, Number(this.bga.gameui.player_id));
+        this.playerTables.render(gameArea, this.gamedatas.players, this.gamedatas.cards, this.gamedatas.deckColors, playerIdsInTableOrder, Number(this.bga.gameui.player_id));
         this.applyLayoutPreferences();
         this.bga.userPreferences.onChange = (prefId) => {
             if (prefId === HAND_POSITION_PREF_ID || prefId === PLAYER_BLOCKS_POSITION_PREF_ID) {
@@ -92,7 +88,7 @@ export class Game {
     }
     async previewPlayCard(cardId, faceDown) {
         const myId = Number(this.bga.gameui.player_id);
-        await this.lanes.previewPlay(this.hand.getCard(cardId), myId, faceDown, this.deckColorByPlayerId[myId]);
+        await this.lanes.previewPlay(this.hand.getCard(cardId), myId, faceDown);
     }
     async previewUnplayCard(cardId, wasFaceDown) {
         await this.lanes.previewUnplay(cardId, wasFaceDown);
@@ -101,7 +97,7 @@ export class Game {
         debug('notifications subscriptions setup');
         this.bga.notifications.setupPromiseNotifications({
             ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, textOnlyNotifHandlers],
+            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.playerTables, textOnlyNotifHandlers],
         });
     }
 }

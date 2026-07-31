@@ -70,7 +70,6 @@ class Globals
     }
 
     // ── BATTLE ────────────────────────────────────────────────────────────────
-
     public static function getBattle(): int
     {
         return (int) Game::get()->bga->globals->get('battle', 1);

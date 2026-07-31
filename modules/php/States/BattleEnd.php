@@ -57,7 +57,7 @@ class BattleEnd extends GameState
         Notifications::moodChanged(Cards::getAngryByPlayerId());
 
         if (Cards::getHandCount($attackerId) < 2 || Cards::getHandCount($defenderId) < 2) {
-            return EndScore::class;
+            return WarEnd::class;
         }
 
         Globals::setAttackerId($defenderId);

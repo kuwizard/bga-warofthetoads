@@ -407,4 +407,48 @@ class Notifications
     {
         self::notifyAll('moodChanged', '', ['angry' => $angry]);
     }
+
+    // ── WAR TRANSITION (RULES.md §8/§9) ─────────────────────────────────────────
+
+    public static function warEnded(int $war, ?Player $winner, array $hostages): void
+    {
+        if ($winner === null) {
+            self::notifyAll('warEnded', clienttranslate('War ${war} ends in a Stalemate — ${count} Hostages each'), [
+                'war'   => $war,
+                'count' => reset($hostages),
+            ]);
+            return;
+        }
+
+        self::notifyAll('warEnded', clienttranslate('${player_name} wins War ${war} — ${count} Hostages to ${count2}'), [
+            'player' => $winner,
+            'war'    => $war,
+            'count'  => $hostages[$winner->getId()],
+            'count2' => min($hostages),
+        ]);
+    }
+
+    // Same public/private split as cardReturned() — the redacted `card` stub still carries the back colour (physically public, [H2]).
+    public static function casualtySet(Player $player, Card $card): void
+    {
+        self::notifyAll('casualtySet', clienttranslate('${player_name} sets their last card aside face-down — their Casualty'), [
+            'player'         => $player,
+            'card'           => $card->getUiData(),
+            '_merge_private' => true,
+            '_private'       => [
+                $player->getId() => [
+                    'card' => $card->getUiData($player->getId()),
+                ],
+            ],
+        ]);
+    }
+
+    public static function warStarted(int $war, array $deckColorByPlayerId, array $deckCounts): void
+    {
+        self::notifyAll('warStarted', clienttranslate('The 2nd War begins — the decks are swapped'), [
+            'war'        => $war,
+            'deckColors' => $deckColorByPlayerId,
+            'deckCounts' => $deckCounts,
+        ]);
+    }
 }

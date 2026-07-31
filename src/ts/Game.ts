@@ -31,9 +31,6 @@ export class Game {
     private playerPanels: PlayerPanels;
     private playerTables: PlayerTables;
 
-    /** Table order index (0 or 1) → deck colour. Mirrors Managers/Cards::setupNewGame(). */
-    private deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' } = {};
-
     constructor(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
         debug('warofthetoads constructor');
         this.bga = bga;
@@ -76,14 +73,8 @@ export class Game {
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
 
-        // `no` (Managers/Players::getInTableOrder()) is the stable seat order
-        // decks are dealt in. `playerorder` is NOT safe for this: BGA rotates
-        // it to reflect whose turn is next, so deriving colour from it flips
-        // blue/red the moment the active player changes.
+        // BGA rotates `playerorder` to reflect whose turn is next — only `no` is a stable seat order.
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
-        playerIdsInTableOrder.forEach((playerId, index) => {
-            this.deckColorByPlayerId[playerId] = index === 0 ? 'blue' : 'red';
-        });
 
         const gameArea = this.bga.gameArea.getElement();
         gameArea.classList.add('wott-game-area');
@@ -95,14 +86,14 @@ export class Game {
         this.playerPanels = new PlayerPanels(this.bga);
 
         this.hand.render(gameArea, this.gamedatas.cards);
-        this.lanes.render(gameArea, this.gamedatas.cards.lanes, this.deckColorByPlayerId, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
-        this.shrine.render(gameArea, this.gamedatas.cards, this.deckColorByPlayerId, playerIdsInTableOrder);
+        this.lanes.render(gameArea, this.gamedatas.cards.lanes, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
+        this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
         this.playerTables.render(
             gameArea,
             this.gamedatas.players,
             this.gamedatas.cards,
-            this.deckColorByPlayerId,
+            this.gamedatas.deckColors,
             playerIdsInTableOrder,
             Number(this.bga.gameui.player_id),
         );
@@ -122,7 +113,6 @@ export class Game {
     ///////////////////////////////////////////////////
     //// Utility methods
 
-    /** Stable seat order (Managers/Players::getInTableOrder()) — see setup()'s comment on why `playerorder` can't be used for this. */
     private getPlayerIdsInTableOrder(): number[] {
         return Object.entries(this.gamedatas.players)
             .sort(([, a], [, b]) => a.no - b.no)
@@ -174,7 +164,7 @@ export class Game {
 
     public async previewPlayCard(cardId: number, faceDown: boolean): Promise<void> {
         const myId = Number(this.bga.gameui.player_id);
-        await this.lanes.previewPlay(this.hand.getCard(cardId)!, myId, faceDown, this.deckColorByPlayerId[myId]);
+        await this.lanes.previewPlay(this.hand.getCard(cardId)!, myId, faceDown);
     }
 
     public async previewUnplayCard(cardId: number, wasFaceDown: boolean): Promise<void> {
@@ -189,7 +179,7 @@ export class Game {
 
         this.bga.notifications.setupPromiseNotifications({
             ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, textOnlyNotifHandlers],
+            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.playerTables, textOnlyNotifHandlers],
         });
     }
 }

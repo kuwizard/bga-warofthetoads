@@ -54,6 +54,22 @@ export class Hand {
             this.appendCard(card);
         });
     }
+    async notif_casualtySet(args) {
+        const playerId = Number(args.player_id);
+        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
+        if (args.card.type === undefined) {
+            return;
+        }
+        this.cards.hand = this.cards.hand.filter(card => card.id !== args.card.id);
+        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
+        const cardElement = document.getElementById(`wott-card-${args.card.id}`);
+        if (!slot || !cardElement) {
+            return;
+        }
+        cardElement.classList.remove('wott-selectable', 'wott-card--selected');
+        await this.flip(cardElement, true);
+        await this.slideIntoPlace(cardElement, slot);
+    }
     async notif_scoutRevealed(args) {
         if (this.isReadOnly() || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
             return;
