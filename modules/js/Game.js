@@ -8,6 +8,7 @@ import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { PlayerTables } from "./playerTables.js";
+import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions, textOnlyNotifHandlers } from "./notifications.js";
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -38,11 +39,13 @@ export class Game {
         this.lanes = new Lanes(this.bga, this.hand);
         this.shrine = new Shrine(this.bga);
         this.playerPanels = new PlayerPanels(this.bga);
+        this.gameEnd = new GameEnd(this.bga);
         this.hand.render(gameArea, this.gamedatas.cards);
         this.lanes.render(gameArea, this.gamedatas.cards.lanes, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
         this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
         this.playerTables.render(gameArea, this.gamedatas.players, this.gamedatas.cards, this.gamedatas.deckColors, playerIdsInTableOrder, Number(this.bga.gameui.player_id));
+        this.gameEnd.render(gameArea, this.gamedatas.players, playerIdsInTableOrder, this.gamedatas.gameEnd);
         this.applyLayoutPreferences();
         this.bga.userPreferences.onChange = (prefId) => {
             if (prefId === HAND_POSITION_PREF_ID || prefId === PLAYER_BLOCKS_POSITION_PREF_ID) {
@@ -97,7 +100,7 @@ export class Game {
         debug('notifications subscriptions setup');
         this.bga.notifications.setupPromiseNotifications({
             ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.playerTables, textOnlyNotifHandlers],
+            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.playerTables, this.gameEnd, textOnlyNotifHandlers],
         });
     }
 }

@@ -71,6 +71,12 @@ abstract class Card extends DB_Model
         return $this->strength;
     }
 
+    // [H3]'s double-Stalemate sort key: lowest wins, so the Siege Cannon — the one card with no printed Strength — ranks +INF and never 0. [H17]'s two Generals both land on 7 by construction.
+    public function getCasualtyRank(): int
+    {
+        return $this->strength ?? PHP_INT_MAX;
+    }
+
     public function getSpecialAttribute(): ?string
     {
         return $this->specialAttribute;

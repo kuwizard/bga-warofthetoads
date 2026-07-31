@@ -40,10 +40,8 @@ const ST_CHOOSE_STACK   = 75;
 const ST_SIEGE_GUESS    = 80;
 const ST_BATTLE_END     = 90;
 const ST_WAR_END        = 95;
+const ST_COMPUTE_SCORES = 98;
 const ST_GAME_END       = 99;
-
-// Template placeholder state, still wired until PR7 (ComputeScores).
-const ST_END_SCORE   = 98;
 
 // ── Card / token locations ────────────────────────────────────────────────────
 // Values of the `card_location` column (dbmodel.sql, PR2). Keep them short —
@@ -81,6 +79,15 @@ const CARD_TYPE_SIEGE     = 'siege';
 
 // Both Generals are printed "General", so SiegeGuess's protocol has 8 values, not 9 ([H17]).
 const GUESS_TYPE_GENERAL = 'general';
+
+// The highest printed Strength (both Generals) — the span [H3]'s Casualty rank is inverted over.
+const CARD_STRENGTH_MAX = 7;
+
+// ── Victory conditions (RULES.md §10, in order — States/ComputeScores) ────────
+
+const VICTORY_SECOND_WAR        = 'secondWar';
+const VICTORY_WON_AND_STALEMATE = 'wonAndStalemate';
+const VICTORY_LOWEST_CASUALTY   = 'lowestCasualty';
 
 // ── Card deck (printed colour) ──────────────────────────────────────────────────
 // Values of the `card_deck` column. NEVER changes for a card, unlike

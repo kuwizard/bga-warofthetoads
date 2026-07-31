@@ -1,5 +1,5 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
-import { slideIntoPlace, waitForTransitionEnd } from "./animations.js";
+import { flipCard, slideIntoPlace } from "./animations.js";
 export const HAND_POSITION_PREF_ID = 103;
 export class Hand {
     constructor(bga, playerTables) {
@@ -67,7 +67,7 @@ export class Hand {
             return;
         }
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
-        await this.flip(cardElement, true);
+        await flipCard(cardElement, true);
         await slideIntoPlace(cardElement, slot);
     }
     async notif_scoutRevealed(args) {
@@ -138,7 +138,7 @@ export class Hand {
             return;
         }
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
-        await this.flip(cardElement, true);
+        await flipCard(cardElement, true);
         await slideIntoPlace(cardElement, deckAnchor);
         cardElement.remove();
     }
@@ -146,12 +146,6 @@ export class Hand {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
         await slideIntoPlace(cardElement, this.handElement);
-        await this.flip(cardElement, false);
-    }
-    flip(cardElement, faceDown) {
-        const inner = cardElement.querySelector('.wott-card-flip__inner');
-        const donePromise = waitForTransitionEnd(inner, 'transform');
-        cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
-        return donePromise;
+        await flipCard(cardElement, false);
     }
 }

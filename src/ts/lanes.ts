@@ -1,6 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
-import { slideAllIntoPlace, slideIntoPlace, waitForTransitionEnd } from "./animations.js";
+import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
 // numbers since `Card::getUiData()`'s `locationArg` is the only place they
@@ -170,7 +170,7 @@ export class Lanes {
         }
 
         if (card.facedown) {
-            await this.flip(existingElement, true);
+            await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
     }
@@ -194,7 +194,7 @@ export class Lanes {
 
         await slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
-            await this.flip(cardElement, false);
+            await flipCard(cardElement, false);
         }
     }
 
@@ -209,19 +209,10 @@ export class Lanes {
         });
     }
 
-    /** Swaps in the real front-face sprite and un-flips — Notifications::cardsRevealed(), genuinely public at this point. */
+    // Notifications::cardsRevealed() — the card is genuinely public now, so the strength badge finally gets its printed baseline.
     private async revealCard(card: CardData): Promise<void> {
-        const cardElement = document.getElementById(`wott-card-${card.id}`);
-        if (!cardElement) {
-            return;
-        }
-
-        const frontFace = cardElement.querySelector<HTMLElement>('.wott-card-flip__face--front')!;
-        frontFace.className = `wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${card.type ? card.type.replace(/_/g, '-') : 'back'}`;
-        this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
         this.printedStrengthByCardId.set(card.id, card.strength);
-
-        await this.flip(cardElement, false);
+        await revealCardFace(this.bga, card);
     }
 
     /** RULES.md §6 (end) — the lane empties between battles; PR4's real capture animation replaces this. */
@@ -248,13 +239,6 @@ export class Lanes {
         }
 
         return cardElement;
-    }
-
-    private flip(cardElement: HTMLElement, faceDown: boolean): Promise<void> {
-        const inner = cardElement.querySelector<HTMLElement>('.wott-card-flip__inner')!;
-        const donePromise = waitForTransitionEnd(inner, 'transform');
-        cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
-        return donePromise;
     }
 
     private waitForAnimationEnd(element: HTMLElement): Promise<void> {

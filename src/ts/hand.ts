@@ -1,6 +1,6 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 import { PlayerTables } from "./playerTables.js";
-import { slideIntoPlace, waitForTransitionEnd } from "./animations.js";
+import { flipCard, slideIntoPlace } from "./animations.js";
 
 export const HAND_POSITION_PREF_ID = 103;
 
@@ -101,7 +101,7 @@ export class Hand {
         }
 
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
-        await this.flip(cardElement, true);
+        await flipCard(cardElement, true);
         await slideIntoPlace(cardElement, slot);
     }
 
@@ -194,7 +194,7 @@ export class Hand {
         // and would otherwise fight with the slide's translate below.
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
 
-        await this.flip(cardElement, true);
+        await flipCard(cardElement, true);
         await slideIntoPlace(cardElement, deckAnchor);
         cardElement.remove();
     }
@@ -205,14 +205,7 @@ export class Hand {
         cardElement.classList.add('wott-card-flip--flipped');
 
         await slideIntoPlace(cardElement, this.handElement);
-        await this.flip(cardElement, false);
+        await flipCard(cardElement, false);
     }
 
-    /** Toggles the face-down flip (hand.scss's `.wott-card-flip--flipped`) and waits for its transition to finish. */
-    private flip(cardElement: HTMLElement, faceDown: boolean): Promise<void> {
-        const inner = cardElement.querySelector<HTMLElement>('.wott-card-flip__inner')!;
-        const donePromise = waitForTransitionEnd(inner, 'transform');
-        cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
-        return donePromise;
-    }
 }

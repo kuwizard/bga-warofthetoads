@@ -474,6 +474,43 @@
   width: 120px;
 }
 
+#wott-game-end:empty {
+  display: none;
+}
+
+#wott-game-end {
+  margin: 0 auto 16px;
+  padding: 16px;
+  max-width: 420px;
+  border: 2px solid #444;
+  border-radius: 6px;
+  text-align: center;
+}
+
+.wott-game-end__title {
+  margin: 0 0 8px;
+}
+
+.wott-game-end__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.wott-game-end__table th,
+.wott-game-end__table td {
+  padding: 4px 8px;
+  text-align: center;
+}
+.wott-game-end__table .wott-game-end__label {
+  text-align: left;
+  font-weight: normal;
+  opacity: 0.75;
+}
+
+.wott-game-end__verdict {
+  margin: 8px 0 0;
+  font-weight: bold;
+}
+
 :root {
   --am: 1;
 }

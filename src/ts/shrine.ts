@@ -1,4 +1,5 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
+import { revealCardFace } from "./animations.js";
 
 /**
  * The Shrine (RULES.md §6 ➏, §7): each player's captured stacks — a face-up
@@ -124,6 +125,16 @@ export class Shrine {
 
         this.cards.casualties.push(args.card);
         this.placeCasualty(args.card);
+    }
+
+    // RULES.md §10 — both Casualties flip face-up at game end, whichever condition decided it. The owner's element already carries the real sprite; everyone else's is still the redacted stub, and revealCardFace covers both.
+    async notif_casualtyRevealed(args: CasualtyRevealedNotifArgs): Promise<void> {
+        const index = this.cards.casualties.findIndex(casualty => casualty.id === args.card.id);
+        if (index !== -1) {
+            this.cards.casualties[index] = args.card;
+        }
+
+        await revealCardFace(this.bga, args.card);
     }
 
     notif_warStarted(_args: WarStartedNotifArgs): void {

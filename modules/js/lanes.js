@@ -1,5 +1,5 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
-import { slideAllIntoPlace, slideIntoPlace, waitForTransitionEnd } from "./animations.js";
+import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 const ANIMATION_FALLBACK_MS = 2000;
@@ -112,7 +112,7 @@ export class Lanes {
             return;
         }
         if (card.facedown) {
-            await this.flip(existingElement, true);
+            await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
     }
@@ -133,7 +133,7 @@ export class Lanes {
         }
         await slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
-            await this.flip(cardElement, false);
+            await flipCard(cardElement, false);
         }
     }
     setCardsSelectable(cardIds, selectable, onClick) {
@@ -147,15 +147,8 @@ export class Lanes {
         });
     }
     async revealCard(card) {
-        const cardElement = document.getElementById(`wott-card-${card.id}`);
-        if (!cardElement) {
-            return;
-        }
-        const frontFace = cardElement.querySelector('.wott-card-flip__face--front');
-        frontFace.className = `wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${card.type ? card.type.replace(/_/g, '-') : 'back'}`;
-        this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
         this.printedStrengthByCardId.set(card.id, card.strength);
-        await this.flip(cardElement, false);
+        await revealCardFace(this.bga, card);
     }
     clear() {
         this.lanesElement.querySelectorAll('.wott-lane-slot').forEach(slot => {
@@ -175,12 +168,6 @@ export class Lanes {
             this.printedStrengthByCardId.set(card.id, card.strength ?? null);
         }
         return cardElement;
-    }
-    flip(cardElement, faceDown) {
-        const inner = cardElement.querySelector('.wott-card-flip__inner');
-        const donePromise = waitForTransitionEnd(inner, 'transform');
-        cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
-        return donePromise;
     }
     waitForAnimationEnd(element) {
         return new Promise(resolve => {

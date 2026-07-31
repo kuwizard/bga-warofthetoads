@@ -1,0 +1,42 @@
+// The end-of-game summary (src/ts/gameEnd.ts) — RULES.md §10's evidence table.
+
+@use 'variables' as v;
+
+#wott-game-end:empty {
+  display: none;
+}
+
+#wott-game-end {
+  margin: 0 auto v.$gap * 2;
+  padding: v.$gap * 2;
+  max-width: 420px;
+  border: 2px solid #444;
+  border-radius: v.$radius;
+  text-align: center;
+}
+
+.wott-game-end__title {
+  margin: 0 0 v.$gap;
+}
+
+.wott-game-end__table {
+  width: 100%;
+  border-collapse: collapse;
+
+  th,
+  td {
+    padding: v.$gap * 0.5 v.$gap;
+    text-align: center;
+  }
+
+  .wott-game-end__label {
+    text-align: left;
+    font-weight: normal;
+    opacity: 0.75;
+  }
+}
+
+.wott-game-end__verdict {
+  margin: v.$gap 0 0;
+  font-weight: bold;
+}

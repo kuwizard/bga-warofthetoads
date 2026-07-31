@@ -209,6 +209,34 @@ class Cards extends CachedDB_Manager
         return $counts;
     }
 
+    // ── END OF GAME (RULES.md §10) ────────────────────────────────────────────
+
+    public static function getCasualtyFor(int $playerId): ?Card
+    {
+        return static::getAll()->where('controller', $playerId)->where('location', LOCATION_CASUALTY)->first();
+    }
+
+    public static function getCasualtyByPlayerId(): array
+    {
+        $casualties = [];
+        foreach (Players::getAll() as $player) {
+            $casualties[$player->getId()] = static::getCasualtyFor($player->getId());
+        }
+
+        return $casualties;
+    }
+
+    // Both Casualties are the tie-break evidence, so they flip face-up whichever condition decided the game.
+    public static function revealCasualties(): Collection
+    {
+        $casualties = static::getAll()->where('location', LOCATION_CASUALTY);
+        foreach ($casualties as $casualty) {
+            $casualty->setFacedown(false);
+        }
+
+        return $casualties;
+    }
+
     // ── BATTLE ────────────────────────────────────────────────────────────────
 
     /**

@@ -1,4 +1,5 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
+import { revealCardFace } from "./animations.js";
 export class Shrine {
     constructor(bga) {
         this.bga = bga;
@@ -79,6 +80,13 @@ export class Shrine {
         }
         this.cards.casualties.push(args.card);
         this.placeCasualty(args.card);
+    }
+    async notif_casualtyRevealed(args) {
+        const index = this.cards.casualties.findIndex(casualty => casualty.id === args.card.id);
+        if (index !== -1) {
+            this.cards.casualties[index] = args.card;
+        }
+        await revealCardFace(this.bga, args.card);
     }
     notif_warStarted(_args) {
         this.cards.stacks = [];

@@ -451,4 +451,33 @@ class Notifications
             'deckCounts' => $deckCounts,
         ]);
     }
+
+    // ── END OF GAME (RULES.md §10) ──────────────────────────────────────────────
+
+    public static function casualtyRevealed(Player $player, Card $card): void
+    {
+        self::notifyAll('casualtyRevealed', clienttranslate('${player_name} reveals their Casualty: ${cardName}'), [
+            'player'   => $player,
+            'i18n'     => ['cardName'],
+            'cardName' => $card->getName(),
+            'card'     => $card->getUiData(),
+        ]);
+    }
+
+    // `$summary` is States/ComputeScores::summary() — the client's end-of-game panel reads it verbatim.
+    public static function gameEnded(?Player $winner, array $summary): void
+    {
+        $messageByCondition = [
+            VICTORY_SECOND_WAR        => clienttranslate('${player_name} wins the game by winning the 2nd War'),
+            VICTORY_WON_AND_STALEMATE => clienttranslate('${player_name} wins the game by winning 1 War and stalemating the other'),
+            VICTORY_LOWEST_CASUALTY   => clienttranslate('${player_name} wins the game with the lowest Casualty'),
+        ];
+
+        if ($winner === null) {
+            self::notifyAll('gameEnded', clienttranslate('Both Casualties rank the same — the game is a draw'), $summary);
+            return;
+        }
+
+        self::notifyAll('gameEnded', $messageByCondition[$summary['condition']], $summary + ['player' => $winner]);
+    }
 }

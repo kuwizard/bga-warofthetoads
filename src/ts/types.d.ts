@@ -56,12 +56,23 @@ type StackCardData = LaneCardData;
 // read (Managers/Cards::getAngryByPlayerId()) — no column, no Global.
 type AngryByPlayerId = { [playerId: number]: boolean };
 
+// Mirrors States/ComputeScores::summary() — a null `wars` entry is a Stalemate, and a null `winnerId` the [H3] draw only `lowestCasualty` can reach.
+interface GameEndSummary {
+    condition: 'secondWar' | 'wonAndStalemate' | 'lowestCasualty';
+    winnerId: number | null;
+    wars: { [war: number]: number | null };
+    scores: { [playerId: number]: number };
+    casualties: { [playerId: number]: CardData | null };
+}
+
 interface WarOfTheToadsGamedatas extends Gamedatas<WarOfTheToadsPlayer> {
     cards: CardsUiData;
     angry: AngryByPlayerId;
     attackerId: number;
     // Current-war deck colour per player (Globals::getDeckColorByPlayerId()) — diverges from table order after the 2nd-War swap.
     deckColors: { [playerId: number]: 'blue' | 'red' };
+    // Null until the game is over; re-derived server-side on every load, never replayed from the log.
+    gameEnd: GameEndSummary | null;
 }
 
 /*
@@ -293,4 +304,19 @@ interface WarStartedNotifArgs {
     war: number;
     deckColors: { [playerId: number]: 'blue' | 'red' };
     deckCounts: { [playerId: number]: number };
+}
+
+// End of game (PR 7b, RULES.md §10) — see Notifications.php.
+
+interface CasualtyRevealedNotifArgs {
+    player_id: number;
+    player_name: string;
+    cardName: string;
+    card: CardData;
+}
+
+// The summary is sent whole; `player_id`/`player_name` name the winner and are absent on a draw.
+interface GameEndedNotifArgs extends GameEndSummary {
+    player_id?: number;
+    player_name?: string;
 }

@@ -32,6 +32,7 @@ use Bga\Games\WarOfTheToads\Core\Globals;
 use Bga\Games\WarOfTheToads\Core\Stats;
 use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
+use Bga\Games\WarOfTheToads\States\ComputeScores;
 use Bga\Games\WarOfTheToads\States\WarSetup;
 
 class Game extends \Bga\GameFramework\Table
@@ -96,10 +97,9 @@ class Game extends \Bga\GameFramework\Table
             'players'    => Players::getUiData($currentPlayerId)->toAssoc(),
             'cards'      => Cards::getUiData($currentPlayerId),
             'angry'      => Cards::getAngryByPlayerId(),
-            // So an F5 mid-battle still renders the lanes' attack-direction arrows.
             'attackerId' => Globals::getAttackerId(),
-            // Current-war deck colour per player — diverges from table order after the 2nd-War swap.
             'deckColors' => Cards::getDeckColorByPlayerId(),
+            'gameEnd'    => $this->gamestate->getCurrentMainStateId() === ST_GAME_END ? ComputeScores::summary() : null,
         ];
     }
 

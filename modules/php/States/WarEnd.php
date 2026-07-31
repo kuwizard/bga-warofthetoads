@@ -47,7 +47,7 @@ class WarEnd extends GameState
         }
 
         if ($war === 2) {
-            return EndScore::class;
+            return ComputeScores::class;
         }
 
         foreach ($players as $player) {

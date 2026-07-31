@@ -1,4 +1,6 @@
-// Shared FLIP helpers, used by hand.ts, lanes.ts and playerTables.ts.
+// Shared FLIP helpers, used by hand.ts, lanes.ts, shrine.ts and playerTables.ts.
+
+import { cardRoleSlug, tplCardTooltip } from "./tpls.js";
 
 const TRANSITION_FALLBACK_MS = 2000;
 
@@ -19,6 +21,27 @@ export function waitForTransitionEnd(element: HTMLElement, propertyName: string)
         }, TRANSITION_FALLBACK_MS);
         element.addEventListener('transitionend', handler);
     });
+}
+
+export function flipCard(cardElement: HTMLElement, faceDown: boolean): Promise<void> {
+    const inner = cardElement.querySelector<HTMLElement>('.wott-card-flip__inner')!;
+    const donePromise = waitForTransitionEnd(inner, 'transform');
+    cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
+    return donePromise;
+}
+
+// Swaps a redacted card's placeholder front for its real sprite, then un-flips — the one "a hidden card becomes public" move, shared by the lane reveal and the end-of-game Casualty reveal.
+export async function revealCardFace(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>, card: CardData): Promise<void> {
+    const cardElement = document.getElementById(`wott-card-${card.id}`);
+    if (!cardElement) {
+        return;
+    }
+
+    const frontFace = cardElement.querySelector<HTMLElement>('.wott-card-flip__face--front')!;
+    frontFace.className = `wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}`;
+    bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+
+    await flipCard(cardElement, false);
 }
 
 // Reparents first so stacking/z-index is right for the whole move, not just the last frame.

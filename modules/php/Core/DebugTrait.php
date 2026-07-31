@@ -7,6 +7,7 @@ use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Managers\Players;
 use Bga\Games\WarOfTheToads\Models\BattleContext;
 use Bga\Games\WarOfTheToads\Notifications;
+use Bga\Games\WarOfTheToads\States\ComputeScores;
 
 /**
  * Home for `debug_*` helpers, kept out of Game.php.
@@ -44,6 +45,81 @@ trait DebugTrait
             $lines[] = "  {$name} = " . json_encode($value, JSON_UNESCAPED_SLASHES);
         }
         Notifications::message("=== globals ===\n" . implode("\n", $lines));
+    }
+
+    // Nothing is set up first: WarSetup's deck reconstruction sweeps every non-Casualty card back into the deck whatever its location, so leftovers in hand and lane need no cleanup.
+    public function debug_finishWar(): void
+    {
+        Notifications::message('DEBUG finishWar: jumping to WarEnd. Press F5 — the lane still shows the abandoned battle client-side.');
+        $this->gamestate->jumpToState(ST_WAR_END);
+    }
+
+    // RULES.md §10 ➊ — a 2nd-War win outranks anything from the 1st.
+    public function debug_winSecondWar(): void
+    {
+        $this->forceEndGame([2, 1], [CARD_TYPE_SCOUT, CARD_TYPE_BODYGUARD]);
+    }
+
+    // RULES.md §10 ➋ — 1 War won, the other a Stalemate.
+    public function debug_winAndStalemate(): void
+    {
+        $this->forceEndGame([1, 0], [CARD_TYPE_SCOUT, CARD_TYPE_BODYGUARD]);
+    }
+
+    // RULES.md §10 ➌ — double Stalemate, decided by [H3]'s literal trap pair: the Siege Cannon must lose to the Assassin.
+    public function debug_doubleStalemate(): void
+    {
+        $this->forceEndGame([0, 0], [CARD_TYPE_SIEGE, CARD_TYPE_ASSASSIN]);
+    }
+
+    // Scores and Casualties are the only inputs state 98 reads, so this reaches any §10 outcome from anywhere in the game.
+    private function forceEndGame(array $scoreBySeat, array $casualtyTypeBySeat): void
+    {
+        foreach (Players::getInTableOrder() as $seat => $player) {
+            $playerId = $player->getId();
+            $this->bga->playerScore->set($playerId, $scoreBySeat[$seat]);
+
+            $current = Cards::getCasualtyFor($playerId);
+            $deck = $current?->getDeck() ?? Cards::getDeckColorFor($playerId);
+            $current?->setLocation(LOCATION_SHRINE);
+
+            $casualty = Cards::getAll()->where('deck', $deck)->where('type', $casualtyTypeBySeat[$seat])->first();
+            $casualty->setController($playerId);
+            Cards::setAsideAsCasualty($casualty);
+        }
+
+        Notifications::message('DEBUG forceEndGame: scores and Casualties planted, jumping to ComputeScores.');
+        $this->gamestate->jumpToState(ST_COMPUTE_SCORES);
+    }
+
+    // [H3]/[H17]'s tie-break — the one place in the codebase where the label ("rank 0") and the sort key (+INF) point in opposite directions. Touches no table.
+    public function debug_casualtyCases(): void
+    {
+        $cases = [
+            '[H3] siege cannon loses to the assassin'  => [CARD_TYPE_SIEGE, CARD_TYPE_ASSASSIN, self::PLAYER_2],
+            '[H3] siege cannon loses to a general'     => [CARD_TYPE_SIEGE, CARD_TYPE_GENERAL_A, self::PLAYER_2],
+            '[H3] two siege cannons draw'              => [CARD_TYPE_SIEGE, CARD_TYPE_SIEGE, null],
+            'the genuinely lowest card wins'           => [CARD_TYPE_ASSASSIN, CARD_TYPE_SCOUT, self::PLAYER_1],
+            '[H17] general A and general B draw'       => [CARD_TYPE_GENERAL_A, CARD_TYPE_GENERAL_B, null],
+        ];
+
+        $lines = [];
+        $failed = 0;
+
+        foreach ($cases as $name => [$type1, $type2, $expected]) {
+            $actual = ComputeScores::lowestCasualtyWinner([
+                self::PLAYER_1 => Cards::detachedFromTable(['card_type' => $type1]),
+                self::PLAYER_2 => Cards::detachedFromTable(['card_type' => $type2]),
+            ]);
+
+            $ok = $expected === $actual;
+            $failed += $ok ? 0 : 1;
+            $lines[] = sprintf('  %s  %s: expected %s, got %s', $ok ? 'pass' : 'FAIL', $name, json_encode($expected), json_encode($actual));
+        }
+
+        Notifications::message(
+            sprintf("=== casualty cases — %d assertion(s) failed ===\n", $failed) . implode("\n", $lines)
+        );
     }
 
     // RULES.md §11's FAQ and the [Hx] rulings, run through the real pipeline. Touches no table.

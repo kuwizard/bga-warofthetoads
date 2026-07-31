@@ -1,3 +1,4 @@
+import { cardRoleSlug, tplCardTooltip } from "./tpls.js";
 const TRANSITION_FALLBACK_MS = 2000;
 export function waitForTransitionEnd(element, propertyName) {
     return new Promise(resolve => {
@@ -15,6 +16,22 @@ export function waitForTransitionEnd(element, propertyName) {
         }, TRANSITION_FALLBACK_MS);
         element.addEventListener('transitionend', handler);
     });
+}
+export function flipCard(cardElement, faceDown) {
+    const inner = cardElement.querySelector('.wott-card-flip__inner');
+    const donePromise = waitForTransitionEnd(inner, 'transform');
+    cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
+    return donePromise;
+}
+export async function revealCardFace(bga, card) {
+    const cardElement = document.getElementById(`wott-card-${card.id}`);
+    if (!cardElement) {
+        return;
+    }
+    const frontFace = cardElement.querySelector('.wott-card-flip__face--front');
+    frontFace.className = `wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}`;
+    bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+    await flipCard(cardElement, false);
 }
 export async function slideAllIntoPlace(moves) {
     const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
