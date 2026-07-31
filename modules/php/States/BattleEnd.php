@@ -31,6 +31,23 @@ class BattleEnd extends GameState
 
     public function onEnteringState()
     {
+        $siegeGuessers = Globals::getSiegeGuessers();
+        foreach ($siegeGuessers as $index => $guesserId) {
+            $opponentId = Players::getOpponentId($guesserId);
+
+            // [H11b]: skipped against an empty hand, still notified.
+            if (Cards::getHandCount($opponentId) === 0) {
+                Notifications::siegeGuessFizzles(Players::get($guesserId), Players::get($opponentId));
+                continue;
+            }
+
+            Globals::setSiegeGuessers(array_slice($siegeGuessers, $index + 1));
+            $this->gamestate->changeActivePlayer($guesserId);
+
+            return SiegeGuess::class;
+        }
+        Globals::setSiegeGuessers([]);
+
         $attackerId = Globals::getAttackerId();
         $defenderId = Players::getOpponentId($attackerId);
 

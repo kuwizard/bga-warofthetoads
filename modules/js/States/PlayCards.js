@@ -13,7 +13,6 @@ export class PlayCards {
         this.filledOrder = [];
         this.busy = false;
         if (!isCurrentPlayerActive) {
-            this.bga.statusBar.setTitle(_('${actplayer} must play 2 cards, 1 face-up and 1 face-down'));
             this.game.setHandSelectable(false);
             return;
         }

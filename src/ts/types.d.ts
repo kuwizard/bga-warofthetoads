@@ -85,6 +85,14 @@ interface DefenderPlayArgs {
 interface ChooseStackArgs {
 }
 
+// Each shower picks min(3, own hand size) cards, derived client-side from the hand ([H6]).
+interface ScoutRevealArgs {
+}
+
+// The 8 guessable faces are a fixed client-side list (tpls.ts's guessableCardTypeLabels, [H17]).
+interface SiegeGuessArgs {
+}
+
 /*
  * Describe here the types for your notif args
  */
@@ -227,4 +235,38 @@ interface TacticNoEffectNotifArgs {
     cardId: number;
     targetId: number | null;
     reason: string;
+}
+
+// The shown cards are public — `cardNames`/`cards` reach everyone; the popin in hand.ts filters to the Scout's controller.
+interface ScoutRevealedNotifArgs {
+    player_id: number;
+    player_name: string;
+    player_id2: number;
+    player_name2: string;
+    cardNames: string;
+    cards: CardData[];
+}
+
+// Log-only notifications — the no-op handlers in notifications.ts exist purely so the framework subscribes to them.
+interface ScoutNothingToShowNotifArgs {
+    player_id: number;
+    player_name: string;
+}
+
+interface SiegeGuessedNotifArgs {
+    player_id: number;
+    player_name: string;
+    player_id2: number;
+    player_name2: string;
+    cardType: string;
+    cardName: string;
+    hit: boolean;
+}
+
+interface SiegeGuessFizzlesNotifArgs {
+    player_id: number;
+    player_name: string;
+    player_id2: number;
+    player_name2: string;
+    cardName: string;
 }

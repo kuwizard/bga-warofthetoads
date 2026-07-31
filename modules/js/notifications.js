@@ -1,5 +1,9 @@
 import { debug } from "./debug.js";
 const NOTIF_MIN_DURATION = 1200;
+export const textOnlyNotifHandlers = {
+    notif_scoutNothingToShow: (_args) => { },
+    notif_siegeGuessFizzles: (_args) => { },
+};
 let rawLog;
 let formattingOwnTitle = false;
 function stripSubstitutionMarkup(html) {

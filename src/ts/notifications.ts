@@ -3,6 +3,12 @@ import { debug } from "./debug.js";
 
 const NOTIF_MIN_DURATION = 1200;
 
+// Without a notif_* handler the framework never subscribes to a notification, so onStart below (status-bar display) would never fire for it.
+export const textOnlyNotifHandlers = {
+    notif_scoutNothingToShow: (_args: ScoutNothingToShowNotifArgs) => {},
+    notif_siegeGuessFizzles: (_args: SiegeGuessFizzlesNotifArgs) => {},
+};
+
 let rawLog: string | undefined;
 let formattingOwnTitle = false;
 

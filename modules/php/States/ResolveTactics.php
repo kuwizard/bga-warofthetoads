@@ -16,7 +16,7 @@ use Bga\Games\WarOfTheToads\Notifications;
 
 class ResolveTactics extends GameState
 {
-    // TACTIC_BAND_AFTER fires past the lane resolution — PR6's SiegeGuess.
+    // TACTIC_BAND_AFTER fires past the lane resolution — States/SiegeGuess.php.
     private const BANDS_BEFORE_BATTLE = [TACTIC_BAND_BLOCK, TACTIC_BAND_START, TACTIC_BAND_DURING];
 
     function __construct(
@@ -30,19 +30,59 @@ class ResolveTactics extends GameState
 
     public function onEnteringState()
     {
-        $context = BattleContext::forCurrentBattle();
+        $remainingBands = Globals::getTacticsRemainingBands();
 
-        $this->revealHiddenCards();
+        if ($remainingBands === null) {
+            $context = BattleContext::forCurrentBattle();
+            $this->revealHiddenCards();
+            $remainingBands = self::BANDS_BEFORE_BATTLE;
+        } else {
+            $context = BattleContext::fromArray(Globals::getBattleContext());
+            Globals::setTacticsRemainingBands(null);
+        }
 
-        foreach (self::BANDS_BEFORE_BATTLE as $band) {
+        foreach (array_values($remainingBands) as $index => $band) {
             $context->runBand($band);
             $this->notifyBandEvents($context);
+
+            if ($band === TACTIC_BAND_START && $this->suspendForScoutReveal($context, array_slice($remainingBands, $index + 1))) {
+                return ScoutReveal::class;
+            }
         }
 
         Cards::applyLanes($context->getLanes());
         Globals::setBattleContext($context->toArray());
 
         return ResolveBattle::class;
+    }
+
+    // The Scout's "shows 3 cards" half suspends the pipeline between START and DURING ([H6]).
+    private function suspendForScoutReveal(BattleContext $context, array $remainingBands): bool
+    {
+        $showers = [];
+        foreach ($context->getRevealedCards() as $card) {
+            if ($card->getType() !== CARD_TYPE_SCOUT || $context->isBlocked($card)) {
+                continue;
+            }
+
+            $showerId = Players::getOpponentId($card->getController());
+            if (Cards::getHandCount($showerId) === 0) {
+                Notifications::scoutNothingToShow(Players::get($showerId));
+                continue;
+            }
+
+            $showers[] = $showerId;
+        }
+
+        if ($showers === []) {
+            return false;
+        }
+
+        Globals::setBattleContext($context->toArray());
+        Globals::setTacticsRemainingBands($remainingBands);
+        Globals::setScoutShowers($showers);
+
+        return true;
     }
 
     private function revealHiddenCards(): void

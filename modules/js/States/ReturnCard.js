@@ -6,9 +6,6 @@ export class ReturnCard {
         this.hasConfirmedReturn = false;
     }
     onEnteringState(args, isCurrentPlayerActive) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ?
-            _('${you} must return a card to the bottom of your deck') :
-            _('${actplayer} must return a card to the bottom of their deck'));
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
     onLeavingState(args, isCurrentPlayerActive) {

@@ -39,6 +39,9 @@ class ResolveBattle extends GameState
         $defenderId = Players::getOpponentId($attackerId);
         $context = BattleContext::fromArray(Globals::getBattleContext());
 
+        // BattleEnd resolves them after every capture path (incl. ChooseStack) converges.
+        Globals::setSiegeGuessers($this->pendingSiegeGuessers($context));
+
         // [H4]: Angry/Calm reads the standing totals from BEFORE this
         // Battle's captures — must be read before any Cards::capture() below.
         $isAngry = [
@@ -99,6 +102,19 @@ class ResolveBattle extends GameState
         }
 
         return BattleEnd::class;
+    }
+
+    // [H11]: read from the context, not a card's final location — the guess fires even on a tie/capture.
+    private function pendingSiegeGuessers(BattleContext $context): array
+    {
+        $guessers = [];
+        foreach ($context->getRevealedCards() as $card) {
+            if ($card->getType() === CARD_TYPE_SIEGE && !$context->isBlocked($card)) {
+                $guessers[] = $card->getController();
+            }
+        }
+
+        return $guessers;
     }
 
     /**

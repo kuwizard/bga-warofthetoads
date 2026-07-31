@@ -1,5 +1,10 @@
 // Game-specific content inside the BGA player panels (src/ts/playerPanels.ts).
 
+// Anchor for the absolutely-positioned speech bubble.
+.wott-player-panel {
+  position: relative;
+}
+
 // RULES.md §7's Calm/Angry. Temporary — it goes away once the Shrine renders
 // the flip/rotate that shows this physically.
 .wott-mood {
@@ -12,4 +17,30 @@
 
 .wott-mood--angry {
   color: #c62828;
+}
+
+// The Siege Cannon answer "spoken" from a player panel (playerPanels.ts::notif_siegeGuessed).
+.wott-speech-bubble {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 8px;
+  z-index: 10;
+  width: 180px;
+  padding: 6px 10px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-style: italic;
+  text-align: center;
+
+  &::before {
+    content: '';
+    position: absolute;
+    right: -12px;
+    top: 12px;
+    border-top: 7px solid transparent;
+    border-bottom: 7px solid transparent;
+    border-left: 12px solid #333;
+  }
 }

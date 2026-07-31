@@ -43,3 +43,16 @@ export function tplCardTooltip(card) {
         </div>
     `;
 }
+export const guessableCardTypes = {
+    assassin: { label: 'Assassin', strength: 1 },
+    scout: { label: 'Scout', strength: 2 },
+    saboteur: { label: 'Saboteur', strength: 3 },
+    trickster: { label: 'Trickster', strength: 4 },
+    berserker: { label: 'Berserker', strength: 5 },
+    bodyguard: { label: 'Bodyguard', strength: 6 },
+    general: { label: 'General', strength: 7 },
+    siege: { label: 'Siege Cannon', strength: null },
+};
+export function tplShownCard(card) {
+    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-shown-card-${card.id}"></div>`;
+}

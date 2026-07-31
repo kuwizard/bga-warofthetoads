@@ -44,3 +44,15 @@ $wott-card-roles: assassin, scout, saboteur, trickster, berserker, bodyguard, ge
 .wott-card--shrine-back {
   background-position: #{math.div(1, $wott-card-cols - 1) * 100%} 100%;
 }
+
+// The Scout reveal popin (hand.ts's notif_scoutRevealed).
+.wott-shown-cards {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 8px;
+
+  .wott-card {
+    width: 120px;
+  }
+}

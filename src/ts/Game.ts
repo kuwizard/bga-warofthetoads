@@ -3,13 +3,15 @@
 import { ReturnCard } from "./States/ReturnCard.js";
 import { PlayCards } from "./States/PlayCards.js";
 import { ChooseStack } from "./States/ChooseStack.js";
+import { ScoutReveal } from "./States/ScoutReveal.js";
+import { SiegeGuess } from "./States/SiegeGuess.js";
 import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { PlayerTables } from "./playerTables.js";
 import { debug, stateLogger } from "./debug.js";
-import { notificationOptions } from "./notifications.js";
+import { notificationOptions, textOnlyNotifHandlers } from "./notifications.js";
 
 // "Player blocks position" preference — see gamepreferences.jsonc.
 const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
@@ -51,6 +53,9 @@ export class Game {
 
         this.chooseStack = new ChooseStack(this, bga);
         this.bga.states.register('ChooseStack', this.chooseStack);
+
+        this.bga.states.register('ScoutReveal', new ScoutReveal(this, bga));
+        this.bga.states.register('SiegeGuess', new SiegeGuess(this, bga));
     }
 
     /*
@@ -143,6 +148,14 @@ export class Game {
         this.hand.setSelectedCard(cardId);
     }
 
+    public setSelectedHandCards(cardIds: number[]) {
+        this.hand.setSelectedCards(cardIds);
+    }
+
+    public getMyHandCount(): number {
+        return this.hand.getCardCount();
+    }
+
     public setLaneCardsSelectable(cardIds: number[], selectable: boolean, onClick?: (cardId: number) => void) {
         this.lanes.setCardsSelectable(cardIds, selectable, onClick);
     }
@@ -176,7 +189,7 @@ export class Game {
 
         this.bga.notifications.setupPromiseNotifications({
             ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels],
+            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, textOnlyNotifHandlers],
         });
     }
 }

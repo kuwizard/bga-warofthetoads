@@ -22,11 +22,6 @@ export class ReturnCard {
      * This method is called each time we are entering the game state. You can use this method to perform some user interface changes at this moment.
      */
     onEnteringState(args: ReturnCardArgs, isCurrentPlayerActive: boolean) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ?
-            _('${you} must return a card to the bottom of your deck') :
-            _('${actplayer} must return a card to the bottom of their deck')
-        );
-
         this.onPlayerActivationChange(args, isCurrentPlayerActive);
     }
 

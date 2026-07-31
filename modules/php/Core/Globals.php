@@ -92,4 +92,45 @@ class Globals
     {
         Game::get()->bga->globals->set('battleContext', $context);
     }
+
+    public static function getTacticsRemainingBands(): ?array
+    {
+        return Game::get()->bga->globals->get('tacticsRemainingBands', null);
+    }
+
+    public static function setTacticsRemainingBands(?array $bands): void
+    {
+        Game::get()->bga->globals->set('tacticsRemainingBands', $bands);
+    }
+
+    public static function getScoutShowers(): ?array
+    {
+        return Game::get()->bga->globals->get('scoutShowers', null);
+    }
+
+    public static function setScoutShowers(?array $playerIds): void
+    {
+        Game::get()->bga->globals->set('scoutShowers', $playerIds);
+    }
+
+    // Shower playerId => shown card ids, buffered until every shower confirmed so mirrored reveals land simultaneously.
+    public static function getPendingScoutReveals(): array
+    {
+        return Game::get()->bga->globals->get('pendingScoutReveals', []);
+    }
+
+    public static function setPendingScoutReveals(array $cardIdsByPlayerId): void
+    {
+        Game::get()->bga->globals->set('pendingScoutReveals', $cardIdsByPlayerId);
+    }
+
+    public static function getSiegeGuessers(): array
+    {
+        return Game::get()->bga->globals->get('siegeGuessers', []);
+    }
+
+    public static function setSiegeGuessers(array $playerIds): void
+    {
+        Game::get()->bga->globals->set('siegeGuessers', $playerIds);
+    }
 }

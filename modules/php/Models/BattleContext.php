@@ -203,6 +203,11 @@ class BattleContext
         return $this->cardsById;
     }
 
+    public function getRevealedCards(): array
+    {
+        return array_map(fn(int $cardId) => $this->cardsById[$cardId], $this->revealedCardIds);
+    }
+
     public function getLanes(): array
     {
         return $this->laneByCardId;

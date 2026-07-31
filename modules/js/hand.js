@@ -1,4 +1,4 @@
-import { tplHandCard, tplCardTooltip } from "./tpls.js";
+import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 export const HAND_POSITION_PREF_ID = 103;
 const TRANSITION_FALLBACK_MS = 2000;
 export class Hand {
@@ -54,6 +54,20 @@ export class Hand {
             this.appendCard(card);
         });
     }
+    async notif_scoutRevealed(args) {
+        if (this.isReadOnly() || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
+            return;
+        }
+        const dialog = new ebg.popindialog();
+        dialog.create('wott-shown-cards');
+        dialog.setTitle(_('Cards shown to you'));
+        dialog.setContent(`<div class="wott-shown-cards">${args.cards.map(tplShownCard).join('')}</div>`);
+        dialog.show();
+        args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
+    }
+    isReadOnly() {
+        return this.bga.players.isCurrentPlayerSpectator() || typeof g_replayFrom != 'undefined' || g_archive_mode;
+    }
     onCardsPlayed(playerId, cardIds) {
         this.cards.hand = this.cards.hand.filter(card => !cardIds.includes(card.id));
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? cardIds.length) - cardIds.length;
@@ -89,9 +103,15 @@ export class Hand {
         });
     }
     setSelectedCard(cardId) {
+        this.setSelectedCards(cardId === null ? [] : [cardId]);
+    }
+    setSelectedCards(cardIds) {
         this.handElement.querySelectorAll('.wott-card-flip[data-card-id]').forEach(cardElement => {
-            cardElement.classList.toggle('wott-card--selected', cardElement.dataset.cardId === String(cardId));
+            cardElement.classList.toggle('wott-card--selected', cardIds.includes(Number(cardElement.dataset.cardId)));
         });
+    }
+    getCardCount() {
+        return this.cards.hand.length;
     }
     getElement() {
         return this.handElement;

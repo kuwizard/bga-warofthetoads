@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Bga\Games\WarOfTheToads;
 
 use Bga\Games\WarOfTheToads\Helpers\Collection;
+use Bga\Games\WarOfTheToads\Managers\Cards;
 use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Models\Player;
 
@@ -256,6 +257,50 @@ class Notifications
             'cardId'     => $card->getId(),
             'targetId'   => $target?->getId(),
             'reason'     => $reason,
+        ]);
+    }
+
+    // The shown cards are public — everyone (spectators included) sees the names in the log; `$cards` keeps the shower's click order ([H6]).
+    public static function scoutRevealed(Player $player, Player $scoutController, array $cards): void
+    {
+        self::notifyAll('scoutRevealed', clienttranslate('${player_name} shows ${cardNames} to ${player_name2}'), [
+            'player'    => $player,
+            'player2'   => $scoutController,
+            'cardNames' => implode(', ', array_map(fn(Card $c) => $c->getName(), $cards)),
+            'cards'     => array_map(fn(Card $c) => $c->getUiData(), $cards),
+        ]);
+    }
+
+    public static function scoutNothingToShow(Player $player): void
+    {
+        self::notifyAll('scoutNothingToShow', clienttranslate('${player_name} has no cards in hand to show'), [
+            'player' => $player,
+        ]);
+    }
+
+    public static function siegeGuessed(Player $player, Player $opponent, string $cardType, string $cardName, bool $hit): void
+    {
+        $message = $hit
+            ? clienttranslate('${player_name} guesses ${cardName}. ${player_name2} says yes')
+            : clienttranslate('${player_name} guesses ${cardName}. ${player_name2} says no');
+
+        self::notifyAll('siegeGuessed', $message, [
+            'player'   => $player,
+            'player2'  => $opponent,
+            'i18n'     => ['cardName'],
+            'cardType' => $cardType,
+            'cardName' => $cardName,
+            'hit'      => $hit,
+        ]);
+    }
+
+    public static function siegeGuessFizzles(Player $player, Player $opponent): void
+    {
+        self::notifyAll('siegeGuessFizzles', clienttranslate('${player_name} plays ${cardName}, but ${player_name2} has no cards in hand'), [
+            'player'   => $player,
+            'player2'  => $opponent,
+            'i18n'     => ['cardName'],
+            'cardName' => Cards::nameOfType(CARD_TYPE_SIEGE),
         ]);
     }
 

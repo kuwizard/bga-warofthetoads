@@ -19,7 +19,7 @@ class Scout extends Card
         $this->description = clienttranslate('+1 to your Ally and opponent shows 3 cards in their hand');
     }
 
-    // The "shows 3 cards" half needs player input — PR6's ScoutReveal, [H6].
+    // The "shows 3 cards" half is interactive — States/ScoutReveal.php, [H6].
     public function applyTactic(BattleContext $context): void
     {
         $context->addStrength($this, $context->getAlly($this), 1.0);

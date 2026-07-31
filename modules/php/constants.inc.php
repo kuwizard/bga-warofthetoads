@@ -93,6 +93,9 @@ const CARD_TYPE_GENERAL_A = 'general_a';
 const CARD_TYPE_GENERAL_B = 'general_b';
 const CARD_TYPE_SIEGE     = 'siege';
 
+// Both Generals are printed "General", so SiegeGuess's protocol has 8 values, not 9 ([H17]).
+const GUESS_TYPE_GENERAL = 'general';
+
 // ── Card deck (printed colour) ──────────────────────────────────────────────────
 // Values of the `card_deck` column. NEVER changes for a card, unlike
 // `card_controller` which swaps at the 2nd War (RULES.md, [H2]).

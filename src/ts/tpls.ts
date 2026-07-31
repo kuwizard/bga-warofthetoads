@@ -61,3 +61,20 @@ export function tplCardTooltip(card: CardData): string {
         </div>
     `;
 }
+
+// The 8 guessable faces for SiegeGuess, in printed-Strength order — both Generals share the printed name "General" ([H17]); Siege Cannon has no printed Strength.
+export const guessableCardTypes: { [type: string]: { label: string; strength: number | null } } = {
+    assassin: { label: 'Assassin', strength: 1 },
+    scout: { label: 'Scout', strength: 2 },
+    saboteur: { label: 'Saboteur', strength: 3 },
+    trickster: { label: 'Trickster', strength: 4 },
+    berserker: { label: 'Berserker', strength: 5 },
+    bodyguard: { label: 'Bodyguard', strength: 6 },
+    general: { label: 'General', strength: 7 },
+    siege: { label: 'Siege Cannon', strength: null },
+};
+
+// A face inside the Scout reveal popin (hand.ts) — plain div, no flip machinery.
+export function tplShownCard(card: CardData): string {
+    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-shown-card-${card.id}"></div>`;
+}

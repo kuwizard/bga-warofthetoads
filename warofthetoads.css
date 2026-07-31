@@ -71,6 +71,10 @@
   text-align: center;
 }
 
+.wott-player-panel {
+  position: relative;
+}
+
 .wott-mood {
   font-weight: bold;
   text-transform: uppercase;
@@ -81,6 +85,30 @@
 
 .wott-mood--angry {
   color: #c62828;
+}
+
+.wott-speech-bubble {
+  position: absolute;
+  right: calc(100% + 14px);
+  top: 8px;
+  z-index: 10;
+  width: 180px;
+  padding: 6px 10px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-style: italic;
+  text-align: center;
+}
+.wott-speech-bubble::before {
+  content: "";
+  position: absolute;
+  right: -12px;
+  top: 12px;
+  border-top: 7px solid transparent;
+  border-bottom: 7px solid transparent;
+  border-left: 12px solid #333;
 }
 
 #wott-my-hand {
@@ -223,7 +251,7 @@
 .wott-card__strength {
   position: absolute;
   top: -8px;
-  right: -8px;
+  left: -8px;
   display: none;
   min-width: 26px;
   padding: 2px 5px;
@@ -417,6 +445,16 @@
 
 .wott-card--shrine-back {
   background-position: 11.1111111111% 100%;
+}
+
+.wott-shown-cards {
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+  padding: 8px;
+}
+.wott-shown-cards .wott-card {
+  width: 120px;
 }
 
 :root {

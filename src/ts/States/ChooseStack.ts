@@ -16,11 +16,6 @@ export class ChooseStack {
     }
 
     onEnteringState(args: ChooseStackArgs, isCurrentPlayerActive: boolean) {
-        this.bga.statusBar.setTitle(isCurrentPlayerActive ?
-            _('${you} must choose which stack to keep') :
-            _('${actplayer} must choose which stack to keep')
-        );
-
         this.selectedStackId = null;
         this.pendingStackIds = isCurrentPlayerActive ? this.game.getMyPendingStackIds() : [];
         this.game.setSelectedStack(null);

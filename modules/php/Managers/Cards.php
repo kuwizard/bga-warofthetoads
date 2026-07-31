@@ -54,6 +54,11 @@ class Cards extends CachedDB_Manager
         return static::cast($row);
     }
 
+    public static function nameOfType(string $cardType): string
+    {
+        return static::detachedFromTable(['card_type' => $cardType])->getName();
+    }
+
     // ── SETUP ─────────────────────────────────────────────────────────────────
 
     /**
