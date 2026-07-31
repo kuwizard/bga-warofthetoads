@@ -1,7 +1,8 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
+import { slideAllIntoPlace, slideIntoPlace, waitForTransitionEnd } from "./animations.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
-const TRANSITION_FALLBACK_MS = 2000;
+const ANIMATION_FALLBACK_MS = 2000;
 export class Lanes {
     constructor(bga, hand) {
         this.bga = bga;
@@ -86,7 +87,7 @@ export class Lanes {
                 moves.push({ element, container });
             }
         });
-        await this.slideAllIntoPlace(moves);
+        await slideAllIntoPlace(moves);
     }
     async flashTactic(cardId) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
@@ -113,7 +114,7 @@ export class Lanes {
         if (card.facedown) {
             await this.flip(existingElement, true);
         }
-        await this.slideIntoPlace(existingElement, slot);
+        await slideIntoPlace(existingElement, slot);
     }
     async previewPlay(card, controller, faceDown) {
         const laneCard = {
@@ -130,7 +131,7 @@ export class Lanes {
         if (!cardElement) {
             return;
         }
-        await this.slideIntoPlace(cardElement, this.hand.getElement());
+        await slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
             await this.flip(cardElement, false);
         }
@@ -177,34 +178,9 @@ export class Lanes {
     }
     flip(cardElement, faceDown) {
         const inner = cardElement.querySelector('.wott-card-flip__inner');
-        const donePromise = this.waitForTransitionEnd(inner, 'transform');
+        const donePromise = waitForTransitionEnd(inner, 'transform');
         cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
         return donePromise;
-    }
-    slideIntoPlace(cardElement, container) {
-        return this.slideAllIntoPlace([{ element: cardElement, container }]);
-    }
-    async slideAllIntoPlace(moves) {
-        if (moves.length === 0) {
-            return;
-        }
-        const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
-        moves.forEach(({ element, container }) => container.appendChild(element));
-        moves.forEach(({ element }, index) => {
-            const toRect = element.getBoundingClientRect();
-            element.classList.add('wott-card-slide');
-            element.style.setProperty('--slide-dx', `${fromRects[index].left - toRect.left}px`);
-            element.style.setProperty('--slide-dy', `${fromRects[index].top - toRect.top}px`);
-            element.getBoundingClientRect();
-        });
-        await Promise.all(moves.map(({ element }) => {
-            const donePromise = this.waitForTransitionEnd(element, 'transform');
-            element.classList.add('wott-card-slide--animating');
-            element.style.removeProperty('--slide-dx');
-            element.style.removeProperty('--slide-dy');
-            return donePromise;
-        }));
-        moves.forEach(({ element }) => element.classList.remove('wott-card-slide', 'wott-card-slide--animating'));
     }
     waitForAnimationEnd(element) {
         return new Promise(resolve => {
@@ -219,25 +195,8 @@ export class Lanes {
             const fallback = setTimeout(() => {
                 element.removeEventListener('animationend', handler);
                 resolve();
-            }, TRANSITION_FALLBACK_MS);
+            }, ANIMATION_FALLBACK_MS);
             element.addEventListener('animationend', handler);
-        });
-    }
-    waitForTransitionEnd(element, propertyName) {
-        return new Promise(resolve => {
-            const handler = (event) => {
-                if (event.propertyName !== propertyName || event.target !== element) {
-                    return;
-                }
-                element.removeEventListener('transitionend', handler);
-                clearTimeout(fallback);
-                resolve();
-            };
-            const fallback = setTimeout(() => {
-                element.removeEventListener('transitionend', handler);
-                resolve();
-            }, TRANSITION_FALLBACK_MS);
-            element.addEventListener('transitionend', handler);
         });
     }
 }

@@ -1,5 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
+import { slideAllIntoPlace, slideIntoPlace, waitForTransitionEnd } from "./animations.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
 // numbers since `Card::getUiData()`'s `locationArg` is the only place they
@@ -7,7 +8,7 @@ import { Hand } from "./hand.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 
-const TRANSITION_FALLBACK_MS = 2000; // mirrors hand.ts
+const ANIMATION_FALLBACK_MS = 2000;
 
 /**
  * The 2 shared lanes (RULES.md §6 ➊➋, IMPLEMENTATION_PLAN.md §2.1 "Lane
@@ -128,7 +129,7 @@ export class Lanes {
             }
         });
 
-        await this.slideAllIntoPlace(moves);
+        await slideAllIntoPlace(moves);
     }
 
     private async flashTactic(cardId: number): Promise<void> {
@@ -171,7 +172,7 @@ export class Lanes {
         if (card.facedown) {
             await this.flip(existingElement, true);
         }
-        await this.slideIntoPlace(existingElement, slot);
+        await slideIntoPlace(existingElement, slot);
     }
 
     async previewPlay(card: CardData, controller: number, faceDown: boolean): Promise<void> {
@@ -191,7 +192,7 @@ export class Lanes {
             return;
         }
 
-        await this.slideIntoPlace(cardElement, this.hand.getElement());
+        await slideIntoPlace(cardElement, this.hand.getElement());
         if (wasFaceDown) {
             await this.flip(cardElement, false);
         }
@@ -249,45 +250,11 @@ export class Lanes {
         return cardElement;
     }
 
-    /** Same technique as hand.ts's private `flip` — duplicated rather than shared since the two classes own separate DOM trees. */
     private flip(cardElement: HTMLElement, faceDown: boolean): Promise<void> {
         const inner = cardElement.querySelector<HTMLElement>('.wott-card-flip__inner')!;
-        const donePromise = this.waitForTransitionEnd(inner, 'transform');
+        const donePromise = waitForTransitionEnd(inner, 'transform');
         cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
         return donePromise;
-    }
-
-    /** Same technique as hand.ts's private `slideIntoPlace` — see there for the full FLIP-technique explanation. */
-    private slideIntoPlace(cardElement: HTMLElement, container: HTMLElement): Promise<void> {
-        return this.slideAllIntoPlace([{ element: cardElement, container }]);
-    }
-
-    // Each FLIP phase runs across the whole group before the next starts, so cards can swap places.
-    private async slideAllIntoPlace(moves: { element: HTMLElement, container: HTMLElement }[]): Promise<void> {
-        if (moves.length === 0) {
-            return;
-        }
-
-        const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
-        moves.forEach(({ element, container }) => container.appendChild(element));
-
-        moves.forEach(({ element }, index) => {
-            const toRect = element.getBoundingClientRect();
-            element.classList.add('wott-card-slide');
-            element.style.setProperty('--slide-dx', `${fromRects[index].left - toRect.left}px`);
-            element.style.setProperty('--slide-dy', `${fromRects[index].top - toRect.top}px`);
-            element.getBoundingClientRect(); // force layout before enabling the transition below
-        });
-
-        await Promise.all(moves.map(({ element }) => {
-            const donePromise = this.waitForTransitionEnd(element, 'transform');
-            element.classList.add('wott-card-slide--animating');
-            element.style.removeProperty('--slide-dx');
-            element.style.removeProperty('--slide-dy');
-            return donePromise;
-        }));
-
-        moves.forEach(({ element }) => element.classList.remove('wott-card-slide', 'wott-card-slide--animating'));
     }
 
     private waitForAnimationEnd(element: HTMLElement): Promise<void> {
@@ -303,26 +270,8 @@ export class Lanes {
             const fallback = setTimeout(() => {
                 element.removeEventListener('animationend', handler);
                 resolve();
-            }, TRANSITION_FALLBACK_MS);
+            }, ANIMATION_FALLBACK_MS);
             element.addEventListener('animationend', handler);
-        });
-    }
-
-    private waitForTransitionEnd(element: HTMLElement, propertyName: string): Promise<void> {
-        return new Promise(resolve => {
-            const handler = (event: TransitionEvent) => {
-                if (event.propertyName !== propertyName || event.target !== element) {
-                    return;
-                }
-                element.removeEventListener('transitionend', handler);
-                clearTimeout(fallback);
-                resolve();
-            };
-            const fallback = setTimeout(() => {
-                element.removeEventListener('transitionend', handler);
-                resolve();
-            }, TRANSITION_FALLBACK_MS);
-            element.addEventListener('transitionend', handler);
         });
     }
 }

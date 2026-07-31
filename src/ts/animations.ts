@@ -1,4 +1,4 @@
-// Shared FLIP helpers — hand.ts and lanes.ts still carry their own older copies.
+// Shared FLIP helpers, used by hand.ts, lanes.ts and playerTables.ts.
 
 const TRANSITION_FALLBACK_MS = 2000;
 
@@ -19,6 +19,18 @@ export function waitForTransitionEnd(element: HTMLElement, propertyName: string)
         }, TRANSITION_FALLBACK_MS);
         element.addEventListener('transitionend', handler);
     });
+}
+
+// Reparents first so stacking/z-index is right for the whole move, not just the last frame.
+export async function slideAllIntoPlace(moves: { element: HTMLElement, container: HTMLElement }[]): Promise<void> {
+    const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
+    moves.forEach(({ element, container }) => container.appendChild(element));
+
+    await slideFromRects(moves.map(({ element }, index) => ({ element, fromRect: fromRects[index] })));
+}
+
+export function slideIntoPlace(element: HTMLElement, container: HTMLElement): Promise<void> {
+    return slideAllIntoPlace([{ element, container }]);
 }
 
 // Animates each element from `fromRect` to where it already sits — no DOM move, and all starting together so two can cross over.

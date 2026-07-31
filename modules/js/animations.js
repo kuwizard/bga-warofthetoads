@@ -16,6 +16,14 @@ export function waitForTransitionEnd(element, propertyName) {
         element.addEventListener('transitionend', handler);
     });
 }
+export async function slideAllIntoPlace(moves) {
+    const fromRects = moves.map(({ element }) => element.getBoundingClientRect());
+    moves.forEach(({ element, container }) => container.appendChild(element));
+    await slideFromRects(moves.map(({ element }, index) => ({ element, fromRect: fromRects[index] })));
+}
+export function slideIntoPlace(element, container) {
+    return slideAllIntoPlace([{ element, container }]);
+}
 export async function slideFromRects(moves) {
     if (moves.length === 0) {
         return;

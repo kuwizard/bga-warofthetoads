@@ -1,6 +1,6 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
+import { slideIntoPlace, waitForTransitionEnd } from "./animations.js";
 export const HAND_POSITION_PREF_ID = 103;
-const TRANSITION_FALLBACK_MS = 2000;
 export class Hand {
     constructor(bga, playerTables) {
         this.bga = bga;
@@ -68,7 +68,7 @@ export class Hand {
         }
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
         await this.flip(cardElement, true);
-        await this.slideIntoPlace(cardElement, slot);
+        await slideIntoPlace(cardElement, slot);
     }
     async notif_scoutRevealed(args) {
         if (this.isReadOnly() || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
@@ -139,51 +139,19 @@ export class Hand {
         }
         cardElement.classList.remove('wott-selectable', 'wott-card--selected');
         await this.flip(cardElement, true);
-        await this.slideIntoPlace(cardElement, deckAnchor);
+        await slideIntoPlace(cardElement, deckAnchor);
         cardElement.remove();
     }
     async animateUndoReturn(card, deckAnchor) {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
-        await this.slideIntoPlace(cardElement, this.handElement);
+        await slideIntoPlace(cardElement, this.handElement);
         await this.flip(cardElement, false);
     }
     flip(cardElement, faceDown) {
         const inner = cardElement.querySelector('.wott-card-flip__inner');
-        const donePromise = this.waitForTransitionEnd(inner, 'transform');
+        const donePromise = waitForTransitionEnd(inner, 'transform');
         cardElement.classList.toggle('wott-card-flip--flipped', faceDown);
         return donePromise;
-    }
-    async slideIntoPlace(cardElement, container) {
-        const fromRect = cardElement.getBoundingClientRect();
-        container.appendChild(cardElement);
-        const toRect = cardElement.getBoundingClientRect();
-        cardElement.classList.add('wott-card-slide');
-        cardElement.style.setProperty('--slide-dx', `${fromRect.left - toRect.left}px`);
-        cardElement.style.setProperty('--slide-dy', `${fromRect.top - toRect.top}px`);
-        cardElement.getBoundingClientRect();
-        const donePromise = this.waitForTransitionEnd(cardElement, 'transform');
-        cardElement.classList.add('wott-card-slide--animating');
-        cardElement.style.removeProperty('--slide-dx');
-        cardElement.style.removeProperty('--slide-dy');
-        await donePromise;
-        cardElement.classList.remove('wott-card-slide', 'wott-card-slide--animating');
-    }
-    waitForTransitionEnd(element, propertyName) {
-        return new Promise(resolve => {
-            const handler = (event) => {
-                if (event.propertyName !== propertyName || event.target !== element) {
-                    return;
-                }
-                element.removeEventListener('transitionend', handler);
-                clearTimeout(fallback);
-                resolve();
-            };
-            const fallback = setTimeout(() => {
-                element.removeEventListener('transitionend', handler);
-                resolve();
-            }, TRANSITION_FALLBACK_MS);
-            element.addEventListener('transitionend', handler);
-        });
     }
 }
