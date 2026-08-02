@@ -8,12 +8,14 @@ export class Shrine {
     private monksElement!: HTMLElement;
     private casualtiesZoneElement!: HTMLElement;
     private shrineCardElement!: HTMLElement;
+    private leftPlayerId!: number;
 
     constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
 
     render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[], angry: AngryByPlayerId): void {
         this.cards = cards;
+        this.leftPlayerId = playerIdsInTableOrder[0];
 
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
@@ -162,13 +164,18 @@ export class Shrine {
         this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
     }
 
-    // RULES.md §7: the card flips to its back as soon as anyone is Angry. Physically it is then rotated to point at that player, which digitally would only turn its text upside down — the Angry player's own stack column is marked instead, and that also covers [H15]'s both-Angry Berserker case the printed card has no face for.
+    // RULES.md §7: flips to the back as soon as anyone is Angry, and rotates to point the back's baked-in Angry arrow at whichever side is actually Angry.
     setMood(angry: AngryByPlayerId): void {
         this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
+        this.shrineCardElement.classList.toggle('wott-shrine-card--rotated', this.isSoleAngry(this.leftPlayerId, angry));
 
         Object.entries(this.stackColumns).forEach(([playerId, column]) => {
             column.classList.toggle('wott-stack-column--angry', !!angry[Number(playerId)]);
         });
+    }
+
+    private isSoleAngry(playerId: number, angry: AngryByPlayerId): boolean {
+        return !!angry[playerId] && Object.values(angry).filter(isAngry => isAngry).length === 1;
     }
 
     /** ChooseStack ([H14]): the given player's 2 highest-id captured stacks — mirrors Cards::getStacksFor()'s array_slice(-2). */

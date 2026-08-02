@@ -387,6 +387,10 @@
   transition: transform calc(0.48s * var(--am)) ease;
 }
 
+.wott-shrine-card--rotated {
+  transform: rotate(180deg);
+}
+
 .wott-stack-column--angry {
   background: hsla(0, 70%, 55%, 0.22);
   box-shadow: inset 0 0 0 2px rgba(190, 40, 40, 0.6);

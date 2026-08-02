@@ -123,6 +123,11 @@
   transition: transform calc(0.48s * var(--am)) ease;
 }
 
+// Points the back face's baked-in Angry arrow at the left player instead of its printed right-pointing default.
+.wott-shrine-card--rotated {
+  transform: rotate(180deg);
+}
+
 // Who the Shrine's back face is pointing at — set per column so [H15]'s both-Angry Berserker marks both.
 .wott-stack-column--angry {
   background: hsla(0, 70%, 55%, 0.22);

@@ -7,6 +7,7 @@ export class Shrine {
     }
     render(gameArea, cards, playerIdsInTableOrder, angry) {
         this.cards = cards;
+        this.leftPlayerId = playerIdsInTableOrder[0];
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
                 <div class="wott-stack-column" id="wott-stack-column-${playerId}">
@@ -113,9 +114,13 @@ export class Shrine {
     }
     setMood(angry) {
         this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
+        this.shrineCardElement.classList.toggle('wott-shrine-card--rotated', this.isSoleAngry(this.leftPlayerId, angry));
         Object.entries(this.stackColumns).forEach(([playerId, column]) => {
             column.classList.toggle('wott-stack-column--angry', !!angry[Number(playerId)]);
         });
+    }
+    isSoleAngry(playerId, angry) {
+        return !!angry[playerId] && Object.values(angry).filter(isAngry => isAngry).length === 1;
     }
     getMyPendingStackIds(playerId) {
         const stackIds = [...new Set(this.cards.stacks
