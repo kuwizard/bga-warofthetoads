@@ -66,7 +66,7 @@ export class Lanes {
         await this.applyLanes(args.lanes);
     }
     async notif_tacticStrength(args) {
-        this.setStrengths(args.strengths);
+        this.setStrengths({ [args.targetId]: args.strengths[args.targetId] });
         await this.flashTactic(args.cardId);
     }
     async notif_tacticTieBreaker(args) {
@@ -79,10 +79,11 @@ export class Lanes {
     setStrengths(strengthByCardId) {
         Object.entries(strengthByCardId).forEach(([cardId, strength]) => {
             const badge = document.getElementById(`wott-card-strength-${cardId}`);
+            const printed = this.printedStrengthByCardId.get(Number(cardId));
+            const differsFromPrinted = strength !== null && strength !== printed;
             if (!badge) {
                 return;
             }
-            const differsFromPrinted = strength !== null && strength !== this.printedStrengthByCardId.get(Number(cardId));
             badge.textContent = differsFromPrinted ? String(strength) : '';
             badge.classList.toggle('wott-card__strength--shown', differsFromPrinted);
         });
@@ -115,6 +116,7 @@ export class Lanes {
             return;
         }
         existingElement.classList.remove('wott-selectable', 'wott-card--selected');
+        this.upgradeToLaneCard(card, existingElement);
         const alreadyInPlace = existingElement.parentElement === slot
             && existingElement.classList.contains('wott-card-flip--flipped') === card.facedown;
         if (alreadyInPlace) {
@@ -124,6 +126,14 @@ export class Lanes {
             await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
+    }
+    upgradeToLaneCard(card, element) {
+        if (element.dataset.controller !== undefined) {
+            return;
+        }
+        element.dataset.controller = String(card.controller);
+        element.insertAdjacentHTML('beforeend', `<div class="wott-card__strength" id="wott-card-strength-${card.id}"></div>`);
+        this.printedStrengthByCardId.set(card.id, card.strength ?? null);
     }
     async previewPlay(card, controller, faceDown) {
         const laneCard = {

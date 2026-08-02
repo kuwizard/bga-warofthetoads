@@ -242,7 +242,6 @@ class Notifications
 
     public static function tacticNoEffect(Player $player, Card $card, string $reason, ?Card $target): void
     {
-        // One complete sentence per reason — never a fragment other languages must reassemble.
         $messageByReason = [
             TACTIC_NO_EFFECT_BLOCKED     => clienttranslate('${player_name} plays ${cardName}, but its Tactic is blocked'),
             TACTIC_NO_EFFECT_NO_TARGET   => clienttranslate('${player_name} plays ${cardName}, but its Tactic has no effect'),
@@ -260,7 +259,6 @@ class Notifications
         ]);
     }
 
-    // The shown cards are public — everyone (spectators included) sees the names in the log; `$cards` keeps the shower's click order ([H6]).
     public static function scoutRevealed(Player $player, Player $scoutController, array $cards): void
     {
         self::notifyAll('scoutRevealed', clienttranslate('${player_name} shows ${cardNames} to ${player_name2}'), [

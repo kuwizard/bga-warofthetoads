@@ -110,6 +110,10 @@ class ResolveBattle extends GameState
             }
 
             Notifications::doubleWinCalm(Players::get($playerId), $winners, $losers, $stackIds);
+
+            // ChooseStack pauses here before BattleEnd's own moodChanged runs — re-derive now, since these 2 captures can flip either player's Angry/Calm.
+            Notifications::moodChanged(Cards::getAngryByPlayerId());
+
             $this->gamestate->changeActivePlayer($playerId);
             return ChooseStack::class;
         }

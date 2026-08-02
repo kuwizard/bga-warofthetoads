@@ -61,7 +61,7 @@ export class Lanes {
         });
     }
 
-    // BattleEnd's one guaranteed per-Battle notification — whichever lane fought last stops glowing once the Battle is fully resolved.
+    // Fired once per Battle from BattleEnd, and again from ResolveBattle's Calm double-win branch (which pauses at ChooseStack before BattleEnd runs) — either way, whichever lane fought last stops glowing.
     notif_moodChanged(_args: MoodChangedNotifArgs): void {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
     }
@@ -75,7 +75,6 @@ export class Lanes {
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
-
         this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
 
         await Promise.all([
@@ -103,8 +102,9 @@ export class Lanes {
         await this.applyLanes(args.lanes);
     }
 
+    // `args.strengths` is the full post-band map (BattleContext::runBand merges every card's delta before any notif goes out) — narrowed to `targetId` so 2 boosts in the same band reveal one badge per blink instead of both at once.
     async notif_tacticStrength(args: TacticStrengthNotifArgs): Promise<void> {
-        this.setStrengths(args.strengths);
+        this.setStrengths({ [args.targetId]: args.strengths[args.targetId] });
         await this.flashTactic(args.cardId);
     }
 
@@ -120,11 +120,12 @@ export class Lanes {
     private setStrengths(strengthByCardId: { [cardId: number]: number | null }): void {
         Object.entries(strengthByCardId).forEach(([cardId, strength]) => {
             const badge = document.getElementById(`wott-card-strength-${cardId}`);
+            const printed = this.printedStrengthByCardId.get(Number(cardId));
+            const differsFromPrinted = strength !== null && strength !== printed;
             if (!badge) {
                 return;
             }
 
-            const differsFromPrinted = strength !== null && strength !== this.printedStrengthByCardId.get(Number(cardId));
             badge.textContent = differsFromPrinted ? String(strength) : '';
             badge.classList.toggle('wott-card__strength--shown', differsFromPrinted);
         });
@@ -172,6 +173,7 @@ export class Lanes {
         }
 
         existingElement.classList.remove('wott-selectable', 'wott-card--selected');
+        this.upgradeToLaneCard(card, existingElement);
 
         // Already previewed here pre-Confirm (States/PlayCards.ts) — a same-position
         // replay would stall on waitForTransitionEnd's fallback with no transition to fire.
@@ -185,6 +187,17 @@ export class Lanes {
             await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
+    }
+
+    // hand.ts::tplHandCard has neither — a hand card is always the viewing player's own, so `data-controller` and the strength badge were never needed until it moves into a lane.
+    private upgradeToLaneCard(card: LaneCardData, element: HTMLElement): void {
+        if (element.dataset.controller !== undefined) {
+            return;
+        }
+
+        element.dataset.controller = String(card.controller);
+        element.insertAdjacentHTML('beforeend', `<div class="wott-card__strength" id="wott-card-strength-${card.id}"></div>`);
+        this.printedStrengthByCardId.set(card.id, card.strength ?? null);
     }
 
     async previewPlay(card: CardData, controller: number, faceDown: boolean): Promise<void> {
