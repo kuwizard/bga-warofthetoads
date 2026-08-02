@@ -1,5 +1,6 @@
 import { debug } from "./debug.js";
-const NOTIF_MIN_DURATION = 1200;
+import { animDur } from "./common.js";
+const NOTIF_MIN_DURATION = 1440;
 export const textOnlyNotifHandlers = {
     notif_scoutNothingToShow: (_args) => { },
     notif_siegeGuessFizzles: (_args) => { },
@@ -14,6 +15,24 @@ function producedMessage(template, msg) {
     const literals = template.split(/\$\{[^}]*\}/).map(s => s.trim()).filter(s => s.length > 2);
     return literals.length > 0 && literals.every(literal => msg.includes(literal));
 }
+function withPlayerColor(html, color) {
+    return html.startsWith('<span') ? html : `<span style="color:#${color}">${html}</span>`;
+}
+function colorizeLaneFightArgs(game, args) {
+    if (typeof args?.card1Controller !== 'number' || typeof args?.card2Controller !== 'number') {
+        return args;
+    }
+    const colored = { ...args };
+    [1, 2].forEach(slot => {
+        const color = game.getPlayerColor(args[`card${slot}Controller`]);
+        if (!color) {
+            return;
+        }
+        colored[`card${slot}Name`] = withPlayerColor(args[`card${slot}Name`], color);
+        colored[`card${slot}Strength`] = withPlayerColor(args[`card${slot}Strength`], color);
+    });
+    return colored;
+}
 export function notificationOptions(game) {
     const bga = game.bga;
     let statusElement = null;
@@ -22,10 +41,10 @@ export function notificationOptions(game) {
     game.bgaFormatText = (log, args) => {
         if (!formattingOwnTitle)
             rawLog = log;
-        return { log, args };
+        return { log, args: colorizeLaneFightArgs(game, args) };
     };
     return {
-        minDuration: NOTIF_MIN_DURATION,
+        minDuration: animDur(NOTIF_MIN_DURATION),
         onStart: (name, msg, args) => {
             const template = rawLog !== undefined && producedMessage(rawLog, msg) ? rawLog : stripSubstitutionMarkup(msg);
             debug(`Notif [${name}]`, { ...args, message: template });

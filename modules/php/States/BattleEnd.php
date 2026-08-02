@@ -31,6 +31,9 @@ class BattleEnd extends GameState
 
     public function onEnteringState()
     {
+        // Refreshed before any Siege Cannon guess, clearing a Berserker's expired for-this-Battle override.
+        Notifications::moodChanged(Cards::getAngryByPlayerId());
+
         $siegeGuessers = Globals::getSiegeGuessers();
         foreach ($siegeGuessers as $index => $guesserId) {
             $opponentId = Players::getOpponentId($guesserId);
@@ -50,11 +53,6 @@ class BattleEnd extends GameState
 
         $attackerId = Globals::getAttackerId();
         $defenderId = Players::getOpponentId($attackerId);
-
-        // Every capture path converges here, so this is where §7's Calm/Angry
-        // has finished moving for the Battle — sent even when unchanged, it's
-        // 2 booleans and saves diffing derived state the server doesn't store.
-        Notifications::moodChanged(Cards::getAngryByPlayerId());
 
         if (Cards::getHandCount($attackerId) < 2 || Cards::getHandCount($defenderId) < 2) {
             return WarEnd::class;

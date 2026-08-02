@@ -45,6 +45,31 @@ export function tplLaneCard(card: LaneCardData, deckColor: 'blue' | 'red'): stri
     `;
 }
 
+// RULES.md §7's physical tracker. Front = both Calm, back = one Calm / one Angry — shrine.ts flips and rotates it exactly as the rules say to.
+export function tplShrineCard(): string {
+    return `
+        <div class="wott-card-flip wott-shrine-card" id="wott-shrine-card">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front wott-card--shrine-front"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--shrine-back"></div>
+            </div>
+        </div>
+    `;
+}
+
+export function tplShrineTooltip(): string {
+    return `
+        <div class="wott-card-tooltip">
+            <div class="wott-card-tooltip__text">
+                <strong class="wott-card-tooltip__name">${_('The Shrine')}</strong>
+                <div class="wott-card-tooltip__description">${_('You are Angry if you currently have fewer Hostages than your opponent.')}</div>
+                <div class="wott-card-tooltip__description">${_('Calm, winning both lanes captures 1 Hostage stack and retires the other. Angry, winning both lanes captures both.')}</div>
+                <div class="wott-card-tooltip__description">${_('The end facing you states your own mood.')}</div>
+            </div>
+        </div>
+    `;
+}
+
 /** Shown via `bga.gameui.addTooltipHtml` on hover — see hand.ts. */
 export function tplCardTooltip(card: CardData): string {
     const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;

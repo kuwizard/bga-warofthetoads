@@ -49,34 +49,47 @@ class ResolveBattle extends GameState
             $defenderId => Cards::isAngry($defenderId) || $context->isAngryOverridden($defenderId),
         ];
 
+        // Resolve both lanes first — a single- vs double-lane win isn't known until both are.
+        $laneCards = [];
+        $laneResults = [];
+        foreach ([LANE_OPEN, LANE_HIDDEN] as $lane) {
+            [$card1, $card2]    = Cards::getLaneCards()->where('locationArg', $lane)->toArray();
+            $laneCards[$lane]   = [$card1, $card2];
+            $laneResults[$lane] = $this->resolveLane($context, $card1, $card2, $attackerId);
+        }
+
         /** @var array<int, array{0: Card, 1: Card}[]> playerId => its lane wins as [winner, loser] pairs */
         $wins = [$attackerId => [], $defenderId => []];
+        foreach ($laneResults as $result) {
+            if ($result !== null) {
+                [$winner, $loser] = $result;
+                $wins[$winner->getController()][] = [$winner, $loser];
+            }
+        }
 
         foreach ([LANE_OPEN, LANE_HIDDEN] as $lane) {
-            [$card1, $card2] = Cards::getLaneCards()->where('locationArg', $lane)->toArray();
-            $result = $this->resolveLane($context, $card1, $card2, $attackerId);
+            [$card1, $card2] = $laneCards[$lane];
+            Notifications::laneFighting($lane, $card1, $card2);
 
+            $result = $laneResults[$lane];
             if ($result === null) {
                 Cards::retireToShrine($card1, $card2);
                 Notifications::laneTied($card1, $card2);
                 continue;
             }
 
+            // A double-lane win is captured and announced together, below.
             [$winner, $loser] = $result;
-            $wins[$winner->getController()][] = [$winner, $loser];
+            if (count($wins[$winner->getController()]) === 1) {
+                $stackId = Cards::capture($winner, $loser);
+                Notifications::hostageCaptured(Players::get($winner->getController()), $winner, $loser, $stackId);
+            }
         }
 
         foreach ([$attackerId, $defenderId] as $playerId) {
             $laneWins = $wins[$playerId];
 
-            if (count($laneWins) === 0) {
-                continue;
-            }
-
-            if (count($laneWins) === 1) {
-                [$winner, $loser] = $laneWins[0];
-                $stackId = Cards::capture($winner, $loser);
-                Notifications::hostageCaptured(Players::get($playerId), $winner, $loser, $stackId);
+            if (count($laneWins) !== 2) {
                 continue;
             }
 

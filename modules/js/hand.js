@@ -1,10 +1,12 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 import { flipCard, slideIntoPlace } from "./animations.js";
+import { animDur, delay, isReadOnly } from "./common.js";
 export const HAND_POSITION_PREF_ID = 103;
+const DEAL_STAGGER_MS = 144;
 export class Hand {
-    constructor(bga, playerTables) {
+    constructor(bga, playerPanels) {
         this.bga = bga;
-        this.playerTables = playerTables;
+        this.playerPanels = playerPanels;
     }
     render(gameArea, cards) {
         this.cards = cards;
@@ -15,13 +17,13 @@ export class Hand {
     }
     async notif_cardReturned(args) {
         const playerId = Number(args.player_id);
-        this.playerTables.adjustDeckCount(playerId, 1);
+        this.playerPanels.adjustDeckCount(playerId, 1);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
         if (args.card_id === undefined) {
             return;
         }
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card_id);
-        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
             await this.animateReturnToDeck(args.card_id, deckAnchor);
         }
@@ -31,15 +33,15 @@ export class Hand {
     }
     async notif_cardReturnUndone(args) {
         const playerId = Number(args.player_id);
-        this.playerTables.adjustDeckCount(playerId, -1);
+        this.playerPanels.adjustDeckCount(playerId, -1);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + 1;
         if (args.card === undefined) {
             return;
         }
         this.cards.hand.push(args.card);
-        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
-            await this.animateUndoReturn(args.card, deckAnchor);
+            await this.animateFromDeck(args.card, deckAnchor);
         }
         else {
             this.appendCard(args.card);
@@ -47,12 +49,19 @@ export class Hand {
     }
     async notif_cardsDrawn(args) {
         const playerId = Number(args.player_id);
-        this.playerTables.adjustDeckCount(playerId, -args.count);
+        this.playerPanels.adjustDeckCount(playerId, -args.count);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
-        args.cards?.forEach(card => {
-            this.cards.hand.push(card);
-            this.appendCard(card);
-        });
+        const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
+        drawnCards.forEach(card => this.cards.hand.push(card));
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
+        if (!deckAnchor) {
+            drawnCards.forEach(card => this.appendCard(card));
+            return;
+        }
+        await Promise.all(drawnCards.map(async (card, index) => {
+            await delay(index * animDur(DEAL_STAGGER_MS));
+            await this.animateFromDeck(card, deckAnchor);
+        }));
     }
     async notif_casualtySet(args) {
         const playerId = Number(args.player_id);
@@ -71,7 +80,7 @@ export class Hand {
         await slideIntoPlace(cardElement, slot);
     }
     async notif_scoutRevealed(args) {
-        if (this.isReadOnly() || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
+        if (isReadOnly(this.bga) || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
             return;
         }
         const dialog = new ebg.popindialog();
@@ -80,9 +89,6 @@ export class Hand {
         dialog.setContent(`<div class="wott-shown-cards">${args.cards.map(tplShownCard).join('')}</div>`);
         dialog.show();
         args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
-    }
-    isReadOnly() {
-        return this.bga.players.isCurrentPlayerSpectator() || typeof g_replayFrom != 'undefined' || g_archive_mode;
     }
     onCardsPlayed(playerId, cardIds) {
         this.cards.hand = this.cards.hand.filter(card => !cardIds.includes(card.id));
@@ -142,7 +148,7 @@ export class Hand {
         await slideIntoPlace(cardElement, deckAnchor);
         cardElement.remove();
     }
-    async animateUndoReturn(card, deckAnchor) {
+    async animateFromDeck(card, deckAnchor) {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
         await slideIntoPlace(cardElement, this.handElement);

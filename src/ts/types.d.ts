@@ -155,6 +155,10 @@ interface CardReturnUndoneNotifArgs {
 // see Notifications.php for why the loser/declined cards are StackCardData
 // (possibly-redacted) while the winner stays full CardData.
 
+interface LaneFightingNotifArgs {
+    lane: number;
+}
+
 interface LaneTiedNotifArgs {
     card1: StackCardData;
     card2: StackCardData;

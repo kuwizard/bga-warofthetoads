@@ -9,13 +9,10 @@ import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
 import { PlayerPanels } from "./playerPanels.js";
-import { PlayerTables } from "./playerTables.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions, textOnlyNotifHandlers } from "./notifications.js";
-
-// "Player blocks position" preference — see gamepreferences.jsonc.
-const PLAYER_BLOCKS_POSITION_PREF_ID = 102;
+import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
@@ -30,7 +27,6 @@ export class Game {
     private lanes: Lanes;
     private shrine: Shrine;
     private playerPanels: PlayerPanels;
-    private playerTables: PlayerTables;
     private gameEnd: GameEnd;
 
     constructor(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
@@ -75,37 +71,34 @@ export class Game {
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
 
+        // Before anything renders: --am scales every CSS duration and every animDur() below it.
+        applyAnimationSpeed(this.bga);
+
         // BGA rotates `playerorder` to reflect whose turn is next — only `no` is a stable seat order.
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
 
         const gameArea = this.bga.gameArea.getElement();
         gameArea.classList.add('wott-game-area');
 
-        this.playerTables = new PlayerTables();
-        this.hand = new Hand(this.bga, this.playerTables);
-        this.lanes = new Lanes(this.bga, this.hand);
         this.shrine = new Shrine(this.bga);
-        this.playerPanels = new PlayerPanels(this.bga);
+        this.playerPanels = new PlayerPanels(this.bga, this.shrine);
+        this.hand = new Hand(this.bga, this.playerPanels);
+        this.lanes = new Lanes(this.bga, this.hand);
         this.gameEnd = new GameEnd(this.bga);
 
         this.hand.render(gameArea, this.gamedatas.cards);
         this.lanes.render(gameArea, this.gamedatas.cards.lanes, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
-        this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder);
-        this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry);
-        this.playerTables.render(
-            gameArea,
-            this.gamedatas.players,
-            this.gamedatas.cards,
-            this.gamedatas.deckColors,
-            playerIdsInTableOrder,
-            Number(this.bga.gameui.player_id),
-        );
+        this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder, this.gamedatas.angry);
+        this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry, this.gamedatas.cards, this.gamedatas.deckColors);
         this.gameEnd.render(gameArea, this.gamedatas.players, playerIdsInTableOrder, this.gamedatas.gameEnd);
 
         this.applyLayoutPreferences();
         this.bga.userPreferences.onChange = (prefId) => {
-            if (prefId === HAND_POSITION_PREF_ID || prefId === PLAYER_BLOCKS_POSITION_PREF_ID) {
+            if (prefId === HAND_POSITION_PREF_ID) {
                 this.applyLayoutPreferences();
+            }
+            if (prefId === ANIMATION_SPEED_PREF_ID) {
+                applyAnimationSpeed(this.bga);
             }
         };
 
@@ -124,9 +117,7 @@ export class Game {
     }
 
     private applyLayoutPreferences() {
-        const handOnTop = this.bga.userPreferences.get(HAND_POSITION_PREF_ID) === 1;
-        this.hand.setPosition(handOnTop ? 'top' : 'bottom');
-        this.playerTables.setLayout(this.bga.userPreferences.get(PLAYER_BLOCKS_POSITION_PREF_ID) === 2, handOnTop);
+        this.hand.setPosition(this.bga.userPreferences.get(HAND_POSITION_PREF_ID) === 1 ? 'top' : 'bottom');
     }
 
     /**
@@ -175,6 +166,10 @@ export class Game {
         await this.lanes.previewUnplay(cardId, wasFaceDown);
     }
 
+    public getPlayerColor(playerId: number): string | undefined {
+        return this.bga.players.getPlayerById(playerId)?.color;
+    }
+
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
@@ -183,7 +178,7 @@ export class Game {
 
         this.bga.notifications.setupPromiseNotifications({
             ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.playerTables, this.gameEnd, textOnlyNotifHandlers],
+            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.gameEnd, textOnlyNotifHandlers],
         });
     }
 }

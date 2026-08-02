@@ -1,25 +1,38 @@
-/**
- * Game-specific content in the BGA player panels. Currently just RULES.md
- * §7's Calm/Angry as a word under each player's name — a stand-in: physically
- * the Shrine displays this by being flipped/rotated, which `shrine.ts` does
- * not render yet.
- *
- * Never derived here. The comparison is trivial (Cards::isAngry()), but [H4]
- * pins *when* it is evaluated and [H15]'s Berserker Angry isn't a function of
- * hostage counts at all — so the value only ever comes from the server, via
- * `gamedatas.angry` and `Notifications::moodChanged()`.
- */
+// Calm/Angry (RULES.md §7) is never derived here: [H4] pins when it is evaluated and [H15]'s Berserker Angry is not a function of hostage counts at all, so the value only ever arrives from the server.
 import { guessableCardTypes } from "./tpls.js";
+import { Shrine } from "./shrine.js";
+import { slideFromRects } from "./animations.js";
 
 export class PlayerPanels {
-    constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
+    private cards!: CardsUiData;
+    private deckColorByPlayerId!: { [playerId: number]: 'blue' | 'red' };
+
+    constructor(
+        private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
+        private shrine: Shrine,
+    ) {
     }
 
-    render(playerIdsInTableOrder: number[], angryByPlayerId: AngryByPlayerId): void {
+    render(
+        playerIdsInTableOrder: number[],
+        angryByPlayerId: AngryByPlayerId,
+        cards: CardsUiData,
+        deckColorByPlayerId: { [playerId: number]: 'blue' | 'red' },
+    ): void {
+        this.cards = cards;
+        this.deckColorByPlayerId = deckColorByPlayerId;
+
         playerIdsInTableOrder.forEach(playerId => {
             this.boardElement(playerId)?.classList.add('wott-player-panel');
             this.bga.playerPanels.getElement(playerId).insertAdjacentHTML('beforeend', `
-                <div class="wott-mood" id="wott-mood-${playerId}"></div>
+                <div class="wott-panel-row">
+                    <div class="wott-deck">
+                        <div class="wott-card wott-card--${deckColorByPlayerId[playerId]}-back" id="wott-deck-pile-${playerId}"></div>
+                        <span class="wott-deck-count" id="wott-deck-count-${playerId}">${cards.deckCounts[playerId] ?? 0}</span>
+                        <div class="wott-deck-anchor" id="wott-deck-anchor-${playerId}"></div>
+                    </div>
+                    <div class="wott-mood" id="wott-mood-${playerId}"></div>
+                </div>
             `);
         });
 
@@ -34,6 +47,35 @@ export class PlayerPanels {
     // [H15] BattleEnd's own moodChanged reverts this — nothing persists the override.
     notif_tacticAngry(args: TacticAngryNotifArgs): void {
         this.setMoods(args.angry);
+    }
+
+    // RULES.md §9's deck swap: the piles only change colour in place, so each animates from where the *other* one stood.
+    async notif_warStarted(args: WarStartedNotifArgs): Promise<void> {
+        const piles = Object.keys(args.deckColors)
+            .map(playerId => document.getElementById(`wott-deck-pile-${playerId}`))
+            .filter((pile): pile is HTMLElement => pile !== null);
+        const rects = piles.map(pile => pile.getBoundingClientRect());
+
+        Object.entries(args.deckColors).forEach(([playerId, deckColor]) => {
+            const pile = document.getElementById(`wott-deck-pile-${playerId}`);
+            pile?.classList.remove(`wott-card--${this.deckColorByPlayerId[Number(playerId)]}-back`);
+            pile?.classList.add(`wott-card--${deckColor}-back`);
+            this.deckColorByPlayerId[Number(playerId)] = deckColor;
+        });
+
+        Object.entries(args.deckCounts).forEach(([playerId, count]) => {
+            this.setDeckCount(Number(playerId), Number(count));
+        });
+
+        const decks = piles.map(pile => pile.parentElement).filter((deck): deck is HTMLElement => deck !== null);
+        decks.forEach(deck => deck.classList.add('wott-deck--swapping'));
+
+        await slideFromRects(piles.map((pile, index) => ({
+            element: pile,
+            fromRect: rects[piles.length - 1 - index],
+        })));
+
+        decks.forEach(deck => deck.classList.remove('wott-deck--swapping'));
     }
 
     // The answering player's panel "says" the Siege Cannon result aloud.
@@ -52,12 +94,31 @@ export class PlayerPanels {
         setTimeout(() => document.getElementById(bubbleId)?.remove(), 4000);
     }
 
+    adjustDeckCount(playerId: number, delta: number): void {
+        this.setDeckCount(playerId, (this.cards.deckCounts[playerId] ?? 0) + delta);
+    }
+
+    getDeckAnchor(playerId: number): HTMLElement | null {
+        return document.getElementById(`wott-deck-anchor-${playerId}`);
+    }
+
+    private setDeckCount(playerId: number, count: number): void {
+        this.cards.deckCounts[playerId] = count;
+
+        const deckCountElement = document.getElementById(`wott-deck-count-${playerId}`);
+        if (deckCountElement) {
+            deckCountElement.textContent = `${count}`;
+        }
+    }
+
     // The framework's whole playerboard — getElement() only returns the small game-content div inside it.
     private boardElement(playerId: number): HTMLElement | null {
         return this.bga.playerPanels.getElement(playerId).closest('.player-board') as HTMLElement | null;
     }
 
     private setMoods(angryByPlayerId: AngryByPlayerId): void {
+        this.shrine.setMood(angryByPlayerId);
+
         Object.entries(angryByPlayerId).forEach(([playerId, angry]) => {
             const element = document.getElementById(`wott-mood-${playerId}`);
             if (!element) {

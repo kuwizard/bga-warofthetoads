@@ -20,9 +20,9 @@
   // 101 is reserved for the card-counting aid toggle (PR9) — default off, shows
   // which of the 9 card types have been seen this War.
 
-  // Read via bga.userPreferences.get(102) in Game.ts::applyLayoutPreferences.
-  // "Top and bottom" stacks the two player-table blocks instead of placing them
-  // on opposite sides, and pairs "my" block with wherever the hand (103) is.
+  // RESERVED — currently wired to nothing. It positioned the #player-tables
+  // blocks, which moved into the BGA player panels; the id is kept for a future
+  // layout option rather than being reused for something unrelated.
   "102": {
     "name": "Player blocks position",
     "needReload": false,

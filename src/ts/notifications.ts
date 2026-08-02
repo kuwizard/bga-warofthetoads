@@ -1,7 +1,8 @@
 import type { Game } from "./Game.js";
 import { debug } from "./debug.js";
+import { animDur } from "./common.js";
 
-const NOTIF_MIN_DURATION = 1200;
+const NOTIF_MIN_DURATION = 1440;
 
 // Without a notif_* handler the framework never subscribes to a notification, so onStart below (status-bar display) would never fire for it.
 export const textOnlyNotifHandlers = {
@@ -22,6 +23,29 @@ function producedMessage(template: string, msg: string): boolean {
     return literals.length > 0 && literals.every(literal => msg.includes(literal));
 }
 
+function withPlayerColor(html: string, color: string): string {
+    return html.startsWith('<span') ? html : `<span style="color:#${color}">${html}</span>`;
+}
+
+function colorizeLaneFightArgs(game: Game, args: any): any {
+    if (typeof args?.card1Controller !== 'number' || typeof args?.card2Controller !== 'number') {
+        return args;
+    }
+
+    const colored = { ...args };
+    [1, 2].forEach(slot => {
+        const color = game.getPlayerColor(args[`card${slot}Controller`]);
+        if (!color) {
+            return;
+        }
+
+        colored[`card${slot}Name`] = withPlayerColor(args[`card${slot}Name`], color);
+        colored[`card${slot}Strength`] = withPlayerColor(args[`card${slot}Strength`], color);
+    });
+
+    return colored;
+}
+
 export function notificationOptions(game: Game) {
     const bga = game.bga;
 
@@ -31,11 +55,12 @@ export function notificationOptions(game: Game) {
 
     game.bgaFormatText = (log: string, args: any) => {
         if (!formattingOwnTitle) rawLog = log;
-        return { log, args };
+        return { log, args: colorizeLaneFightArgs(game, args) };
     };
 
     return {
-        minDuration: NOTIF_MIN_DURATION,
+        // Read once by the framework, so a mid-game speed change only reaches this floor on the next page load.
+        minDuration: animDur(NOTIF_MIN_DURATION),
 
         onStart: (name: string, msg: string, args: any): void => {
             const template = rawLog !== undefined && producedMessage(rawLog, msg) ? rawLog : stripSubstitutionMarkup(msg);

@@ -304,6 +304,27 @@ class Notifications
         ]);
     }
 
+    public static function laneFighting(int $lane, Card $card1, Card $card2): void
+    {
+        self::notifyAll('laneFighting', clienttranslate('${laneName} lane fights: ${card1Name}${card1Strength} vs ${card2Name}${card2Strength}'), [
+            'lane'            => $lane,
+            'i18n'            => ['laneName', 'card1Name', 'card2Name'],
+            'laneName'        => $lane === LANE_OPEN ? clienttranslate('Open') : clienttranslate('Hidden'),
+            'card1Name'       => $card1->getName(),
+            'card1Strength'   => self::strengthSuffix($card1),
+            'card1Controller' => $card1->getController(),
+            'card2Name'       => $card2->getName(),
+            'card2Strength'   => self::strengthSuffix($card2),
+            'card2Controller' => $card2->getController(),
+        ]);
+    }
+
+    // The Siege Cannon prints no Strength (gameEnd.ts::casualtyLabel) — an empty suffix here, same honest omission.
+    private static function strengthSuffix(Card $card): string
+    {
+        return $card->getStrength() === null ? '' : " ({$card->getStrength()})";
+    }
+
     /**
      * `ResolveBattle` (PR4, RULES.md §6 ➎): equal Strength, no winner — both
      * cards retire to the Shrine as Monks. Called after `Cards::retireToShrine()`,

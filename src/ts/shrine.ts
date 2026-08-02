@@ -1,23 +1,18 @@
-import { tplLaneCard, tplCardTooltip } from "./tpls.js";
-import { revealCardFace } from "./animations.js";
+import { tplLaneCard, tplCardTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
+import { hideCardFace, revealCardFace, slideAllIntoPlace } from "./animations.js";
 
-/**
- * The Shrine (RULES.md §6 ➏, §7): each player's captured stacks — a face-up
- * Captor over a face-down Hostage — kept in their own column so the opponent
- * can see how many stacks (Hostages) they hold, plus a shared pile for tied
- * and declined cards (Monks). Calm/Angry is never computed here — it's fully
- * server-derived ([H4]) — the visible stack count already conveys the same
- * "who's ahead" information the physical Shrine's flip/rotate does.
- */
+// The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the shared Monk pile. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
     private cards!: CardsUiData;
     private stackColumns: { [playerId: number]: HTMLElement } = {};
     private monksElement!: HTMLElement;
+    private casualtiesZoneElement!: HTMLElement;
+    private shrineCardElement!: HTMLElement;
 
     constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
 
-    render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[]): void {
+    render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[], angry: AngryByPlayerId): void {
         this.cards = cards;
 
         const columnsHtml = playerIdsInTableOrder
@@ -26,7 +21,7 @@ export class Shrine {
                     <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
                 </div>
             `)
-            .join('');
+            .join(tplShrineCard());
 
         const casualtySlotsHtml = playerIdsInTableOrder
             .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
@@ -34,9 +29,17 @@ export class Shrine {
 
         gameArea.insertAdjacentHTML('beforeend', `
             <div id="wott-shrine">
-                ${columnsHtml}
-                <div class="wott-monks" id="wott-monks"></div>
-                <div class="wott-casualties" id="wott-casualties">${casualtySlotsHtml}</div>
+                <div class="wott-shrine-captures">${columnsHtml}</div>
+                <div class="wott-shrine-retired">
+                    <div class="wott-zone">
+                        <span class="wott-zone__label">${_('Monks')}</span>
+                        <div class="wott-monks" id="wott-monks"></div>
+                    </div>
+                    <div class="wott-zone" id="wott-casualties-zone">
+                        <span class="wott-zone__label">${_('Casualties')}</span>
+                        <div class="wott-casualties" id="wott-casualties">${casualtySlotsHtml}</div>
+                    </div>
+                </div>
             </div>
         `);
 
@@ -44,6 +47,12 @@ export class Shrine {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`)!;
         });
         this.monksElement = document.getElementById('wott-monks')!;
+        this.casualtiesZoneElement = document.getElementById('wott-casualties-zone')!;
+        // No Casualty exists yet during the 1st War (RULES.md §8/§9) — the zone only makes sense from the 2nd War on.
+        this.casualtiesZoneElement.classList.toggle('wott-zone--hidden', cards.casualties.length === 0);
+        this.shrineCardElement = document.getElementById('wott-shrine-card')!;
+        this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
+        this.setMood(angry);
 
         // F5 mid-War: place whatever is already captured/retired, no animation.
         // A stack's column is keyed by its Captor's controller, never a card's
@@ -68,26 +77,28 @@ export class Shrine {
     }
 
     /** `ResolveBattle`'s tie branch (RULES.md §6 ➎, [H16]) — Notifications::laneTied(). */
-    notif_laneTied(args: LaneTiedNotifArgs): void {
-        [args.card1, args.card2].forEach(card => {
+    async notif_laneTied(args: LaneTiedNotifArgs): Promise<void> {
+        const tiedCards = [args.card1, args.card2];
+        tiedCards.forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
-            this.placeMonk(card);
         });
+
+        await this.moveCards(tiedCards.map(card => ({ card, container: this.monksElement })));
     }
 
     /** `ResolveBattle`'s single-lane-win branch (RULES.md §6 ➎) — Notifications::hostageCaptured(). */
-    notif_hostageCaptured(args: HostageCapturedNotifArgs): void {
-        this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
+    async notif_hostageCaptured(args: HostageCapturedNotifArgs): Promise<void> {
+        await this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
     }
 
     /** `ResolveBattle`'s double-win-while-Angry branch (§7, [H4]) — Notifications::leapFrog(). */
-    notif_leapFrog(args: LeapFrogNotifArgs): void {
-        this.captureStacks(Number(args.player_id), args.winners, args.losers);
+    async notif_leapFrog(args: LeapFrogNotifArgs): Promise<void> {
+        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
 
-    notif_doubleWinCalm(args: DoubleWinCalmNotifArgs): void {
-        this.captureStacks(Number(args.player_id), args.winners, args.losers);
+    async notif_doubleWinCalm(args: DoubleWinCalmNotifArgs): Promise<void> {
+        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
     }
 
     /**
@@ -97,23 +108,26 @@ export class Shrine {
      * likewise updated to the redacted-stub shape a fresh page load would
      * produce.
      */
-    notif_stackKept(args: StackKeptNotifArgs): void {
+    async notif_stackKept(args: StackKeptNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
 
-        const declinedCards = this.cards.stacks.filter(card => card.locationArg === args.declinedStackId);
-        declinedCards.forEach(card => {
-            this.cards.shrine.push({
+        // The Captor hides just as completely as its Hostage once both are Monks, and each keeps its own true `controller` (see placeStackCard) so it shows its own deck-back colour.
+        const retiredCards: StackCardData[] = this.cards.stacks
+            .filter(card => card.locationArg === args.declinedStackId)
+            .map(card => ({
                 id: card.id,
                 controller: card.controller,
                 location: 'shrine',
                 locationArg: 0,
                 facedown: true,
                 deck: card.deck,
-            });
-        });
+            }));
+
+        this.cards.shrine.push(...retiredCards);
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
 
-        this.retireStack(args.declinedStackId, declinedCards);
+        await this.moveCards(retiredCards.map(card => ({ card, container: this.monksElement })));
+        document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
 
@@ -137,6 +151,7 @@ export class Shrine {
         await revealCardFace(this.bga, args.card);
     }
 
+    // Only ever fired for the 2nd War (States/WarSetup.php) — the Casualties, set aside just before this, are now worth showing.
     notif_warStarted(_args: WarStartedNotifArgs): void {
         this.cards.stacks = [];
         this.cards.shrine = [];
@@ -144,6 +159,16 @@ export class Shrine {
         document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
         this.monksElement.innerHTML = '';
         Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
+        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+    }
+
+    // RULES.md §7: the card flips to its back as soon as anyone is Angry. Physically it is then rotated to point at that player, which digitally would only turn its text upside down — the Angry player's own stack column is marked instead, and that also covers [H15]'s both-Angry Berserker case the printed card has no face for.
+    setMood(angry: AngryByPlayerId): void {
+        this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
+
+        Object.entries(this.stackColumns).forEach(([playerId, column]) => {
+            column.classList.toggle('wott-stack-column--angry', !!angry[Number(playerId)]);
+        });
     }
 
     /** ChooseStack ([H14]): the given player's 2 highest-id captured stacks — mirrors Cards::getStacksFor()'s array_slice(-2). */
@@ -178,17 +203,48 @@ export class Shrine {
     }
 
     /** 1 or 2 parallel [winner, loser] pairs, captured and rendered identically regardless of Angry/Calm/single-lane. */
-    private captureStacks(controller: number, winners: CardData[], losers: StackCardData[]): void {
+    private async captureStacks(controller: number, winners: CardData[], losers: StackCardData[]): Promise<void> {
+        const entries: { card: StackCardData, container: HTMLElement }[] = [];
+
         winners.forEach((winner, i) => {
             const loser = losers[i];
             this.removeFromLanes(loser.id);
             this.removeFromLanes(winner.id);
             this.cards.stacks.push(loser, winner);
-            this.placeStackCard(loser, controller);
-            this.placeStackCard(winner, controller);
+
+            const stackElement = this.stackElementFor(winner.locationArg, controller);
+            if (stackElement) {
+                // Hostage before Captor: DOM order inside a stack is its z-order (shrine.scss).
+                entries.push({ card: loser, container: stackElement }, { card: winner, container: stackElement });
+            }
         });
 
+        await this.moveCards(entries);
         this.refreshStackCount(controller, this.cards.stacks);
+    }
+
+    private async moveCards(entries: { card: StackCardData, container: HTMLElement }[]): Promise<void> {
+        // Everything becoming hidden turns face-down together, then the whole battle's cards travel at once.
+        await Promise.all(entries
+            .filter(({ card }) => card.facedown)
+            .map(({ card }) => hideCardFace(this.bga, card)));
+
+        const moves: { element: HTMLElement, container: HTMLElement }[] = [];
+
+        entries.forEach(({ card, container }) => {
+            const cardElement = document.getElementById(`wott-card-${card.id}`);
+            if (!cardElement) {
+                this.createCard(card, container);
+                return;
+            }
+
+            cardElement.classList.remove('wott-selectable', 'wott-card--selected', 'wott-card--blocked', 'wott-card--tie-breaker');
+            cardElement.onclick = null;
+            cardElement.querySelector('.wott-card__strength')?.remove();
+            moves.push({ element: cardElement, container });
+        });
+
+        await slideAllIntoPlace(moves);
     }
 
     private removeFromLanes(cardId: number): void {
@@ -206,52 +262,37 @@ export class Shrine {
      * still its own controller's, so a Hostage shows its true owner's colour.
      */
     private placeStackCard(card: StackCardData, stackOwnerId: number): void {
+        const stackElement = this.stackElementFor(card.locationArg, stackOwnerId);
+        if (stackElement) {
+            this.createCard(card, stackElement);
+        }
+    }
+
+    private stackElementFor(stackId: number, stackOwnerId: number): HTMLElement | null {
         const column = this.stackColumns[stackOwnerId];
         if (!column) {
-            return;
+            return null;
         }
 
-        let stackElement = document.getElementById(`wott-stack-${card.locationArg}`);
+        let stackElement = document.getElementById(`wott-stack-${stackId}`);
         if (!stackElement) {
-            column.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${card.locationArg}"></div>`);
-            stackElement = document.getElementById(`wott-stack-${card.locationArg}`)!;
+            column.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${stackId}"></div>`);
+            stackElement = document.getElementById(`wott-stack-${stackId}`)!;
         }
 
-        this.placeCard(card, stackElement);
+        return stackElement;
     }
 
     /** A tied or declined card retiring to the shared Monk pile. */
     private placeMonk(card: StackCardData): void {
-        this.placeCard(card, this.monksElement);
+        this.createCard(card, this.monksElement);
     }
 
     private placeCasualty(card: StackCardData): void {
         const slot = document.getElementById(`wott-casualty-slot-${card.controller}`);
         if (slot) {
-            this.placeCard(card, slot);
+            this.createCard(card, slot);
         }
-    }
-
-    /**
-     * [H14]: the declined stack's 2 members (its Captor included — a Monk
-     * hides just as completely as a Hostage) move into the Monk pile. Each
-     * card keeps its own true `controller` (the Hostage's is still its
-     * original, losing owner — see placeStackCard()'s comment) so it shows
-     * its own deck-back colour, not the stack owner's.
-     */
-    private retireStack(stackId: number, declinedCards: StackCardData[]): void {
-        declinedCards.forEach(card => {
-            const stub: StackCardData = {
-                id: card.id,
-                controller: card.controller,
-                location: 'shrine',
-                locationArg: 0,
-                facedown: true,
-                deck: card.deck,
-            };
-            this.placeMonk(stub);
-        });
-        document.getElementById(`wott-stack-${stackId}`)?.remove();
     }
 
     private setStackCount(playerId: number, count: number): void {
@@ -268,27 +309,8 @@ export class Shrine {
         this.setStackCount(playerId, count);
     }
 
-    /**
-     * A card becoming hidden (`facedown`) must never keep its revealing DOM
-     * node around — a CSS-only flip would still leave the true sprite class
-     * inspectable. Only a card staying public (a Captor) is safe to reparent
-     * as-is; anything facedown is destroyed and rebuilt from the (already
-     * redacted, per `Card::getUiData()`) stub — mirrors `Lanes::playCard()`'s
-     * reparent-don't-recreate approach for the one case where recreating
-     * really is required.
-     */
-    private placeCard(card: StackCardData, container: HTMLElement): HTMLElement {
-        const existingElement = document.getElementById(`wott-card-${card.id}`);
-
-        if (existingElement && card.facedown) {
-            existingElement.remove();
-        } else if (existingElement) {
-            container.appendChild(existingElement);
-            existingElement.classList.remove('wott-selectable', 'wott-card--selected', 'wott-card--blocked', 'wott-card--tie-breaker');
-            existingElement.querySelector('.wott-card__strength')?.remove();
-            return existingElement;
-        }
-
+    // Builds a card that has no element yet — a page load, or a capture seen by a client that never rendered the lane card. Cards that are already on the table travel via moveCards() instead.
+    private createCard(card: StackCardData, container: HTMLElement): HTMLElement {
         container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`)!;
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);

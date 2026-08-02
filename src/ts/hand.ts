@@ -1,16 +1,13 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
-import { PlayerTables } from "./playerTables.js";
+import { PlayerPanels } from "./playerPanels.js";
 import { flipCard, slideIntoPlace } from "./animations.js";
+import { animDur, delay, isReadOnly } from "./common.js";
 
 export const HAND_POSITION_PREF_ID = 103;
 
-/**
- * The viewing player's own hand — a single strip rendered above or below the
- * player tables (Imperial Settlers layout, position configurable via the
- * "Hand position" preference), never the opponent's: RULES.md's hidden hand
- * is the whole point, and a count of card-backs told the viewer nothing they
- * don't already see from `wott-deck-count`.
- */
+const DEAL_STAGGER_MS = 144;
+
+// The viewing player's own hand, never the opponent's — RULES.md's hidden hand is the whole point, and card-backs would say nothing the panel's deck count doesn't already.
 export class Hand {
     private cards!: CardsUiData;
     private gameArea!: HTMLElement;
@@ -18,7 +15,7 @@ export class Hand {
 
     constructor(
         private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
-        private playerTables: PlayerTables,
+        private playerPanels: PlayerPanels,
     ) {
     }
 
@@ -33,7 +30,7 @@ export class Hand {
     async notif_cardReturned(args: CardReturnedNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
 
-        this.playerTables.adjustDeckCount(playerId, 1);
+        this.playerPanels.adjustDeckCount(playerId, 1);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
 
         // [H13]: only the returning player's own client is sent `card_id`.
@@ -43,7 +40,7 @@ export class Hand {
 
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card_id);
 
-        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
             await this.animateReturnToDeck(args.card_id, deckAnchor);
         } else {
@@ -54,7 +51,7 @@ export class Hand {
     async notif_cardReturnUndone(args: CardReturnUndoneNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
 
-        this.playerTables.adjustDeckCount(playerId, -1);
+        this.playerPanels.adjustDeckCount(playerId, -1);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + 1;
 
         if (args.card === undefined) {
@@ -63,9 +60,9 @@ export class Hand {
 
         this.cards.hand.push(args.card);
 
-        const deckAnchor = this.playerTables.getDeckAnchor(playerId);
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
-            await this.animateUndoReturn(args.card, deckAnchor);
+            await this.animateFromDeck(args.card, deckAnchor);
         } else {
             this.appendCard(args.card);
         }
@@ -74,13 +71,23 @@ export class Hand {
     async notif_cardsDrawn(args: CardsDrawnNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
 
-        this.playerTables.adjustDeckCount(playerId, -args.count);
+        this.playerPanels.adjustDeckCount(playerId, -args.count);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
 
-        args.cards?.forEach(card => {
-            this.cards.hand.push(card);
-            this.appendCard(card);
-        });
+        // The War's opening deal is already in `getAllDatas()` by the time its notification arrives.
+        const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
+        drawnCards.forEach(card => this.cards.hand.push(card));
+
+        const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
+        if (!deckAnchor) {
+            drawnCards.forEach(card => this.appendCard(card));
+            return;
+        }
+
+        await Promise.all(drawnCards.map(async (card, index) => {
+            await delay(index * animDur(DEAL_STAGGER_MS));
+            await this.animateFromDeck(card, deckAnchor);
+        }));
     }
 
     // Only the owner's client receives the full card (and has the element) — everyone else's stub is shrine.ts's job.
@@ -107,7 +114,7 @@ export class Hand {
 
     async notif_scoutRevealed(args: ScoutRevealedNotifArgs): Promise<void> {
         // `cards` reaches everyone; the popin is only for the Scout's controller.
-        if (this.isReadOnly() || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
+        if (isReadOnly(this.bga) || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {
             return;
         }
 
@@ -118,10 +125,6 @@ export class Hand {
         dialog.show();
 
         args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
-    }
-
-    private isReadOnly(): boolean {
-        return this.bga.players.isCurrentPlayerSpectator() || typeof g_replayFrom != 'undefined' || g_archive_mode;
     }
 
     onCardsPlayed(playerId: number, cardIds: number[]): void {
@@ -199,8 +202,7 @@ export class Hand {
         cardElement.remove();
     }
 
-    /** Reverses animateReturnToDeck — slides the card out of `deckAnchor` into the hand, then flips it face-up. */
-    private async animateUndoReturn(card: CardData, deckAnchor: HTMLElement): Promise<void> {
+    private async animateFromDeck(card: CardData, deckAnchor: HTMLElement): Promise<void> {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
 

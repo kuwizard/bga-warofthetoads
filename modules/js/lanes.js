@@ -1,5 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
+import { animDur } from "./common.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 const ANIMATION_FALLBACK_MS = 2000;
@@ -27,6 +28,14 @@ export class Lanes {
     async notif_battleStarted(args) {
         this.setAttacker(Number(args.player_id));
         this.clear();
+    }
+    notif_laneFighting(args) {
+        this.lanesElement.querySelectorAll('.wott-lane').forEach(lane => {
+            lane.classList.toggle('wott-lane--fighting', Number(lane.dataset.lane) === args.lane);
+        });
+    }
+    notif_moodChanged(_args) {
+        this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
     }
     setAttacker(attackerId) {
         const attacksLeft = attackerId !== this.playerIdsInTableOrder[0];
@@ -182,7 +191,7 @@ export class Lanes {
             const fallback = setTimeout(() => {
                 element.removeEventListener('animationend', handler);
                 resolve();
-            }, ANIMATION_FALLBACK_MS);
+            }, Math.max(300, animDur(ANIMATION_FALLBACK_MS)));
             element.addEventListener('animationend', handler);
         });
     }

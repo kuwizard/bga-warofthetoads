@@ -1,6 +1,7 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
 import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
+import { animDur } from "./common.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
 // numbers since `Card::getUiData()`'s `locationArg` is the only place they
@@ -52,6 +53,17 @@ export class Lanes {
     async notif_battleStarted(args: BattleStartedNotifArgs): Promise<void> {
         this.setAttacker(Number(args.player_id));
         this.clear();
+    }
+
+    notif_laneFighting(args: LaneFightingNotifArgs): void {
+        this.lanesElement.querySelectorAll('.wott-lane').forEach(lane => {
+            lane.classList.toggle('wott-lane--fighting', Number((lane as HTMLElement).dataset.lane) === args.lane);
+        });
+    }
+
+    // BattleEnd's one guaranteed per-Battle notification — whichever lane fought last stops glowing once the Battle is fully resolved.
+    notif_moodChanged(_args: MoodChangedNotifArgs): void {
+        this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
     }
 
     private setAttacker(attackerId: number): void {
@@ -254,7 +266,7 @@ export class Lanes {
             const fallback = setTimeout(() => {
                 element.removeEventListener('animationend', handler);
                 resolve();
-            }, ANIMATION_FALLBACK_MS);
+            }, Math.max(300, animDur(ANIMATION_FALLBACK_MS)));
             element.addEventListener('animationend', handler);
         });
     }

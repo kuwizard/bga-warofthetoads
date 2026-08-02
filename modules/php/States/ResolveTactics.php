@@ -98,6 +98,11 @@ class ResolveTactics extends GameState
     private function notifyBandEvents(BattleContext $context): void
     {
         foreach ($context->takeEvents() as $event) {
+            // Bodyguard's own tacticBlocked() already told this story; skip the redundant second line.
+            if ($event['type'] === TACTIC_EVENT_NO_EFFECT && $event['reason'] === TACTIC_NO_EFFECT_BLOCKED) {
+                continue;
+            }
+
             $cards  = $context->getCards();
             $card   = $cards[$event['sourceId']];
             $target = isset($event['targetId']) ? $cards[$event['targetId']] : null;
