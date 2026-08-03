@@ -8,14 +8,14 @@ export class Shrine {
     private monksElement!: HTMLElement;
     private casualtiesZoneElement!: HTMLElement;
     private shrineCardElement!: HTMLElement;
-    private leftPlayerId!: number;
+    private firstPlayerId!: number;
 
     constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
     }
 
     render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[], angry: AngryByPlayerId): void {
         this.cards = cards;
-        this.leftPlayerId = playerIdsInTableOrder[0];
+        this.firstPlayerId = playerIdsInTableOrder[0];
 
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
@@ -164,10 +164,10 @@ export class Shrine {
         this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
     }
 
-    // RULES.md §7: flips to the back as soon as anyone is Angry, and rotates to point the back's baked-in Angry arrow at whichever side is actually Angry.
+    // RULES.md §7: flips to the back as soon as anyone is Angry, and rotates to point the back's baked-in Angry arrow at whichever side is actually Angry — layout.scss turns both rotations another quarter in top-down mode.
     setMood(angry: AngryByPlayerId): void {
         this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
-        this.shrineCardElement.classList.toggle('wott-shrine-card--rotated', this.isSoleAngry(this.leftPlayerId, angry));
+        this.shrineCardElement.classList.toggle('wott-shrine-card--rotated', this.isSoleAngry(this.firstPlayerId, angry));
 
         Object.entries(this.stackColumns).forEach(([playerId, column]) => {
             column.classList.toggle('wott-stack-column--angry', !!angry[Number(playerId)]);

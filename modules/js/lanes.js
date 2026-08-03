@@ -10,8 +10,7 @@ export class Lanes {
         this.hand = hand;
         this.printedStrengthByCardId = new Map();
     }
-    render(gameArea, lanes, playerIdsInTableOrder, attackerId) {
-        this.playerIdsInTableOrder = playerIdsInTableOrder;
+    render(gameArea, lanes, playerIdsInTableOrder) {
         const slotsHtml = (lane) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
             .join('<div class="wott-lane-arrow"><span class="wott-lane-arrow__right">➜</span><span class="wott-lane-arrow__left">➜</span></div>');
@@ -22,11 +21,9 @@ export class Lanes {
             </div>
         `);
         this.lanesElement = document.getElementById('wott-lanes');
-        this.setAttacker(attackerId);
         lanes.forEach(card => this.createCardElement(card, this.slotFor(card)));
     }
-    async notif_battleStarted(args) {
-        this.setAttacker(Number(args.player_id));
+    async notif_battleStarted(_args) {
         this.clear();
     }
     notif_laneFighting(args) {
@@ -36,12 +33,6 @@ export class Lanes {
     }
     notif_moodChanged(_args) {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
-    }
-    setAttacker(attackerId) {
-        const attacksLeft = attackerId !== this.playerIdsInTableOrder[0];
-        this.lanesElement.querySelectorAll('.wott-lane-arrow').forEach(arrow => {
-            arrow.classList.toggle('wott-lane-arrow--left', attacksLeft);
-        });
     }
     async notif_cardsPlayed(args) {
         const playerId = Number(args.player_id);

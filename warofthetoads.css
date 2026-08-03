@@ -422,6 +422,72 @@
   width: 100%;
 }
 
+#wott-table {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+.wott-layout--top-down #wott-table {
+  flex-direction: row;
+  justify-content: center;
+  gap: 24px;
+  width: fit-content;
+  max-width: none;
+}
+.wott-layout--top-down #wott-lanes {
+  flex-direction: row;
+  gap: 32px;
+}
+.wott-layout--top-down .wott-lane {
+  flex-direction: column;
+  gap: 16px;
+}
+.wott-layout--top-down .wott-lane-arrow {
+  flex-direction: row;
+  gap: 8px;
+}
+.wott-layout--top-down .wott-lane-arrow__right {
+  transform: rotate(90deg);
+}
+.wott-layout--top-down .wott-lane-arrow__left {
+  transform: rotate(-90deg);
+}
+.wott-layout--top-down #wott-shrine {
+  flex-wrap: nowrap;
+  align-items: center;
+}
+.wott-layout--top-down .wott-shrine-captures {
+  flex-direction: column;
+  flex-wrap: nowrap;
+}
+.wott-layout--top-down .wott-shrine-captures > .wott-stack-column:first-child {
+  flex-direction: row;
+}
+.wott-layout--top-down .wott-shrine-retired {
+  flex-direction: column;
+}
+.wott-layout--top-down .wott-shrine-card {
+  transform: rotate(90deg);
+}
+.wott-layout--top-down .wott-shrine-card--rotated {
+  transform: rotate(270deg);
+}
+
+.wott-layout--top-down.wott-layout--reversed .wott-lane {
+  flex-direction: column-reverse;
+}
+.wott-layout--top-down.wott-layout--reversed .wott-shrine-captures {
+  flex-direction: column-reverse;
+}
+.wott-layout--top-down.wott-layout--reversed .wott-shrine-card {
+  transform: rotate(270deg);
+}
+.wott-layout--top-down.wott-layout--reversed .wott-shrine-card--rotated {
+  transform: rotate(90deg);
+}
+
 .wott-card {
   aspect-ratio: 25/36;
   background-image: url("img/cards.png");

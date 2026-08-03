@@ -20,9 +20,10 @@
   // 101 is reserved for the card-counting aid toggle (PR9) — default off, shows
   // which of the 9 card types have been seen this War.
 
-  // RESERVED — currently wired to nothing. It positioned the #player-tables
-  // blocks, which moved into the BGA player panels; the id is kept for a future
-  // layout option rather than being reused for something unrelated.
+  // Read via layout.ts::BOARD_LAYOUT_PREF_ID. "Top and bottom" is the default:
+  // the two players face each other, each playing their open card to the left
+  // and their hidden one to the right, with the Shrine turned a quarter turn to
+  // the right of the lanes. Which end is yours follows preference 103.
   "102": {
     "name": "Player blocks position",
     "needReload": false,
@@ -30,7 +31,7 @@
       "1": { "name": "Left and right" },
       "2": { "name": "Top and bottom" }
     },
-    "default": 1
+    "default": 2
   },
 
   // Read via hand.ts::HAND_POSITION_PREF_ID.

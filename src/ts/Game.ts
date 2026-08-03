@@ -5,9 +5,10 @@ import { PlayCards } from "./States/PlayCards.js";
 import { ChooseStack } from "./States/ChooseStack.js";
 import { ScoutReveal } from "./States/ScoutReveal.js";
 import { SiegeGuess } from "./States/SiegeGuess.js";
-import { Hand, HAND_POSITION_PREF_ID } from "./hand.js";
+import { Hand } from "./hand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
+import { Layout, BOARD_LAYOUT_PREF_ID, HAND_POSITION_PREF_ID } from "./layout.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
@@ -26,6 +27,7 @@ export class Game {
     private hand: Hand;
     private lanes: Lanes;
     private shrine: Shrine;
+    private layout: Layout;
     private playerPanels: PlayerPanels;
     private gameEnd: GameEnd;
 
@@ -84,17 +86,19 @@ export class Game {
         this.playerPanels = new PlayerPanels(this.bga, this.shrine);
         this.hand = new Hand(this.bga, this.playerPanels);
         this.lanes = new Lanes(this.bga, this.hand);
+        this.layout = new Layout(this.bga);
         this.gameEnd = new GameEnd(this.bga);
 
+        const table = this.layout.render(gameArea, playerIdsInTableOrder);
         this.hand.render(gameArea, this.gamedatas.cards);
-        this.lanes.render(gameArea, this.gamedatas.cards.lanes, playerIdsInTableOrder, Number(this.gamedatas.attackerId));
-        this.shrine.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder, this.gamedatas.angry);
+        this.lanes.render(table, this.gamedatas.cards.lanes, playerIdsInTableOrder);
+        this.shrine.render(table, this.gamedatas.cards, playerIdsInTableOrder, this.gamedatas.angry);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry, this.gamedatas.cards, this.gamedatas.deckColors);
         this.gameEnd.render(gameArea, this.gamedatas.players, playerIdsInTableOrder, this.gamedatas.gameEnd);
 
         this.applyLayoutPreferences();
         this.bga.userPreferences.onChange = (prefId) => {
-            if (prefId === HAND_POSITION_PREF_ID) {
+            if (prefId === HAND_POSITION_PREF_ID || prefId === BOARD_LAYOUT_PREF_ID) {
                 this.applyLayoutPreferences();
             }
             if (prefId === ANIMATION_SPEED_PREF_ID) {
@@ -117,7 +121,8 @@ export class Game {
     }
 
     private applyLayoutPreferences() {
-        this.hand.setPosition(this.bga.userPreferences.get(HAND_POSITION_PREF_ID) === 1 ? 'top' : 'bottom');
+        this.hand.setPosition(this.layout.getHandPosition());
+        this.layout.apply();
     }
 
     /**

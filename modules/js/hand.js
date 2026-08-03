@@ -1,7 +1,6 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 import { flipCard, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
-export const HAND_POSITION_PREF_ID = 103;
 const DEAL_STAGGER_MS = 144;
 export class Hand {
     constructor(bga, playerPanels) {

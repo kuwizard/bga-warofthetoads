@@ -3,8 +3,6 @@ import { PlayerPanels } from "./playerPanels.js";
 import { flipCard, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 
-export const HAND_POSITION_PREF_ID = 103;
-
 const DEAL_STAGGER_MS = 144;
 
 // The viewing player's own hand, never the opponent's — RULES.md's hidden hand is the whole point, and card-backs would say nothing the panel's deck count doesn't already.

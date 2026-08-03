@@ -19,7 +19,6 @@ const ANIMATION_FALLBACK_MS = 2000;
  */
 export class Lanes {
     private lanesElement!: HTMLElement;
-    private playerIdsInTableOrder!: number[];
 
     private printedStrengthByCardId = new Map<number, number | null>();
 
@@ -30,9 +29,7 @@ export class Lanes {
     }
 
     /** `playerIdsInTableOrder` fixes each slot's physical side (blue's slot always first/left) — see Game.ts::getPlayerIdsInTableOrder(). */
-    render(gameArea: HTMLElement, lanes: LaneCardData[], playerIdsInTableOrder: number[], attackerId: number): void {
-        this.playerIdsInTableOrder = playerIdsInTableOrder;
-
+    render(gameArea: HTMLElement, lanes: LaneCardData[], playerIdsInTableOrder: number[]): void {
         const slotsHtml = (lane: number) => playerIdsInTableOrder
             .map(playerId => `<div class="wott-lane-slot" id="wott-lane-slot-${lane}-${playerId}"></div>`)
             .join('<div class="wott-lane-arrow"><span class="wott-lane-arrow__right">➜</span><span class="wott-lane-arrow__left">➜</span></div>');
@@ -44,14 +41,12 @@ export class Lanes {
             </div>
         `);
         this.lanesElement = document.getElementById('wott-lanes')!;
-        this.setAttacker(attackerId);
 
         // F5 mid-battle: place whatever is already in the lanes, no animation.
         lanes.forEach(card => this.createCardElement(card, this.slotFor(card)));
     }
 
-    async notif_battleStarted(args: BattleStartedNotifArgs): Promise<void> {
-        this.setAttacker(Number(args.player_id));
+    async notif_battleStarted(_args: BattleStartedNotifArgs): Promise<void> {
         this.clear();
     }
 
@@ -64,13 +59,6 @@ export class Lanes {
     // Fired once per Battle from BattleEnd, and again from ResolveBattle's Calm double-win branch (which pauses at ChooseStack before BattleEnd runs) — either way, whichever lane fought last stops glowing.
     notif_moodChanged(_args: MoodChangedNotifArgs): void {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
-    }
-
-    private setAttacker(attackerId: number): void {
-        const attacksLeft = attackerId !== this.playerIdsInTableOrder[0];
-        this.lanesElement.querySelectorAll('.wott-lane-arrow').forEach(arrow => {
-            arrow.classList.toggle('wott-lane-arrow--left', attacksLeft);
-        });
     }
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
