@@ -87,7 +87,8 @@
   50%      { filter: brightness(1.5) drop-shadow(0 0 10px #f2b632); }
 }
 
-.wott-card--blocked .wott-card-flip__inner {
+// Never __inner: a filter on the preserve-3d element flattens it, and the flip then mirrors the front face instead of turning to the back.
+.wott-card--blocked .wott-card-flip__face {
   filter: grayscale(0.8) brightness(0.7);
 }
 
