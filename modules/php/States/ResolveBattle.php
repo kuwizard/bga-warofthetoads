@@ -115,6 +115,7 @@ class ResolveBattle extends GameState
             Notifications::moodChanged(Cards::getAngryByPlayerId());
 
             $this->gamestate->changeActivePlayer($playerId);
+            $this->game->giveExtraTime($playerId);
             return ChooseStack::class;
         }
 

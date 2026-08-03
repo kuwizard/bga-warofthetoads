@@ -34,6 +34,7 @@ class DefenderSetup extends GameState
     {
         $defenderId = Players::getOpponentId(Globals::getAttackerId());
         $this->gamestate->changeActivePlayer($defenderId);
+        $this->game->giveExtraTime($defenderId);
 
         return DefenderPlay::class;
     }

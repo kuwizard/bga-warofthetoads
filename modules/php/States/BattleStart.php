@@ -32,6 +32,7 @@ class BattleStart extends GameState
     {
         $attacker = Players::get(Globals::getAttackerId());
         $this->gamestate->changeActivePlayer($attacker->getId());
+        $this->game->giveExtraTime($attacker->getId());
 
         // [H15]'s Angry override must not survive into the next Battle.
         Globals::setBattleContext(null);

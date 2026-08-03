@@ -46,6 +46,7 @@ class BattleEnd extends GameState
 
             Globals::setSiegeGuessers(array_slice($siegeGuessers, $index + 1));
             $this->gamestate->changeActivePlayer($guesserId);
+            $this->game->giveExtraTime($guesserId);
 
             return SiegeGuess::class;
         }

@@ -37,6 +37,9 @@ class ReturnCard extends GameState
     public function onEnteringState()
     {
         $this->gamestate->setAllPlayersMultiactive();
+        foreach (Players::getAll() as $playerId => $player) {
+            $this->game->giveExtraTime($playerId);
+        }
     }
 
     /**

@@ -35,6 +35,9 @@ class ScoutReveal extends GameState
         Globals::setPendingScoutReveals([]);
 
         $this->gamestate->setPlayersMultiactive($showers, ResolveTactics::class, true);
+        foreach ($showers as $showerId) {
+            $this->game->giveExtraTime($showerId);
+        }
     }
 
     #[PossibleAction]
