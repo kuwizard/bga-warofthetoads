@@ -15,23 +15,26 @@ function producedMessage(template, msg) {
     const literals = template.split(/\$\{[^}]*\}/).map(s => s.trim()).filter(s => s.length > 2);
     return literals.length > 0 && literals.every(literal => msg.includes(literal));
 }
-function withPlayerColor(html, color) {
-    return html.startsWith('<span') ? html : `<span style="color:#${color}">${html}</span>`;
+const CONTROLLER_ARG_SUFFIX = 'Controller';
+function colorizedPlaceholders(prefix, log) {
+    const namePlusStrength = `\${${prefix}Name}\${${prefix}Strength}`;
+    return log.includes(namePlusStrength) ? namePlusStrength : `\${${prefix}Name}`;
 }
-function colorizeLaneFightArgs(game, args) {
-    if (typeof args?.card1Controller !== 'number' || typeof args?.card2Controller !== 'number') {
-        return args;
+function colorizeCardNamesInTemplate(game, log, args) {
+    if (!log || !args) {
+        return log;
     }
-    const colored = { ...args };
-    [1, 2].forEach(slot => {
-        const color = game.getPlayerColor(args[`card${slot}Controller`]);
-        if (!color) {
-            return;
+    return Object.keys(args).reduce((colored, key) => {
+        if (!key.endsWith(CONTROLLER_ARG_SUFFIX) || typeof args[key] !== 'number') {
+            return colored;
         }
-        colored[`card${slot}Name`] = withPlayerColor(args[`card${slot}Name`], color);
-        colored[`card${slot}Strength`] = withPlayerColor(args[`card${slot}Strength`], color);
-    });
-    return colored;
+        const color = game.getPlayerColor(args[key]);
+        if (!color) {
+            return colored;
+        }
+        const placeholders = colorizedPlaceholders(key.slice(0, -CONTROLLER_ARG_SUFFIX.length), colored);
+        return colored.replace(placeholders, `<span style="color:#${color}">${placeholders}</span>`);
+    }, log);
 }
 export function notificationOptions(game) {
     const bga = game.bga;
@@ -41,7 +44,7 @@ export function notificationOptions(game) {
     game.bgaFormatText = (log, args) => {
         if (!formattingOwnTitle)
             rawLog = log;
-        return { log, args: colorizeLaneFightArgs(game, args) };
+        return { log: colorizeCardNamesInTemplate(game, log, args), args };
     };
     return {
         minDuration: animDur(NOTIF_MIN_DURATION),

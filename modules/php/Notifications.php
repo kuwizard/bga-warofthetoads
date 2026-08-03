@@ -137,10 +137,14 @@ class Notifications
      */
     public static function cardsPlayed(Player $player, Card $faceUpCard, Card $faceDownCard): void
     {
-        self::notifyAll('cardsPlayed', clienttranslate('${player_name} plays 2 cards'), [
-            'player'       => $player,
-            'faceUpCard'   => $faceUpCard->getUiData(),
-            'faceDownCard' => $faceDownCard->getUiData(),
+        self::notifyAll('cardsPlayed', clienttranslate('${player_name} plays ${cardName}${cardStrength} and a hidden card'), [
+            'player'         => $player,
+            'i18n'           => ['cardName'],
+            'cardName'       => $faceUpCard->getName(),
+            'cardStrength'   => self::strengthSuffix($faceUpCard),
+            'cardController' => $faceUpCard->getController(),
+            'faceUpCard'     => $faceUpCard->getUiData(),
+            'faceDownCard'   => $faceDownCard->getUiData(),
         ]);
     }
 
@@ -170,9 +174,16 @@ class Notifications
      */
     public static function cardsRevealed(Card $card1, Card $card2): void
     {
-        self::notifyAll('cardsRevealed', clienttranslate('The hidden cards are revealed'), [
-            'card1' => $card1->getUiData(),
-            'card2' => $card2->getUiData(),
+        self::notifyAll('cardsRevealed', clienttranslate('The hidden cards are revealed: ${card1Name}${card1Strength} and ${card2Name}${card2Strength}'), [
+            'i18n'            => ['card1Name', 'card2Name'],
+            'card1'           => $card1->getUiData(),
+            'card1Name'       => $card1->getName(),
+            'card1Strength'   => self::strengthSuffix($card1),
+            'card1Controller' => $card1->getController(),
+            'card2'           => $card2->getUiData(),
+            'card2Name'       => $card2->getName(),
+            'card2Strength'   => self::strengthSuffix($card2),
+            'card2Controller' => $card2->getController(),
         ]);
     }
 

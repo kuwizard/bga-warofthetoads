@@ -23,27 +23,32 @@ function producedMessage(template: string, msg: string): boolean {
     return literals.length > 0 && literals.every(literal => msg.includes(literal));
 }
 
-function withPlayerColor(html: string, color: string): string {
-    return html.startsWith('<span') ? html : `<span style="color:#${color}">${html}</span>`;
+const CONTROLLER_ARG_SUFFIX = 'Controller';
+
+function colorizedPlaceholders(prefix: string, log: string): string {
+    const namePlusStrength = `\${${prefix}Name}\${${prefix}Strength}`;
+    return log.includes(namePlusStrength) ? namePlusStrength : `\${${prefix}Name}`;
 }
 
-function colorizeLaneFightArgs(game: Game, args: any): any {
-    if (typeof args?.card1Controller !== 'number' || typeof args?.card2Controller !== 'number') {
-        return args;
+// Colours the template, not the arg values: bgaFormatText runs before BGA translates the `i18n` args.
+function colorizeCardNamesInTemplate(game: Game, log: string, args: any): string {
+    if (!log || !args) {
+        return log;
     }
 
-    const colored = { ...args };
-    [1, 2].forEach(slot => {
-        const color = game.getPlayerColor(args[`card${slot}Controller`]);
-        if (!color) {
-            return;
+    return Object.keys(args).reduce((colored, key) => {
+        if (!key.endsWith(CONTROLLER_ARG_SUFFIX) || typeof args[key] !== 'number') {
+            return colored;
         }
 
-        colored[`card${slot}Name`] = withPlayerColor(args[`card${slot}Name`], color);
-        colored[`card${slot}Strength`] = withPlayerColor(args[`card${slot}Strength`], color);
-    });
+        const color = game.getPlayerColor(args[key]);
+        if (!color) {
+            return colored;
+        }
 
-    return colored;
+        const placeholders = colorizedPlaceholders(key.slice(0, -CONTROLLER_ARG_SUFFIX.length), colored);
+        return colored.replace(placeholders, `<span style="color:#${color}">${placeholders}</span>`);
+    }, log);
 }
 
 export function notificationOptions(game: Game) {
@@ -55,7 +60,7 @@ export function notificationOptions(game: Game) {
 
     game.bgaFormatText = (log: string, args: any) => {
         if (!formattingOwnTitle) rawLog = log;
-        return { log, args: colorizeLaneFightArgs(game, args) };
+        return { log: colorizeCardNamesInTemplate(game, log, args), args };
     };
 
     return {
