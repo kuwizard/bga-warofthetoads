@@ -20,6 +20,7 @@ class WarSetup extends GameState
         parent::__construct($game,
             id: ST_WAR_SETUP,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

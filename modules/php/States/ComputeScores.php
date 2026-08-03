@@ -21,6 +21,7 @@ class ComputeScores extends GameState
         parent::__construct($game,
             id: ST_COMPUTE_SCORES,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

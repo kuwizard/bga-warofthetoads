@@ -21,6 +21,7 @@ class DrawCards extends GameState
         parent::__construct($game,
             id: ST_DRAW_CARDS,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

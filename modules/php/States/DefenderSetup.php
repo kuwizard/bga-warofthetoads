@@ -26,6 +26,7 @@ class DefenderSetup extends GameState
         parent::__construct($game,
             id: ST_DEFENDER_SETUP,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

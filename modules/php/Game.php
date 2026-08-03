@@ -108,9 +108,26 @@ class Game extends \Bga\GameFramework\Table
      */
     public function getGameProgression()
     {
-        // TODO: compute and return the game progression.
+        if ($this->gamestate->getCurrentMainStateId() === ST_COMPUTE_SCORES) {
+            return 100;
+        }
 
-        return 0;
+        $battlesCompleted = (Globals::getWar() - 1) * 4 + (Globals::getBattle() - 1) + $this->battlePlayFraction();
+
+        return (int) round($battlesCompleted / 8 * 100);
+    }
+
+    private function battlePlayFraction(): float
+    {
+        $stateId = $this->gamestate->getCurrentMainStateId();
+        $bothPlayersPlayed = $stateId >= ST_DRAW_CARDS;
+        $attackerPlayedOnly = $stateId >= ST_DEFENDER_SETUP;
+
+        return match (true) {
+            $bothPlayersPlayed => 1.0,
+            $attackerPlayedOnly => 0.5,
+            default => 0.0,
+        };
     }
 
     /**

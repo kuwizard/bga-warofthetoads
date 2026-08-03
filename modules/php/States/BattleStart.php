@@ -24,6 +24,7 @@ class BattleStart extends GameState
         parent::__construct($game,
             id: ST_BATTLE_START,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 

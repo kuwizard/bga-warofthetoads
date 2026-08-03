@@ -21,6 +21,7 @@ class WarEnd extends GameState
         parent::__construct($game,
             id: ST_WAR_END,
             type: StateType::GAME,
+            updateGameProgression: true,
         );
     }
 
