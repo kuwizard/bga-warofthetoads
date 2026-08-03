@@ -87,16 +87,10 @@ class ReturnCard extends GameState
         $this->gamestate->setPlayersMultiactive([$playerId], BattleStart::class);
     }
 
-    /**
-     * Called when an active player has quit. Picks an arbitrary card from
-     * their hand — any of the 5 is a legal return, so there is no "better"
-     * zombie choice to make.
-     *
-     * See https://en.doc.boardgamearena.com/Zombie_Mode
-     */
     function zombie(int $playerId)
     {
-        $card = Cards::getHand($playerId)->first();
+        $hand = Cards::getHand($playerId)->toArray();
+        $card = $hand[bga_rand(0, count($hand) - 1)];
         $this->returnCard($playerId, $card);
 
         return $this->gamestate->setPlayerNonMultiactive($playerId, BattleStart::class);

@@ -42,10 +42,14 @@ trait PlayCardsTrait
         Notifications::cardsPlayed(Players::get($playerId), $faceUpCard, $faceDownCard);
     }
 
-    /** Any legal 2-card split is a valid zombie play — no "better" choice to make (mirrors ReturnCard::zombie). */
     private function zombiePlayCards(int $playerId): void
     {
-        [$faceUpCard, $faceDownCard] = Cards::getHand($playerId)->toArray();
+        $randomHandOrder = Cards::getHand($playerId)->toArray();
+        for ($i = count($randomHandOrder) - 1; $i > 0; $i--) {
+            $j = bga_rand(0, $i);
+            [$randomHandOrder[$i], $randomHandOrder[$j]] = [$randomHandOrder[$j], $randomHandOrder[$i]];
+        }
+        [$faceUpCard, $faceDownCard] = [$randomHandOrder[0], $randomHandOrder[1]];
 
         Cards::playToLane($faceUpCard, $faceDownCard);
         Notifications::cardsPlayed(Players::get($playerId), $faceUpCard, $faceDownCard);

@@ -85,7 +85,12 @@ class ScoutReveal extends GameState
 
     function zombie(int $playerId)
     {
-        $cards = array_slice(Cards::getHand($playerId)->toArray(), 0, 3);
+        $randomHandOrder = Cards::getHand($playerId)->toArray();
+        for ($i = count($randomHandOrder) - 1; $i > 0; $i--) {
+            $j = bga_rand(0, $i);
+            [$randomHandOrder[$i], $randomHandOrder[$j]] = [$randomHandOrder[$j], $randomHandOrder[$i]];
+        }
+        $cards = array_slice($randomHandOrder, 0, 3);
         $this->showCards($playerId, $cards);
 
         return $this->gamestate->setPlayerNonMultiactive($playerId, ResolveTactics::class);

@@ -70,7 +70,8 @@ class SiegeGuess extends GameState
 
     function zombie(int $playerId)
     {
-        $this->guess($playerId, CARD_TYPE_ASSASSIN);
+        $guessedType = self::GUESSABLE_TYPES[bga_rand(0, count(self::GUESSABLE_TYPES) - 1)];
+        $this->guess($playerId, $guessedType);
 
         return BattleEnd::class;
     }

@@ -59,13 +59,13 @@ class ChooseStack extends GameState
         Notifications::stackKept(Players::get($playerId), $keptStackId, $declinedId);
     }
 
-    /**
-     * Arbitrary but legal: keeps the more recently formed of the 2 stacks.
-     * See https://en.doc.boardgamearena.com/Zombie_Mode
-     */
     function zombie(int $playerId)
     {
-        $keptStackId = Cards::getStacksFor($playerId)->last()->getLocationArg();
+        $pendingIds = array_map(
+            fn($c) => $c->getLocationArg(),
+            array_slice(Cards::getStacksFor($playerId)->toArray(), -2)
+        );
+        $keptStackId = $pendingIds[bga_rand(0, count($pendingIds) - 1)];
         $this->chooseStack($playerId, $keptStackId);
 
         return BattleEnd::class;
