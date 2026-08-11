@@ -24,7 +24,7 @@ class ScoutReveal extends GameState
         parent::__construct($game,
             id: ST_SCOUT_REVEAL,
             type: StateType::MULTIPLE_ACTIVE_PLAYER,
-            description: clienttranslate('${actplayer} must choose 3 cards to show you (Scout effect)'),
+            description: clienttranslate('Your opponent must choose 3 cards to show you (Scout effect)'),
             descriptionMyTurn: clienttranslate('${you} must choose 3 cards to show the opponent (Scout effect)'),
         );
     }
