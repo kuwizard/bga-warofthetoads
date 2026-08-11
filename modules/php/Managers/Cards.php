@@ -96,10 +96,9 @@ class Cards extends CachedDB_Manager
 
         static::invalidate();
 
-        $dealCount = DEV_FULL_HANDS ? count(self::$map) : 5;
         foreach ($players as $player) {
             static::shuffleDeck($player->getId());
-            static::drawCards($player->getId(), $dealCount);
+            static::drawCards($player->getId(), 5);
         }
     }
 

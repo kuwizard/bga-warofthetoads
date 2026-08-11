@@ -47,11 +47,10 @@ class WarSetup extends GameState
 
             foreach ($players as $player) {
                 Cards::shuffleDeck($player->getId());
-                $dealCount = DEV_FULL_HANDS ? Cards::getDeckCount($player->getId()) : 5;
-                Notifications::cardsDrawn($player, Cards::drawCards($player->getId(), $dealCount));
+                Notifications::cardsDrawn($player, Cards::drawCards($player->getId(), 5));
             }
         }
 
-        return DEV_FULL_HANDS ? BattleStart::class : ReturnCard::class;
+        return ReturnCard::class;
     }
 }

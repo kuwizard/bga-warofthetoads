@@ -19,10 +19,6 @@
  * See doc/IMPLEMENTATION_PLAN.md §2 for the design these mirror.
  */
 
-// ── TEMPORARY: deals the whole deck and skips ReturnCard. Revert before committing ──
-
-const DEV_FULL_HANDS = true;
-
 // ── State ids — 1/99 are framework-reserved; 98 is the score slot (argGameEnd/stGameEnd are final); rename history: doc/IMPLEMENTATION_PLAN.md §2.2 ──
 
 const ST_GAME_SETUP  = 1;
