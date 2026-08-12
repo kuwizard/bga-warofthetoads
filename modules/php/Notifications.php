@@ -276,7 +276,8 @@ class Notifications
             'player'    => $player,
             'player2'   => $scoutController,
             'cardNames' => implode(', ', array_map(fn(Card $c) => $c->getName(), $cards)),
-            'cards'     => array_map(fn(Card $c) => $c->getUiData(), $cards),
+            // Scout forces a full reveal even though these cards stay face-down in hand.
+            'cards'     => array_map(fn(Card $c) => $c->getUiData($c->getController()), $cards),
         ]);
     }
 
