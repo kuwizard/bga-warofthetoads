@@ -1,5 +1,5 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
-import { flipCard, slideIntoPlace } from "./animations.js";
+import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 const DEAL_STAGGER_MS = 144;
 export class Hand {
@@ -37,13 +37,12 @@ export class Hand {
         if (args.card === undefined) {
             return;
         }
-        this.cards.hand.push(args.card);
         const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
             await this.animateFromDeck(args.card, deckAnchor);
         }
         else {
-            this.appendCard(args.card);
+            this.insertCardSorted(args.card);
         }
     }
     async notif_cardsDrawn(args) {
@@ -51,10 +50,9 @@ export class Hand {
         this.playerPanels.adjustDeckCount(playerId, -args.count);
         this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
         const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
-        drawnCards.forEach(card => this.cards.hand.push(card));
         const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (!deckAnchor) {
-            drawnCards.forEach(card => this.appendCard(card));
+            drawnCards.forEach(card => this.insertCardSorted(card));
             return;
         }
         await Promise.all(drawnCards.map(async (card, index) => {
@@ -126,6 +124,22 @@ export class Hand {
     appendCard(card) {
         this.createCardElement(card, this.handElement);
     }
+    spliceCardSorted(card) {
+        const nextCard = this.cards.hand.find(c => c.id > card.id);
+        const index = nextCard ? this.cards.hand.indexOf(nextCard) : this.cards.hand.length;
+        this.cards.hand.splice(index, 0, card);
+        return nextCard ? document.getElementById(`wott-card-${nextCard.id}`) : null;
+    }
+    insertCardSorted(card) {
+        const nextElement = this.spliceCardSorted(card);
+        if (nextElement) {
+            nextElement.insertAdjacentHTML('beforebegin', tplHandCard(card));
+        }
+        else {
+            this.handElement.insertAdjacentHTML('beforeend', tplHandCard(card));
+        }
+        this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+    }
     createCardElement(card, container) {
         container.insertAdjacentHTML('beforeend', tplHandCard(card));
         this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
@@ -156,6 +170,16 @@ export class Hand {
     getElement() {
         return this.handElement;
     }
+    getInsertionPointFor(cardId) {
+        const index = this.cards.hand.findIndex(c => c.id === cardId);
+        for (let i = index + 1; i < this.cards.hand.length; i++) {
+            const element = this.handElement.querySelector(`#wott-card-${this.cards.hand[i].id}`);
+            if (element) {
+                return element;
+            }
+        }
+        return null;
+    }
     async animateReturnToDeck(cardId, deckAnchor) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
         if (!cardElement) {
@@ -169,7 +193,10 @@ export class Hand {
     async animateFromDeck(card, deckAnchor) {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
-        await slideIntoPlace(cardElement, this.handElement);
+        const fromRect = cardElement.getBoundingClientRect();
+        const nextElement = this.spliceCardSorted(card);
+        this.handElement.insertBefore(cardElement, nextElement);
+        await slideFromRects([{ element: cardElement, fromRect }]);
         await flipCard(cardElement, false);
     }
 }

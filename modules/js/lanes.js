@@ -1,5 +1,5 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
-import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
+import { flipCard, revealCardFace, slideAllIntoPlace, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur } from "./common.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
@@ -141,7 +141,9 @@ export class Lanes {
         if (!cardElement) {
             return;
         }
-        await slideIntoPlace(cardElement, this.hand.getElement());
+        const fromRect = cardElement.getBoundingClientRect();
+        this.hand.getElement().insertBefore(cardElement, this.hand.getInsertionPointFor(cardId));
+        await slideFromRects([{ element: cardElement, fromRect }]);
         if (wasFaceDown) {
             await flipCard(cardElement, false);
         }

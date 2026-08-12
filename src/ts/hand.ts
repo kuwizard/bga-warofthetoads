@@ -1,6 +1,6 @@
 import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 import { PlayerPanels } from "./playerPanels.js";
-import { flipCard, slideIntoPlace } from "./animations.js";
+import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 
 const DEAL_STAGGER_MS = 144;
@@ -56,13 +56,11 @@ export class Hand {
             return;
         }
 
-        this.cards.hand.push(args.card);
-
         const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (deckAnchor) {
             await this.animateFromDeck(args.card, deckAnchor);
         } else {
-            this.appendCard(args.card);
+            this.insertCardSorted(args.card);
         }
     }
 
@@ -74,11 +72,10 @@ export class Hand {
 
         // The War's opening deal is already in `getAllDatas()` by the time its notification arrives.
         const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
-        drawnCards.forEach(card => this.cards.hand.push(card));
 
         const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (!deckAnchor) {
-            drawnCards.forEach(card => this.appendCard(card));
+            drawnCards.forEach(card => this.insertCardSorted(card));
             return;
         }
 
@@ -168,6 +165,24 @@ export class Hand {
         this.createCardElement(card, this.handElement);
     }
 
+    // [H1]: ascending `id` is ascending Strength for a player's cards — matches a refresh's order.
+    private spliceCardSorted(card: CardData): HTMLElement | null {
+        const nextCard = this.cards.hand.find(c => c.id > card.id);
+        const index = nextCard ? this.cards.hand.indexOf(nextCard) : this.cards.hand.length;
+        this.cards.hand.splice(index, 0, card);
+        return nextCard ? document.getElementById(`wott-card-${nextCard.id}`) : null;
+    }
+
+    private insertCardSorted(card: CardData): void {
+        const nextElement = this.spliceCardSorted(card);
+        if (nextElement) {
+            nextElement.insertAdjacentHTML('beforebegin', tplHandCard(card));
+        } else {
+            this.handElement.insertAdjacentHTML('beforeend', tplHandCard(card));
+        }
+        this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+    }
+
     private createCardElement(card: CardData, container: HTMLElement): HTMLElement {
         container.insertAdjacentHTML('beforeend', tplHandCard(card));
         this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
@@ -206,6 +221,18 @@ export class Hand {
         return this.handElement;
     }
 
+    // Skips array neighbours currently sitting outside handElement (e.g. the lane-preview card of a still-selected other role) so `cardId` lands next to whichever sorted neighbour is actually present.
+    getInsertionPointFor(cardId: number): HTMLElement | null {
+        const index = this.cards.hand.findIndex(c => c.id === cardId);
+        for (let i = index + 1; i < this.cards.hand.length; i++) {
+            const element = this.handElement.querySelector<HTMLElement>(`#wott-card-${this.cards.hand[i].id}`);
+            if (element) {
+                return element;
+            }
+        }
+        return null;
+    }
+
     /** Flips the card face-down in place, then slides it into `deckAnchor` — the ReturnCard confirm animation. */
     private async animateReturnToDeck(cardId: number, deckAnchor: HTMLElement): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
@@ -226,7 +253,10 @@ export class Hand {
         const cardElement = this.createCardElement(card, deckAnchor);
         cardElement.classList.add('wott-card-flip--flipped');
 
-        await slideIntoPlace(cardElement, this.handElement);
+        const fromRect = cardElement.getBoundingClientRect();
+        const nextElement = this.spliceCardSorted(card);
+        this.handElement.insertBefore(cardElement, nextElement);
+        await slideFromRects([{ element: cardElement, fromRect }]);
         await flipCard(cardElement, false);
     }
 

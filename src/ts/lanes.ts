@@ -1,6 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
-import { flipCard, revealCardFace, slideAllIntoPlace, slideIntoPlace } from "./animations.js";
+import { flipCard, revealCardFace, slideAllIntoPlace, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur } from "./common.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
@@ -205,7 +205,9 @@ export class Lanes {
             return;
         }
 
-        await slideIntoPlace(cardElement, this.hand.getElement());
+        const fromRect = cardElement.getBoundingClientRect();
+        this.hand.getElement().insertBefore(cardElement, this.hand.getInsertionPointFor(cardId));
+        await slideFromRects([{ element: cardElement, fromRect }]);
         if (wasFaceDown) {
             await flipCard(cardElement, false);
         }
