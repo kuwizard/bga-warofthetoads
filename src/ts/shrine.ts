@@ -1,5 +1,5 @@
 import { tplLaneCard, tplCardTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
-import { hideCardFace, revealCardFace, slideAllIntoPlace } from "./animations.js";
+import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 
 // The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the shared Monk pile. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
@@ -133,14 +133,16 @@ export class Shrine {
         this.refreshStackCount(playerId, this.cards.stacks);
     }
 
-    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub appears directly here.
-    notif_casualtySet(args: CasualtySetNotifArgs): void {
+    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub slides in here. Unhidden up front so the zone is already on screen before either card arrives, not revealed after the fact by notif_warStarted.
+    async notif_casualtySet(args: CasualtySetNotifArgs): Promise<void> {
+        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+
         if (args.card.type !== undefined) {
             return;
         }
 
         this.cards.casualties.push(args.card);
-        this.placeCasualty(args.card);
+        await this.animateCasualtyIn(args.card, Number(args.player_id));
     }
 
     // RULES.md §10 — both Casualties flip face-up at game end, whichever condition decided it. The owner's element already carries the real sprite; everyone else's is still the redacted stub, and revealCardFace covers both.
@@ -300,6 +302,25 @@ export class Shrine {
         if (slot) {
             this.createCard(card, slot);
         }
+    }
+
+    // The redacted stub arriving live (notif_casualtySet) — slides from the deck anchor on that player's own panel, mirroring hand.ts's deck-to-hand deal.
+    private async animateCasualtyIn(card: StackCardData, playerId: number): Promise<void> {
+        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
+        if (!slot) {
+            return;
+        }
+
+        const anchor = document.getElementById(`wott-deck-anchor-${playerId}`);
+        if (!anchor) {
+            this.createCard(card, slot);
+            return;
+        }
+
+        const cardElement = this.createCard(card, anchor);
+        const fromRect = cardElement.getBoundingClientRect();
+        slot.appendChild(cardElement);
+        await slideFromRects([{ element: cardElement, fromRect }]);
     }
 
     private setStackCount(playerId: number, count: number): void {

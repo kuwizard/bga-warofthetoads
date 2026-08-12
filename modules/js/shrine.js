@@ -1,5 +1,5 @@
 import { tplLaneCard, tplCardTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
-import { hideCardFace, revealCardFace, slideAllIntoPlace } from "./animations.js";
+import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 export class Shrine {
     constructor(bga) {
         this.bga = bga;
@@ -90,12 +90,13 @@ export class Shrine {
         document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
-    notif_casualtySet(args) {
+    async notif_casualtySet(args) {
+        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
         if (args.card.type !== undefined) {
             return;
         }
         this.cards.casualties.push(args.card);
-        this.placeCasualty(args.card);
+        await this.animateCasualtyIn(args.card, Number(args.player_id));
     }
     async notif_casualtyRevealed(args) {
         const index = this.cards.casualties.findIndex(casualty => casualty.id === args.card.id);
@@ -209,6 +210,21 @@ export class Shrine {
         if (slot) {
             this.createCard(card, slot);
         }
+    }
+    async animateCasualtyIn(card, playerId) {
+        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
+        if (!slot) {
+            return;
+        }
+        const anchor = document.getElementById(`wott-deck-anchor-${playerId}`);
+        if (!anchor) {
+            this.createCard(card, slot);
+            return;
+        }
+        const cardElement = this.createCard(card, anchor);
+        const fromRect = cardElement.getBoundingClientRect();
+        slot.appendChild(cardElement);
+        await slideFromRects([{ element: cardElement, fromRect }]);
     }
     setStackCount(playerId, count) {
         const el = document.getElementById(`wott-stack-count-${playerId}`);
