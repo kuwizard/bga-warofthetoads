@@ -9,6 +9,30 @@
   max-width: 800px;
 }
 
+.wott-explain-bubble {
+  position: fixed;
+  z-index: 1000;
+  width: 260px;
+  padding: 6px 10px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-style: italic;
+  text-align: center;
+  transform: translateX(-50%);
+}
+.wott-explain-bubble::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  bottom: 100%;
+  transform: translateX(-50%);
+  border-left: 7px solid transparent;
+  border-right: 7px solid transparent;
+  border-bottom: 12px solid #333;
+}
+
 .wott-player-panel {
   position: relative;
 }

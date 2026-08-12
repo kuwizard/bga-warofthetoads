@@ -18,3 +18,29 @@
     max-width: 800px;
   }
 }
+
+// Positioned below its trigger button via inline left/top (see ChooseStack.ts).
+.wott-explain-bubble {
+  position: fixed;
+  z-index: 1000;
+  width: 260px;
+  padding: 6px 10px;
+  border: 2px solid #333;
+  border-radius: 10px;
+  background: #fff;
+  color: #333;
+  font-style: italic;
+  text-align: center;
+  transform: translateX(-50%);
+
+  &::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    bottom: 100%;
+    transform: translateX(-50%);
+    border-left: 7px solid transparent;
+    border-right: 7px solid transparent;
+    border-bottom: 12px solid #333;
+  }
+}
