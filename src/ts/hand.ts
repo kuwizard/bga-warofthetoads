@@ -116,13 +116,35 @@ export class Hand {
             return;
         }
 
+        const dialogId = 'wott-shown-cards-dialog';
         const dialog = new ebg.popindialog();
-        dialog.create('wott-shown-cards');
+        dialog.create(dialogId);
         dialog.setTitle(_('Cards shown to you'));
         dialog.setContent(`<div class="wott-shown-cards">${args.cards.map(tplShownCard).join('')}</div>`);
-        dialog.show();
 
         args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
+
+        await this.waitForDialogClose(dialog, dialogId);
+    }
+
+    private waitForDialogClose(dialog: PopinDialog, dialogId: string): Promise<void> {
+        return new Promise(resolve => {
+            let resolved = false;
+            const close = () => {
+                if (resolved) {
+                    return;
+                }
+                resolved = true;
+                underlay?.removeEventListener('click', close);
+                dialog.destroy();
+                resolve();
+            };
+            const underlay = document.getElementById(`popin_${dialogId}_underlay`);
+
+            dialog.replaceCloseCallback(close);
+            dialog.show();
+            underlay?.addEventListener('click', close);
+        });
     }
 
     onCardsPlayed(playerId: number, cardIds: number[]): void {
