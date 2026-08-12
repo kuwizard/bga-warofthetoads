@@ -123,6 +123,7 @@ interface CardsDrawnNotifArgs {
     player_id: number;
     player_name: string;
     count: number;
+    arrivesFaceUp: boolean;
     // Present only in the `_private` block delivered to the drawing player
     // (Notifications::cardsDrawn()) — absent for everyone else, [H13].
     cards?: CardData[];

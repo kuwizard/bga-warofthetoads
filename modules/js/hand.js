@@ -6,6 +6,7 @@ export class Hand {
     constructor(bga, playerPanels) {
         this.bga = bga;
         this.playerPanels = playerPanels;
+        this.selectable = false;
     }
     render(gameArea, cards) {
         this.cards = cards;
@@ -57,7 +58,7 @@ export class Hand {
         }
         await Promise.all(drawnCards.map(async (card, index) => {
             await delay(index * animDur(DEAL_STAGGER_MS));
-            await this.animateFromDeck(card, deckAnchor);
+            await this.animateFromDeck(card, deckAnchor, args.arrivesFaceUp);
         }));
     }
     async notif_casualtySet(args) {
@@ -139,22 +140,28 @@ export class Hand {
             this.handElement.insertAdjacentHTML('beforeend', tplHandCard(card));
         }
         this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
+        this.applySelectable(document.getElementById(`wott-card-${card.id}`));
     }
     createCardElement(card, container) {
         container.insertAdjacentHTML('beforeend', tplHandCard(card));
         this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
-        return document.getElementById(`wott-card-${card.id}`);
+        const cardElement = document.getElementById(`wott-card-${card.id}`);
+        this.applySelectable(cardElement);
+        return cardElement;
     }
     removeCard(cardId) {
         document.getElementById(`wott-card-${cardId}`)?.remove();
     }
     setSelectable(selectable, onClick) {
-        this.handElement.querySelectorAll('.wott-card-flip[data-card-id]').forEach(cardElement => {
-            cardElement.classList.toggle('wott-selectable', selectable);
-            cardElement.onclick = (selectable && onClick) ?
-                () => onClick(Number(cardElement.dataset.cardId)) :
-                null;
-        });
+        this.selectable = selectable;
+        this.selectableOnClick = onClick;
+        this.handElement.querySelectorAll('.wott-card-flip[data-card-id]').forEach(cardElement => this.applySelectable(cardElement));
+    }
+    applySelectable(cardElement) {
+        cardElement.classList.toggle('wott-selectable', this.selectable);
+        cardElement.onclick = (this.selectable && this.selectableOnClick) ?
+            () => this.selectableOnClick(Number(cardElement.dataset.cardId)) :
+            null;
     }
     setSelectedCard(cardId) {
         this.setSelectedCards(cardId === null ? [] : [cardId]);
@@ -190,13 +197,15 @@ export class Hand {
         await slideIntoPlace(cardElement, deckAnchor);
         cardElement.remove();
     }
-    async animateFromDeck(card, deckAnchor) {
+    async animateFromDeck(card, deckAnchor, arrivesFaceUp = false) {
         const cardElement = this.createCardElement(card, deckAnchor);
-        cardElement.classList.add('wott-card-flip--flipped');
+        cardElement.classList.toggle('wott-card-flip--flipped', !arrivesFaceUp);
         const fromRect = cardElement.getBoundingClientRect();
         const nextElement = this.spliceCardSorted(card);
         this.handElement.insertBefore(cardElement, nextElement);
         await slideFromRects([{ element: cardElement, fromRect }]);
-        await flipCard(cardElement, false);
+        if (!arrivesFaceUp) {
+            await flipCard(cardElement, false);
+        }
     }
 }

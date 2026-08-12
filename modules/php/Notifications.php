@@ -155,11 +155,12 @@ class Notifications
      * as `cardReturnUndone`: everyone else only learns the count for their
      * deck-count display, the drawing player's own client gets the full cards.
      */
-    public static function cardsDrawn(Player $player, Collection $cards): void
+    public static function cardsDrawn(Player $player, Collection $cards, bool $arrivesFaceUp = false): void
     {
         self::notifyAll('cardsDrawn', clienttranslate('${player_name} draws ${count} card(s)'), [
             'player'         => $player,
             'count'          => $cards->count(),
+            'arrivesFaceUp'  => $arrivesFaceUp,
             '_merge_private' => true,
             '_private'       => [
                 $player->getId() => [

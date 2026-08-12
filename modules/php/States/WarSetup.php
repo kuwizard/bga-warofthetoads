@@ -47,7 +47,7 @@ class WarSetup extends GameState
 
             foreach ($players as $player) {
                 Cards::shuffleDeck($player->getId());
-                Notifications::cardsDrawn($player, Cards::drawCards($player->getId(), 5));
+                Notifications::cardsDrawn($player, Cards::drawCards($player->getId(), 5), arrivesFaceUp: true);
             }
         }
 
