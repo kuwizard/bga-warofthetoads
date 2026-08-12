@@ -145,6 +145,8 @@ class Notifications
             'cardController' => $faceUpCard->getController(),
             'faceUpCard'     => $faceUpCard->getUiData(),
             'faceDownCard'   => $faceDownCard->getUiData(),
+            // cardController isn't in the message template, so it needs 'preserve' to survive historical_log replay on refresh.
+            'preserve'       => ['cardController'],
         ]);
     }
 
@@ -184,6 +186,7 @@ class Notifications
             'card2Name'       => $card2->getName(),
             'card2Strength'   => self::strengthSuffix($card2),
             'card2Controller' => $card2->getController(),
+            'preserve'        => ['card1Controller', 'card2Controller'],
         ]);
     }
 
@@ -326,6 +329,7 @@ class Notifications
             'card2Name'       => $card2->getName(),
             'card2Strength'   => self::strengthSuffix($card2),
             'card2Controller' => $card2->getController(),
+            'preserve'        => ['card1Controller', 'card2Controller'],
         ]);
     }
 
