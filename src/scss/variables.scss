@@ -9,3 +9,9 @@
 
 $gap: 8px;
 $radius: 6px;
+
+// Mirrors `player_colors` in gameinfos.jsonc and PLAYER_COLOR_BY_DECK in constants.inc.php.
+$deck-colors: (
+  'blue': #1a3ec1,
+  'red': #c0392b,
+);

@@ -308,6 +308,7 @@ interface WarStartedNotifArgs {
     war: number;
     deckColors: { [playerId: number]: 'blue' | 'red' };
     deckCounts: { [playerId: number]: number };
+    playerColors: { [playerId: number]: string };
 }
 
 // End of game (PR 7b, RULES.md §10) — see Notifications.php.

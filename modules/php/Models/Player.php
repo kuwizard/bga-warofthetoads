@@ -36,6 +36,17 @@ class Player extends DB_Model
         'zombie' => ['player_zombie', 'bool'],
     ];
 
+    public function getDeck(): string
+    {
+        $deck = array_search($this->color, PLAYER_COLOR_BY_DECK, true);
+
+        if ($deck === false) {
+            throw new \LogicException("Player {$this->id} has colour {$this->color}, which belongs to no deck");
+        }
+
+        return $deck;
+    }
+
     /**
      * Score lives in BGA's playerScore counter, not in a column we own — so it
      * is read through the framework rather than declared as an attribute.

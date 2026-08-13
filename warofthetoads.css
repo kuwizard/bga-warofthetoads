@@ -656,6 +656,16 @@
   font-weight: bold;
 }
 
+.wott-log-deck--blue,
+.wott-log-deck--blue * {
+  color: #1a3ec1 !important;
+}
+
+.wott-log-deck--red,
+.wott-log-deck--red * {
+  color: #c0392b !important;
+}
+
 :root {
   --am: 1;
 }

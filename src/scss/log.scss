@@ -1,0 +1,12 @@
+// Deck colours for game log lines, applied by src/ts/notifications.ts.
+
+@use 'sass:map';
+@use 'variables' as v;
+
+// !important: BGA colours ${player_name} with an inline style of its own, inside this span.
+@each $deck, $color in v.$deck-colors {
+  .wott-log-deck--#{$deck},
+  .wott-log-deck--#{$deck} * {
+    color: $color !important;
+  }
+}

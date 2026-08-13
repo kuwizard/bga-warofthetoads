@@ -12,7 +12,7 @@ import { Layout, BOARD_LAYOUT_PREF_ID, HAND_POSITION_PREF_ID } from "./layout.js
 import { PlayerPanels } from "./playerPanels.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
-import { notificationOptions, textOnlyNotifHandlers } from "./notifications.js";
+import { notificationOptions } from "./notifications.js";
 import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
 
 export class Game {
@@ -171,19 +171,14 @@ export class Game {
         await this.lanes.previewUnplay(cardId, wasFaceDown);
     }
 
-    public getPlayerColor(playerId: number): string | undefined {
-        return this.bga.players.getPlayerById(playerId)?.color;
-    }
-
     ///////////////////////////////////////////////////
     //// Reaction to cometD notifications
 
     setupNotifications() {
         debug('notifications subscriptions setup');
 
-        this.bga.notifications.setupPromiseNotifications({
-            ...notificationOptions(this),
-            handlers: [this.hand, this.lanes, this.shrine, this.playerPanels, this.gameEnd, textOnlyNotifHandlers],
-        });
+        this.bga.notifications.setupPromiseNotifications(
+            notificationOptions(this, [this.hand, this.lanes, this.shrine, this.playerPanels, this.gameEnd])
+        );
     }
 }

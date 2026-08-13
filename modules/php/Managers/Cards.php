@@ -61,25 +61,13 @@ class Cards extends CachedDB_Manager
 
     // ── SETUP ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Builds both colour decks (9 cards each, one of every `CARD_MATERIAL`
-     * type), assigns one to each player in table order — `player_colors` in
-     * gameinfos.jsonc already documents Blue Hills going to player 1 — then
-     * shuffles and deals 5 into each hand.
-     *
-     * `card_controller` starts equal to the dealt `card_deck`; they only
-     * diverge after the 2nd-War deck swap (PR7).
-     *
-     * Call after `Players::setupNewGame()` — this reads `Players::getInTableOrder()`.
-     */
     public static function setupNewGame(): void
     {
-        $decks = [CARD_DECK_BLUE, CARD_DECK_RED];
         $players = Players::getInTableOrder();
 
         $rows = [];
-        foreach ($players as $i => $player) {
-            $deck = $decks[$i];
+        foreach ($players as $player) {
+            $deck = $player->getDeck();
             foreach (array_keys(self::$map) as $order => $type) {
                 $rows[] = [$type, $deck, $player->getId(), LOCATION_DECK, $order, 0];
             }

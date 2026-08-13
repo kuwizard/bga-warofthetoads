@@ -1,11 +1,12 @@
 import { debug } from "./debug.js";
-import { animDur } from "./common.js";
+import { animDur, delay } from "./common.js";
 const NOTIF_MIN_DURATION = 1440;
-export const textOnlyNotifHandlers = {
-    notif_scoutNothingToShow: (_args) => { },
-    notif_siegeGuessFizzles: (_args) => { },
-    notif_warEnded: (_args) => { },
-};
+const FRAMEWORK_MIN_DURATION = 1;
+class TextOnlyNotifs {
+    notif_scoutNothingToShow(_args) { }
+    notif_siegeGuessFizzles(_args) { }
+    notif_warEnded(_args) { }
+}
 let rawLog;
 let formattingOwnTitle = false;
 function stripSubstitutionMarkup(html) {
@@ -15,39 +16,62 @@ function producedMessage(template, msg) {
     const literals = template.split(/\$\{[^}]*\}/).map(s => s.trim()).filter(s => s.length > 2);
     return literals.length > 0 && literals.every(literal => msg.includes(literal));
 }
-const CONTROLLER_ARG_SUFFIX = 'Controller';
-function colorizedPlaceholders(prefix, log) {
-    const namePlusStrength = `\${${prefix}Name}\${${prefix}Strength}`;
-    return log.includes(namePlusStrength) ? namePlusStrength : `\${${prefix}Name}`;
+const DECK_ARG_PATTERN = /^(.*)Deck(\d?)$/;
+function colorizedPlaceholders(deckArg, log) {
+    const [, prefix, suffix] = deckArg.match(DECK_ARG_PATTERN);
+    const candidates = prefix === 'player'
+        ? [`\${player_name${suffix}}`]
+        : [`\${${prefix}${suffix}Name}\${${prefix}${suffix}Strength}`, `\${${prefix}${suffix}Name}`];
+    return candidates.find(candidate => log.includes(candidate)) ?? null;
 }
-function colorizeCardNamesInTemplate(game, log, args) {
+function colorizeDecksInTemplate(log, args) {
     if (!log || !args) {
         return log;
     }
     return Object.keys(args).reduce((colored, key) => {
-        if (!key.endsWith(CONTROLLER_ARG_SUFFIX) || typeof args[key] !== 'number') {
+        const deck = args[key];
+        if (!DECK_ARG_PATTERN.test(key) || (deck !== 'blue' && deck !== 'red')) {
             return colored;
         }
-        const color = game.getPlayerColor(args[key]);
-        if (!color) {
+        const placeholders = colorizedPlaceholders(key, colored);
+        if (!placeholders) {
             return colored;
         }
-        const placeholders = colorizedPlaceholders(key.slice(0, -CONTROLLER_ARG_SUFFIX.length), colored);
-        return colored.replace(placeholders, `<span style="color:#${color}">${placeholders}</span>`);
+        return colored.replace(placeholders, `<span class="wott-log-deck wott-log-deck--${deck}">${placeholders}</span>`);
     }, log);
 }
-export function notificationOptions(game) {
+function notifMethodNames(handler) {
+    return Object.getOwnPropertyNames(Object.getPrototypeOf(handler)).filter(name => name.startsWith('notif_'));
+}
+function holdNotifsForCurrentAnimationSpeed(bga, handlers) {
+    handlers.forEach(handler => notifMethodNames(handler)
+        .filter(name => !Object.prototype.hasOwnProperty.call(handler, name))
+        .forEach(name => {
+        const handle = handler[name].bind(handler);
+        Object.defineProperty(handler, name, {
+            configurable: true,
+            value: (args, notif) => {
+                const silent = !notif?.log || !bga.gameui.bgaAnimationsActive();
+                return Promise.all([handle(args, notif), delay(silent ? 0 : animDur(NOTIF_MIN_DURATION))]);
+            },
+        });
+    }));
+}
+export function notificationOptions(game, handlers) {
     const bga = game.bga;
+    const allHandlers = [...handlers, new TextOnlyNotifs()];
+    holdNotifsForCurrentAnimationSpeed(bga, allHandlers);
     let statusElement = null;
     let savedStatus;
     let savedTitle;
     game.bgaFormatText = (log, args) => {
         if (!formattingOwnTitle)
             rawLog = log;
-        return { log: colorizeCardNamesInTemplate(game, log, args), args };
+        return { log: colorizeDecksInTemplate(log, args), args };
     };
     return {
-        minDuration: animDur(NOTIF_MIN_DURATION),
+        handlers: allHandlers,
+        minDuration: FRAMEWORK_MIN_DURATION,
         onStart: (name, msg, args) => {
             const template = rawLog !== undefined && producedMessage(rawLog, msg) ? rawLog : stripSubstitutionMarkup(msg);
             debug(`Notif [${name}]`, { ...args, message: template });

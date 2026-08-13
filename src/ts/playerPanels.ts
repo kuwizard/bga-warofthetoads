@@ -2,6 +2,10 @@
 import { guessableCardTypes } from "./tpls.js";
 import { Shrine } from "./shrine.js";
 import { slideFromRects } from "./animations.js";
+import { animDur } from "./common.js";
+
+const SPEECH_BUBBLE_MS = 4000;
+const SPEECH_BUBBLE_MIN_MS = 1200;
 
 export class PlayerPanels {
     private cards!: CardsUiData;
@@ -51,6 +55,8 @@ export class PlayerPanels {
 
     // RULES.md §9's deck swap: the piles only change colour in place, so each animates from where the *other* one stood.
     async notif_warStarted(args: WarStartedNotifArgs): Promise<void> {
+        this.applyPlayerColors(args.playerColors);
+
         const piles = Object.keys(args.deckColors)
             .map(playerId => document.getElementById(`wott-deck-pile-${playerId}`))
             .filter((pile): pile is HTMLElement => pile !== null);
@@ -91,7 +97,37 @@ export class PlayerPanels {
         this.boardElement(args.player_id2)?.insertAdjacentHTML('beforeend', `
             <div class="wott-speech-bubble" id="${bubbleId}">${text}</div>
         `);
-        setTimeout(() => document.getElementById(bubbleId)?.remove(), 4000);
+        setTimeout(() => document.getElementById(bubbleId)?.remove(), Math.max(SPEECH_BUBBLE_MIN_MS, animDur(SPEECH_BUBBLE_MS)));
+    }
+
+    // PHP swapped player_color with the decks (Players::applyDeckColors); this is the same swap on the loaded page.
+    private applyPlayerColors(colorByPlayerId: { [playerId: number]: string }): void {
+        Object.entries(colorByPlayerId).forEach(([id, color]) => {
+            const player = this.bga.players.getPlayerById(Number(id));
+            const previousColor = player?.color;
+            if (!previousColor || previousColor === color) {
+                return;
+            }
+
+            player.color = color;
+            this.repaintPanel(Number(id), previousColor, color);
+        });
+    }
+
+    // BGA writes the colour into inline styles all over its own panel and never re-reads it, so the old hex is swapped wherever it sits.
+    private repaintPanel(playerId: number, previousColor: string, color: string): void {
+        const panel = this.boardElement(playerId);
+        if (!panel) {
+            return;
+        }
+
+        const previousHex = new RegExp(previousColor, 'gi');
+        [panel, ...Array.from(panel.querySelectorAll<HTMLElement>('[style]'))].forEach(element => {
+            const style = element.getAttribute('style');
+            if (style?.match(previousHex)) {
+                element.setAttribute('style', style.replace(previousHex, color));
+            }
+        });
     }
 
     adjustDeckCount(playerId: number, delta: number): void {

@@ -92,6 +92,12 @@ const VICTORY_LOWEST_CASUALTY   = 'lowestCasualty';
 const CARD_DECK_BLUE = 'blue';
 const CARD_DECK_RED  = 'red';
 
+// Mirrors `player_colors` in gameinfos.jsonc and $deck-colors in src/scss/variables.scss.
+const PLAYER_COLOR_BY_DECK = [
+    CARD_DECK_BLUE => '1a3ec1',
+    CARD_DECK_RED  => 'c0392b',
+];
+
 // ── Special Attributes ───────────────────────────────────────────────────────
 // Not a DB column — looked up from `material.inc.php` by `card_type`, same as
 // Strength and the Tactic band. `null` in material.inc.php means "no Special

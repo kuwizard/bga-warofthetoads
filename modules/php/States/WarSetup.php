@@ -42,7 +42,10 @@ class WarSetup extends GameState
 
         // The 1st War is set up before any client has loaded the table — only the 2nd is watched live.
         if (Globals::getWar() === 2) {
-            Notifications::warStarted(2, Cards::getDeckColorByPlayerId(), Cards::getDeckCountsByPlayerId());
+            $deckColors = Cards::getDeckColorByPlayerId();
+            $playerColors = Players::applyDeckColors($deckColors);
+
+            Notifications::warStarted(2, $deckColors, Cards::getDeckCountsByPlayerId(), $playerColors);
             Notifications::moodChanged(Cards::getAngryByPlayerId());
 
             foreach ($players as $player) {

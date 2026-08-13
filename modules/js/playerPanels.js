@@ -1,5 +1,8 @@
 import { guessableCardTypes } from "./tpls.js";
 import { slideFromRects } from "./animations.js";
+import { animDur } from "./common.js";
+const SPEECH_BUBBLE_MS = 4000;
+const SPEECH_BUBBLE_MIN_MS = 1200;
 export class PlayerPanels {
     constructor(bga, shrine) {
         this.bga = bga;
@@ -30,6 +33,7 @@ export class PlayerPanels {
         this.setMoods(args.angry);
     }
     async notif_warStarted(args) {
+        this.applyPlayerColors(args.playerColors);
         const piles = Object.keys(args.deckColors)
             .map(playerId => document.getElementById(`wott-deck-pile-${playerId}`))
             .filter((pile) => pile !== null);
@@ -62,7 +66,31 @@ export class PlayerPanels {
         this.boardElement(args.player_id2)?.insertAdjacentHTML('beforeend', `
             <div class="wott-speech-bubble" id="${bubbleId}">${text}</div>
         `);
-        setTimeout(() => document.getElementById(bubbleId)?.remove(), 4000);
+        setTimeout(() => document.getElementById(bubbleId)?.remove(), Math.max(SPEECH_BUBBLE_MIN_MS, animDur(SPEECH_BUBBLE_MS)));
+    }
+    applyPlayerColors(colorByPlayerId) {
+        Object.entries(colorByPlayerId).forEach(([id, color]) => {
+            const player = this.bga.players.getPlayerById(Number(id));
+            const previousColor = player?.color;
+            if (!previousColor || previousColor === color) {
+                return;
+            }
+            player.color = color;
+            this.repaintPanel(Number(id), previousColor, color);
+        });
+    }
+    repaintPanel(playerId, previousColor, color) {
+        const panel = this.boardElement(playerId);
+        if (!panel) {
+            return;
+        }
+        const previousHex = new RegExp(previousColor, 'gi');
+        [panel, ...Array.from(panel.querySelectorAll('[style]'))].forEach(element => {
+            const style = element.getAttribute('style');
+            if (style?.match(previousHex)) {
+                element.setAttribute('style', style.replace(previousHex, color));
+            }
+        });
     }
     adjustDeckCount(playerId, delta) {
         this.setDeckCount(playerId, (this.cards.deckCounts[playerId] ?? 0) + delta);

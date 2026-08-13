@@ -54,6 +54,7 @@ class Notifications
         if (isset($data['player']) && $data['player'] instanceof Player) {
             $data['player_id']   = $data['player']->getId();
             $data['player_name'] = $data['player']->getName();
+            $data['playerDeck']  = $data['player']->getDeck();
             unset($data['player']);
         }
 
@@ -61,7 +62,20 @@ class Notifications
         if (isset($data['player2']) && $data['player2'] instanceof Player) {
             $data['player_id2']   = $data['player2']->getId();
             $data['player_name2'] = $data['player2']->getName();
+            $data['playerDeck2']  = $data['player2']->getDeck();
             unset($data['player2']);
+        }
+
+        self::preserveDeckArgsThroughRefresh($data);
+    }
+
+    // No `…Deck` arg appears in a message template, so only `preserve` keeps it in the historical log.
+    private static function preserveDeckArgsThroughRefresh(array &$data): void
+    {
+        $deckArgs = array_filter(array_keys($data), fn(string $key) => preg_match('/Deck\d?$/', $key) === 1);
+
+        if ($deckArgs !== []) {
+            $data['preserve'] = array_values(array_unique(array_merge($data['preserve'] ?? [], $deckArgs)));
         }
     }
 
@@ -142,11 +156,9 @@ class Notifications
             'i18n'           => ['cardName'],
             'cardName'       => $faceUpCard->getName(),
             'cardStrength'   => self::strengthSuffix($faceUpCard),
-            'cardController' => $faceUpCard->getController(),
+            'cardDeck'       => $faceUpCard->getDeck(),
             'faceUpCard'     => $faceUpCard->getUiData(),
             'faceDownCard'   => $faceDownCard->getUiData(),
-            // cardController isn't in the message template, so it needs 'preserve' to survive historical_log replay on refresh.
-            'preserve'       => ['cardController'],
         ]);
     }
 
@@ -182,12 +194,11 @@ class Notifications
             'card1'           => $card1->getUiData(),
             'card1Name'       => $card1->getName(),
             'card1Strength'   => self::strengthSuffix($card1),
-            'card1Controller' => $card1->getController(),
+            'card1Deck'       => $card1->getDeck(),
             'card2'           => $card2->getUiData(),
             'card2Name'       => $card2->getName(),
             'card2Strength'   => self::strengthSuffix($card2),
-            'card2Controller' => $card2->getController(),
-            'preserve'        => ['card1Controller', 'card2Controller'],
+            'card2Deck'       => $card2->getDeck(),
         ]);
     }
 
@@ -326,11 +337,10 @@ class Notifications
             'laneName'        => $lane === LANE_OPEN ? clienttranslate('Open') : clienttranslate('Hidden'),
             'card1Name'       => $card1->getName(),
             'card1Strength'   => self::strengthSuffix($card1),
-            'card1Controller' => $card1->getController(),
+            'card1Deck'       => $card1->getDeck(),
             'card2Name'       => $card2->getName(),
             'card2Strength'   => self::strengthSuffix($card2),
-            'card2Controller' => $card2->getController(),
-            'preserve'        => ['card1Controller', 'card2Controller'],
+            'card2Deck'       => $card2->getDeck(),
         ]);
     }
 
@@ -479,12 +489,13 @@ class Notifications
         ]);
     }
 
-    public static function warStarted(int $war, array $deckColorByPlayerId, array $deckCounts): void
+    public static function warStarted(int $war, array $deckColorByPlayerId, array $deckCounts, array $playerColors): void
     {
-        self::notifyAll('warStarted', clienttranslate('The 2nd War begins — the decks are swapped'), [
-            'war'        => $war,
-            'deckColors' => $deckColorByPlayerId,
-            'deckCounts' => $deckCounts,
+        self::notifyAll('warStarted', clienttranslate('The 2nd War begins — the decks and players\' colors are swapped'), [
+            'war'          => $war,
+            'deckColors'   => $deckColorByPlayerId,
+            'deckCounts'   => $deckCounts,
+            'playerColors' => $playerColors,
         ]);
     }
 

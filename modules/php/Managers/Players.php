@@ -62,6 +62,21 @@ class Players extends CachedDB_Manager
         ])->values($rows);
     }
 
+    public static function applyDeckColors(array $deckColorByPlayerId): array
+    {
+        $colorByPlayerId = [];
+        foreach ($deckColorByPlayerId as $playerId => $deck) {
+            $color = PLAYER_COLOR_BY_DECK[$deck];
+            $colorByPlayerId[$playerId] = $color;
+            static::get((int) $playerId)?->setColor($color);
+        }
+
+        // BGA reads the player table into memory once per request; ${player_name} keeps the old colour without this.
+        Game::get()->reloadPlayersBasicInfos();
+
+        return $colorByPlayerId;
+    }
+
     // ── READS ─────────────────────────────────────────────────────────────────
 
     public static function get(int $id): ?Player
