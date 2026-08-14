@@ -42,22 +42,19 @@
   }
 
   #wott-shrine {
-    flex-wrap: nowrap;
-    align-items: center;
-  }
-
-  .wott-shrine-captures {
     flex-direction: column;
     flex-wrap: nowrap;
   }
 
   // The blocks themselves stay upright — only the assembly around them turned.
-  .wott-shrine-captures > .wott-stack-column:first-child {
+  .wott-stack-column:first-child {
     flex-direction: row;
   }
 
-  .wott-shrine-retired {
-    flex-direction: column;
+  // Wide enough for the rotated Shrine card's corners, which overhang its own box.
+  .wott-shrine-center {
+    flex-direction: row;
+    gap: v.$gap * 4;
   }
 
   .wott-shrine-card {
@@ -76,7 +73,7 @@
     flex-direction: column-reverse;
   }
 
-  .wott-shrine-captures {
+  #wott-shrine {
     flex-direction: column-reverse;
   }
 

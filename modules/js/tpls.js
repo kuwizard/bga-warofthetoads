@@ -54,6 +54,17 @@ export function tplShrineTooltip() {
         </div>
     `;
 }
+export function tplRetiredTooltip() {
+    return `
+        <div class="wott-card-tooltip">
+            <div class="wott-card-tooltip__text">
+                <strong class="wott-card-tooltip__name">${_('Monks/Casualties')}</strong>
+                <div class="wott-card-tooltip__description">${_('Monks are cards retired from a tied lane or from a declined stack. They do not count towards scoring.')}</div>
+                <div class="wott-card-tooltip__description">${_('The Casualties are the cards left in hand when the 1st War ended. They stay face-down until the game ends.')}</div>
+            </div>
+        </div>
+    `;
+}
 export function tplCardTooltip(card) {
     const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;
     return `

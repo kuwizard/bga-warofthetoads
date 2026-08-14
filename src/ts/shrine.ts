@@ -1,12 +1,11 @@
-import { tplLaneCard, tplCardTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
+import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 
-// The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the shared Monk pile. Calm/Angry arrives server-derived ([H4]) and is never computed here.
+// The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the pile of cards retired beside it. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
     private cards!: CardsUiData;
     private stackColumns: { [playerId: number]: HTMLElement } = {};
-    private monksElement!: HTMLElement;
-    private casualtiesZoneElement!: HTMLElement;
+    private retiredElement!: HTMLElement;
     private shrineCardElement!: HTMLElement;
     private firstPlayerId!: number;
 
@@ -17,43 +16,40 @@ export class Shrine {
         this.cards = cards;
         this.firstPlayerId = playerIdsInTableOrder[0];
 
+        const casualtySlotsHtml = playerIdsInTableOrder
+            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
+            .join('');
+
+        // The tracker card and everything retired beside it (Monks and Casualties alike) form one block between the two stack columns, so the columns alone decide how wide the Shrine gets — see layout.scss for what top-down does with the three.
+        const centerHtml = `
+            <div class="wott-shrine-center">
+                ${tplShrineCard()}
+                <div class="wott-zone" id="wott-retired">
+                    <span class="wott-zone__label">${_('Monks/Casualties')}</span>
+                    <div class="wott-retired-cards" id="wott-retired-cards">${casualtySlotsHtml}</div>
+                </div>
+            </div>
+        `;
+
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
                 <div class="wott-stack-column" id="wott-stack-column-${playerId}">
                     <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
                 </div>
             `)
-            .join(tplShrineCard());
+            .join(centerHtml);
 
-        const casualtySlotsHtml = playerIdsInTableOrder
-            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
-            .join('');
-
-        gameArea.insertAdjacentHTML('beforeend', `
-            <div id="wott-shrine">
-                <div class="wott-shrine-captures">${columnsHtml}</div>
-                <div class="wott-shrine-retired">
-                    <div class="wott-zone">
-                        <span class="wott-zone__label">${_('Monks')}</span>
-                        <div class="wott-monks" id="wott-monks"></div>
-                    </div>
-                    <div class="wott-zone" id="wott-casualties-zone">
-                        <span class="wott-zone__label">${_('Casualties')}</span>
-                        <div class="wott-casualties" id="wott-casualties">${casualtySlotsHtml}</div>
-                    </div>
-                </div>
-            </div>
-        `);
+        gameArea.insertAdjacentHTML('beforeend', `<div id="wott-shrine">${columnsHtml}</div>`);
 
         playerIdsInTableOrder.forEach(playerId => {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`)!;
         });
-        this.monksElement = document.getElementById('wott-monks')!;
-        this.casualtiesZoneElement = document.getElementById('wott-casualties-zone')!;
-        // No Casualty exists yet during the 1st War (RULES.md §8/§9) — the zone only makes sense from the 2nd War on.
-        this.casualtiesZoneElement.classList.toggle('wott-zone--hidden', cards.casualties.length === 0);
+        this.retiredElement = document.getElementById('wott-retired-cards')!;
+        // No Casualty exists yet during the 1st War (RULES.md §8/§9) — the two slots stay collapsed until the 2nd.
+        this.retiredElement.classList.toggle('wott-retired-cards--no-casualties', cards.casualties.length === 0);
         this.shrineCardElement = document.getElementById('wott-shrine-card')!;
         this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
+        this.bga.gameui.addTooltipHtml('wott-retired', tplRetiredTooltip());
         this.setMood(angry);
 
         // F5 mid-War: place whatever is already captured/retired, no animation.
@@ -73,7 +69,7 @@ export class Shrine {
         [...cards.stacks]
             .sort((a, b) => a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown))
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.shrine.forEach(card => this.placeMonk(card));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
         cards.casualties.forEach(card => this.placeCasualty(card));
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
@@ -86,7 +82,7 @@ export class Shrine {
             this.cards.shrine.push(card);
         });
 
-        await this.moveCards(tiedCards.map(card => ({ card, container: this.monksElement })));
+        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
     }
 
     /** `ResolveBattle`'s single-lane-win branch (RULES.md §6 ➎) — Notifications::hostageCaptured(). */
@@ -128,14 +124,14 @@ export class Shrine {
         this.cards.shrine.push(...retiredCards);
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
 
-        await this.moveCards(retiredCards.map(card => ({ card, container: this.monksElement })));
+        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredElement })));
         document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
 
-    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub slides in here. Unhidden up front so the zone is already on screen before either card arrives, not revealed after the fact by notif_warStarted.
+    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub slides in here. The slots open up front so they are already on screen before either card arrives, not revealed after the fact by notif_warStarted.
     async notif_casualtySet(args: CasualtySetNotifArgs): Promise<void> {
-        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
 
         if (args.card.type !== undefined) {
             return;
@@ -157,13 +153,14 @@ export class Shrine {
 
     // Only ever fired for the 2nd War (States/WarSetup.php) — the Casualties, set aside just before this, are now worth showing.
     notif_warStarted(_args: WarStartedNotifArgs): void {
+        // The Casualties share the pile but were set aside moments earlier and stay — so the Monks go one by one rather than by emptying the container.
+        this.cards.shrine.forEach(monk => document.getElementById(`wott-card-${monk.id}`)?.remove());
         this.cards.stacks = [];
         this.cards.shrine = [];
 
         document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
-        this.monksElement.innerHTML = '';
         Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
-        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
     }
 
     // RULES.md §7: flips to the back as soon as anyone is Angry, and rotates to point the back's baked-in Angry arrow at whichever side is actually Angry — layout.scss turns both rotations another quarter in top-down mode.
@@ -290,11 +287,6 @@ export class Shrine {
         }
 
         return stackElement;
-    }
-
-    /** A tied or declined card retiring to the shared Monk pile. */
-    private placeMonk(card: StackCardData): void {
-        this.createCard(card, this.monksElement);
     }
 
     private placeCasualty(card: StackCardData): void {

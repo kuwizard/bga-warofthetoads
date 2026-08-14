@@ -1,4 +1,4 @@
-import { tplLaneCard, tplCardTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
+import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 export class Shrine {
     constructor(bga) {
@@ -8,39 +8,34 @@ export class Shrine {
     render(gameArea, cards, playerIdsInTableOrder, angry) {
         this.cards = cards;
         this.firstPlayerId = playerIdsInTableOrder[0];
+        const casualtySlotsHtml = playerIdsInTableOrder
+            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
+            .join('');
+        const centerHtml = `
+            <div class="wott-shrine-center">
+                ${tplShrineCard()}
+                <div class="wott-zone" id="wott-retired">
+                    <span class="wott-zone__label">${_('Monks/Casualties')}</span>
+                    <div class="wott-retired-cards" id="wott-retired-cards">${casualtySlotsHtml}</div>
+                </div>
+            </div>
+        `;
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
                 <div class="wott-stack-column" id="wott-stack-column-${playerId}">
                     <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
                 </div>
             `)
-            .join(tplShrineCard());
-        const casualtySlotsHtml = playerIdsInTableOrder
-            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
-            .join('');
-        gameArea.insertAdjacentHTML('beforeend', `
-            <div id="wott-shrine">
-                <div class="wott-shrine-captures">${columnsHtml}</div>
-                <div class="wott-shrine-retired">
-                    <div class="wott-zone">
-                        <span class="wott-zone__label">${_('Monks')}</span>
-                        <div class="wott-monks" id="wott-monks"></div>
-                    </div>
-                    <div class="wott-zone" id="wott-casualties-zone">
-                        <span class="wott-zone__label">${_('Casualties')}</span>
-                        <div class="wott-casualties" id="wott-casualties">${casualtySlotsHtml}</div>
-                    </div>
-                </div>
-            </div>
-        `);
+            .join(centerHtml);
+        gameArea.insertAdjacentHTML('beforeend', `<div id="wott-shrine">${columnsHtml}</div>`);
         playerIdsInTableOrder.forEach(playerId => {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`);
         });
-        this.monksElement = document.getElementById('wott-monks');
-        this.casualtiesZoneElement = document.getElementById('wott-casualties-zone');
-        this.casualtiesZoneElement.classList.toggle('wott-zone--hidden', cards.casualties.length === 0);
+        this.retiredElement = document.getElementById('wott-retired-cards');
+        this.retiredElement.classList.toggle('wott-retired-cards--no-casualties', cards.casualties.length === 0);
         this.shrineCardElement = document.getElementById('wott-shrine-card');
         this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
+        this.bga.gameui.addTooltipHtml('wott-retired', tplRetiredTooltip());
         this.setMood(angry);
         const stackOwnerByStackId = {};
         cards.stacks.forEach(card => {
@@ -51,7 +46,7 @@ export class Shrine {
         [...cards.stacks]
             .sort((a, b) => a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown))
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.shrine.forEach(card => this.placeMonk(card));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
         cards.casualties.forEach(card => this.placeCasualty(card));
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
@@ -61,7 +56,7 @@ export class Shrine {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
         });
-        await this.moveCards(tiedCards.map(card => ({ card, container: this.monksElement })));
+        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
     }
     async notif_hostageCaptured(args) {
         await this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
@@ -86,12 +81,12 @@ export class Shrine {
         }));
         this.cards.shrine.push(...retiredCards);
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
-        await this.moveCards(retiredCards.map(card => ({ card, container: this.monksElement })));
+        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredElement })));
         document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
     async notif_casualtySet(args) {
-        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
         if (args.card.type !== undefined) {
             return;
         }
@@ -106,12 +101,12 @@ export class Shrine {
         await revealCardFace(this.bga, args.card);
     }
     notif_warStarted(_args) {
+        this.cards.shrine.forEach(monk => document.getElementById(`wott-card-${monk.id}`)?.remove());
         this.cards.stacks = [];
         this.cards.shrine = [];
         document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
-        this.monksElement.innerHTML = '';
         Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
-        this.casualtiesZoneElement.classList.remove('wott-zone--hidden');
+        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
     }
     setMood(angry) {
         this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
@@ -201,9 +196,6 @@ export class Shrine {
             stackElement = document.getElementById(`wott-stack-${stackId}`);
         }
         return stackElement;
-    }
-    placeMonk(card) {
-        this.createCard(card, this.monksElement);
     }
     placeCasualty(card) {
         const slot = document.getElementById(`wott-casualty-slot-${card.controller}`);
