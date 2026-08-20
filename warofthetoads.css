@@ -495,8 +495,8 @@
 }
 
 .wott-card {
-  aspect-ratio: 25/36;
-  background-image: url("img/cards.png");
+  aspect-ratio: 5/7;
+  background-image: url("img/cards.jpg");
   background-repeat: no-repeat;
   background-size: 1000% 300%;
   border-radius: 6px;
