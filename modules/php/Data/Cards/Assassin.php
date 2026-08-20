@@ -17,7 +17,7 @@ class Assassin extends Card
         $this->strength         = 1;
         $this->specialAttribute = SPECIAL_ATTRIBUTE_BEATS_GENERAL;
         $this->band             = TACTIC_BAND_DURING;
-        $this->description      = clienttranslate('+2.5 to your Ally or their Foe, whoever is lower');
+        $this->description      = clienttranslate("+2.5 to the lowest card in your Ally's lane");
     }
 
     public function applyTactic(BattleContext $context): void

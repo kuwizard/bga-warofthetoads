@@ -5,13 +5,22 @@ export function cardRoleSlug(cardType: string): string {
     return cardType.replace(/_/g, '-');
 }
 
-/** `card.specialAttribute` (raw code from constants.inc.php) → RULES.md §3's exact column text. */
-const specialAttributeLabels: { [code: string]: string } = {
-    beats_general: 'Wins against General',
-    beats_siege: 'Wins against Siege Cannon',
-    loses_to_assassin: 'Loses against Assassin',
-    siege: 'Loses in Defence, wins in Attack — except against Saboteur',
-};
+function specialAttributeLabels(): { [code: string]: string } {
+    return {
+        beats_general: _('Wins against General'),
+        beats_siege: _('Wins against Siege Cannon'),
+        loses_to_assassin: _('Loses against Assassin'),
+        siege: _('Loses in Defence, wins in Attack — except against Saboteur'),
+    };
+}
+
+function bandLabels(): { [code: string]: string } {
+    return {
+        start: _('Start of Battle'),
+        during: _('During Battle'),
+        after: _('After Battle'),
+    };
+}
 
 // Two-sided (see src/scss/hand.scss's .wott-card-flip) so a returned card can
 // flip face-down before sliding into the deck, and back when undone.
@@ -85,7 +94,8 @@ export function tplRetiredTooltip(): string {
 
 /** Shown via `bga.gameui.addTooltipHtml` on hover — see hand.ts. */
 export function tplCardTooltip(card: CardData): string {
-    const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels[card.specialAttribute] : null;
+    const specialAttributeLabel = card.specialAttribute ? specialAttributeLabels()[card.specialAttribute] : null;
+    const bandLabel = bandLabels()[card.band];
 
     return `
         <div class="wott-card-tooltip">
@@ -93,7 +103,8 @@ export function tplCardTooltip(card: CardData): string {
             <div class="wott-card-tooltip__text">
                 <strong class="wott-card-tooltip__name">${_(card.name)}</strong>
                 ${card.strength !== null ? `<div class="wott-card-tooltip__strength">${_('Strength')} ${card.strength}</div>` : ''}
-                ${specialAttributeLabel ? `<div class="wott-card-tooltip__special">${_(specialAttributeLabel)}</div>` : ''}
+                ${specialAttributeLabel ? `<div class="wott-card-tooltip__special">${specialAttributeLabel}</div>` : ''}
+                ${bandLabel ? `<div class="wott-card-tooltip__band">${bandLabel}</div>` : ''}
                 <div class="wott-card-tooltip__description">${_(card.description)}</div>
             </div>
         </div>

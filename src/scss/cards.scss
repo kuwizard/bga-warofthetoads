@@ -14,7 +14,7 @@ $wott-card-roles: assassin, scout, saboteur, trickster, berserker, bodyguard, ge
   background-repeat: no-repeat;
   background-size: #{$wott-card-cols * 100%} #{$wott-card-rows * 100%};
   border-radius: v.$radius;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.6);
 }
 
 @each $role in $wott-card-roles {

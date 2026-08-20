@@ -21,7 +21,7 @@ class Siege extends Card
         $this->specialAttribute = SPECIAL_ATTRIBUTE_SIEGE;
         $this->band             = TACTIC_BAND_AFTER;
         $this->description      = clienttranslate(
-            'After Battle, guess a card in your opponent\'s hand. If correct, they must say yes'
+            'Guess a card in your opponent\'s hand. If correct, they must say yes'
         );
     }
 }
