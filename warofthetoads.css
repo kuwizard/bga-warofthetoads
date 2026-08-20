@@ -53,6 +53,31 @@
   width: 100%;
 }
 
+.wott-deck-layer {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.wott-deck-layer--1 {
+  z-index: -2;
+  transform: translate(2px, 2px);
+}
+
+.wott-deck-layer--2 {
+  z-index: -3;
+  transform: translate(4px, 4px);
+}
+
+.wott-deck--tier-2 .wott-deck-layer--1 {
+  display: block;
+}
+
+.wott-deck--tier-3 .wott-deck-layer--1,
+.wott-deck--tier-3 .wott-deck-layer--2 {
+  display: block;
+}
+
 .wott-deck-anchor {
   position: absolute;
   inset: 0;
@@ -172,6 +197,8 @@
 }
 
 .wott-card-slide {
+  position: relative;
+  z-index: 20;
   transform: translate(var(--slide-dx, 0px), var(--slide-dy, 0px));
 }
 

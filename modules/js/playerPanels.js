@@ -15,7 +15,9 @@ export class PlayerPanels {
             this.boardElement(playerId)?.classList.add('wott-player-panel');
             this.bga.playerPanels.getElement(playerId).insertAdjacentHTML('beforeend', `
                 <div class="wott-panel-row">
-                    <div class="wott-deck">
+                    <div class="wott-deck ${this.stackTierClass(cards.deckCounts[playerId] ?? 0)}" id="wott-deck-${playerId}">
+                        <div class="wott-card wott-deck-layer wott-deck-layer--2 wott-card--${deckColorByPlayerId[playerId]}-back" id="wott-deck-layer-2-${playerId}"></div>
+                        <div class="wott-card wott-deck-layer wott-deck-layer--1 wott-card--${deckColorByPlayerId[playerId]}-back" id="wott-deck-layer-1-${playerId}"></div>
                         <div class="wott-card wott-card--${deckColorByPlayerId[playerId]}-back" id="wott-deck-pile-${playerId}"></div>
                         <span class="wott-deck-count" id="wott-deck-count-${playerId}">${cards.deckCounts[playerId] ?? 0}</span>
                         <div class="wott-deck-anchor" id="wott-deck-anchor-${playerId}"></div>
@@ -39,9 +41,15 @@ export class PlayerPanels {
             .filter((pile) => pile !== null);
         const rects = piles.map(pile => pile.getBoundingClientRect());
         Object.entries(args.deckColors).forEach(([playerId, deckColor]) => {
-            const pile = document.getElementById(`wott-deck-pile-${playerId}`);
-            pile?.classList.remove(`wott-card--${this.deckColorByPlayerId[Number(playerId)]}-back`);
-            pile?.classList.add(`wott-card--${deckColor}-back`);
+            const previousColor = this.deckColorByPlayerId[Number(playerId)];
+            [
+                document.getElementById(`wott-deck-pile-${playerId}`),
+                document.getElementById(`wott-deck-layer-1-${playerId}`),
+                document.getElementById(`wott-deck-layer-2-${playerId}`),
+            ].forEach(card => {
+                card?.classList.remove(`wott-card--${previousColor}-back`);
+                card?.classList.add(`wott-card--${deckColor}-back`);
+            });
             this.deckColorByPlayerId[Number(playerId)] = deckColor;
         });
         Object.entries(args.deckCounts).forEach(([playerId, count]) => {
@@ -104,6 +112,18 @@ export class PlayerPanels {
         if (deckCountElement) {
             deckCountElement.textContent = `${count}`;
         }
+        const deckElement = document.getElementById(`wott-deck-${playerId}`);
+        deckElement?.classList.remove('wott-deck--tier-1', 'wott-deck--tier-2', 'wott-deck--tier-3');
+        deckElement?.classList.add(this.stackTierClass(count));
+    }
+    stackTierClass(count) {
+        if (count >= 4) {
+            return 'wott-deck--tier-3';
+        }
+        if (count >= 2) {
+            return 'wott-deck--tier-2';
+        }
+        return 'wott-deck--tier-1';
     }
     boardElement(playerId) {
         return this.bga.playerPanels.getElement(playerId).closest('.player-board');

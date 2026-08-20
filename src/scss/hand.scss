@@ -68,12 +68,10 @@ $hand-card-height: math.div($hand-card-width * 36, 25);
   outline-offset: 2px;
 }
 
-// Runtime slide (src/ts/hand.ts::slideIntoPlace, the classic FLIP technique).
-// The card is already reparented to its real final position when this runs,
-// so stacking/z-index is correct for the whole move; --slide-dx/--slide-dy
-// hold the pixel offset from its previous screen position, and removing them
-// (with .wott-card-slide--animating's transition active) animates the slide.
+// FLIP-style slide (src/ts/hand.ts::slideIntoPlace); z-index keeps it above unrelated subtrees, e.g. the deck stack, it passes over on screen.
 .wott-card-slide {
+  position: relative;
+  z-index: 20;
   transform: translate(var(--slide-dx, 0px), var(--slide-dy, 0px));
 }
 

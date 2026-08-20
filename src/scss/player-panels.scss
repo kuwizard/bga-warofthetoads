@@ -26,6 +26,32 @@
   }
 }
 
+// Extra card backs peeking out from under the top card so a player can tell there's more than one left, without exposing what they are.
+.wott-deck-layer {
+  position: absolute;
+  inset: 0;
+  display: none;
+}
+
+.wott-deck-layer--1 {
+  z-index: -2;
+  transform: translate(2px, 2px);
+}
+
+.wott-deck-layer--2 {
+  z-index: -3;
+  transform: translate(4px, 4px);
+}
+
+.wott-deck--tier-2 .wott-deck-layer--1 {
+  display: block;
+}
+
+.wott-deck--tier-3 .wott-deck-layer--1,
+.wott-deck--tier-3 .wott-deck-layer--2 {
+  display: block;
+}
+
 // Absolutely positioned over the deck square so a card in transit never adds flow height, and behind it so the card reads as coming out from under the pile.
 .wott-deck-anchor {
   position: absolute;
