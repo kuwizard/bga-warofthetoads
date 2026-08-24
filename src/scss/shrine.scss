@@ -38,10 +38,9 @@
 
 .wott-stack-column {
   display: flex;
-  align-items: flex-start;
-  gap: v.$gap * 2;
+  flex-direction: column;
+  gap: v.$gap;
   min-width: 210px;
-  min-height: 120px;
   padding: v.$gap;
   border-radius: v.$radius * 2;
   background: hsla(0, 0%, 100%, 0.35);
@@ -49,8 +48,15 @@
   transition: background calc(0.48s * var(--am)) ease, box-shadow calc(0.48s * var(--am)) ease;
 }
 
+.wott-stack-row {
+  display: flex;
+  align-items: flex-start;
+  gap: v.$gap * 2;
+  min-height: 120px;
+}
+
 // Stacks grow towards the Shrine from either side, so the pair reads as one balance.
-.wott-stack-column:first-child {
+.wott-stack-column:first-child .wott-stack-row {
   flex-direction: row-reverse;
 }
 

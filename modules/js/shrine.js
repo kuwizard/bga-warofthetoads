@@ -10,6 +10,7 @@ export class Shrine {
         this.bga = bga;
         this.opponentHand = opponentHand;
         this.stackColumns = {};
+        this.stackRows = {};
     }
     render(gameArea, cards, playerIdsInTableOrder, angry) {
         this.cards = cards;
@@ -30,16 +31,22 @@ export class Shrine {
                 </div>
             </div>
         `;
+        const myIndex = playerIdsInTableOrder.indexOf(Number(this.bga.gameui.player_id));
+        const myPlayerId = myIndex !== -1 ? playerIdsInTableOrder[myIndex] : playerIdsInTableOrder[0];
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
                 <div class="wott-stack-column" id="wott-stack-column-${playerId}">
-                    <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
+                    <span class="wott-zone__label">${playerId === myPlayerId ? _('Hostages') : _("Opponent's Hostages")}</span>
+                    <div class="wott-stack-row" id="wott-stack-row-${playerId}">
+                        <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
+                    </div>
                 </div>
             `)
             .join(centerHtml);
         gameArea.insertAdjacentHTML('beforeend', `<div id="wott-shrine">${columnsHtml}</div>`);
         playerIdsInTableOrder.forEach(playerId => {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`);
+            this.stackRows[playerId] = document.getElementById(`wott-stack-row-${playerId}`);
         });
         this.retiredElement = document.getElementById('wott-retired-cards');
         this.retiredDecks = Object.fromEntries(DECK_COLORS.map(deck => [deck, document.getElementById(`wott-retired-deck-${deck}`)]));
@@ -198,13 +205,13 @@ export class Shrine {
         }
     }
     stackElementFor(stackId, stackOwnerId) {
-        const column = this.stackColumns[stackOwnerId];
-        if (!column) {
+        const row = this.stackRows[stackOwnerId];
+        if (!row) {
             return null;
         }
         let stackElement = document.getElementById(`wott-stack-${stackId}`);
         if (!stackElement) {
-            column.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${stackId}"></div>`);
+            row.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${stackId}"></div>`);
             stackElement = document.getElementById(`wott-stack-${stackId}`);
         }
         return stackElement;

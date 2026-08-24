@@ -17,6 +17,7 @@ const RETIRED_SHOWN_FLAT = 3;
 export class Shrine {
     private cards!: CardsUiData;
     private stackColumns: { [playerId: number]: HTMLElement } = {};
+    private stackRows: { [playerId: number]: HTMLElement } = {};
     private retiredElement!: HTMLElement;
     private retiredDecks!: { [deck: string]: HTMLElement };
     private shrineCardElement!: HTMLElement;
@@ -52,10 +53,17 @@ export class Shrine {
             </div>
         `;
 
+        // Mirrors layout.ts's viewingPlayerSitsSecond fallback: a spectator has no seat of their own, so the table's first player anchors which column reads as "mine".
+        const myIndex = playerIdsInTableOrder.indexOf(Number(this.bga.gameui.player_id));
+        const myPlayerId = myIndex !== -1 ? playerIdsInTableOrder[myIndex] : playerIdsInTableOrder[0];
+
         const columnsHtml = playerIdsInTableOrder
             .map(playerId => `
                 <div class="wott-stack-column" id="wott-stack-column-${playerId}">
-                    <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
+                    <span class="wott-zone__label">${playerId === myPlayerId ? _('Hostages') : _("Opponent's Hostages")}</span>
+                    <div class="wott-stack-row" id="wott-stack-row-${playerId}">
+                        <span class="wott-stack-count" id="wott-stack-count-${playerId}">0</span>
+                    </div>
                 </div>
             `)
             .join(centerHtml);
@@ -64,6 +72,7 @@ export class Shrine {
 
         playerIdsInTableOrder.forEach(playerId => {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`)!;
+            this.stackRows[playerId] = document.getElementById(`wott-stack-row-${playerId}`)!;
         });
         this.retiredElement = document.getElementById('wott-retired-cards')!;
         this.retiredDecks = Object.fromEntries(DECK_COLORS.map(deck => [deck, document.getElementById(`wott-retired-deck-${deck}`)!]));
@@ -282,14 +291,14 @@ export class Shrine {
     }
 
     private stackElementFor(stackId: number, stackOwnerId: number): HTMLElement | null {
-        const column = this.stackColumns[stackOwnerId];
-        if (!column) {
+        const row = this.stackRows[stackOwnerId];
+        if (!row) {
             return null;
         }
 
         let stackElement = document.getElementById(`wott-stack-${stackId}`);
         if (!stackElement) {
-            column.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${stackId}"></div>`);
+            row.insertAdjacentHTML('beforeend', `<div class="wott-stack" id="wott-stack-${stackId}"></div>`);
             stackElement = document.getElementById(`wott-stack-${stackId}`)!;
         }
 

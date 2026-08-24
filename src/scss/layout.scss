@@ -47,7 +47,7 @@
   }
 
   // The blocks themselves stay upright — only the assembly around them turned.
-  .wott-stack-column:first-child {
+  .wott-stack-column:first-child .wott-stack-row {
     flex-direction: row;
   }
 
