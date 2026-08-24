@@ -20,9 +20,10 @@ export class Game {
         this.bga.states.logger = stateLogger;
         this.returnCard = new ReturnCard(this, bga);
         this.bga.states.register('ReturnCard', this.returnCard);
-        this.playCards = new PlayCards(this, bga);
-        this.bga.states.register('AttackerPlay', this.playCards);
-        this.bga.states.register('DefenderPlay', this.playCards);
+        this.attackerPlayCards = new PlayCards(this, bga, 'attacking');
+        this.bga.states.register('AttackerPlay', this.attackerPlayCards);
+        this.defenderPlayCards = new PlayCards(this, bga, 'defending');
+        this.bga.states.register('DefenderPlay', this.defenderPlayCards);
         this.chooseStack = new ChooseStack(this, bga);
         this.bga.states.register('ChooseStack', this.chooseStack);
         this.bga.states.register('ScoutReveal', new ScoutReveal(this, bga));

@@ -23,7 +23,8 @@ export class Game {
     public bgaFormatText?: (log: string, args: any) => { log: string; args: any };
 
     private returnCard: ReturnCard;
-    private playCards: PlayCards;
+    private attackerPlayCards: PlayCards;
+    private defenderPlayCards: PlayCards;
     private chooseStack: ChooseStack;
     private hand: Hand;
     private opponentHand: OpponentHand;
@@ -44,11 +45,11 @@ export class Game {
         this.returnCard = new ReturnCard(this, bga);
         this.bga.states.register('ReturnCard', this.returnCard);
 
-        // AttackerPlay/DefenderPlay share one handler — RULES.md §6 ➊➋ is the
-        // same physical action for both roles (mirrors PHP's PlayCardsTrait).
-        this.playCards = new PlayCards(this, bga);
-        this.bga.states.register('AttackerPlay', this.playCards);
-        this.bga.states.register('DefenderPlay', this.playCards);
+        // Separate instances so the status bar can show the correct role (RULES.md §6 ➊➋).
+        this.attackerPlayCards = new PlayCards(this, bga, 'attacking');
+        this.bga.states.register('AttackerPlay', this.attackerPlayCards);
+        this.defenderPlayCards = new PlayCards(this, bga, 'defending');
+        this.bga.states.register('DefenderPlay', this.defenderPlayCards);
 
         this.chooseStack = new ChooseStack(this, bga);
         this.bga.states.register('ChooseStack', this.chooseStack);

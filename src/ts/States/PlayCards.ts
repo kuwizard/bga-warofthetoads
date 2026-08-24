@@ -8,7 +8,7 @@ export class PlayCards {
     private filledOrder: CardRole[] = [];
     private busy: boolean = false;
 
-    constructor(private game: Game, private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
+    constructor(private game: Game, private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>, private role: 'attacking' | 'defending') {
     }
 
     onEnteringState(args: AttackerPlayArgs, isCurrentPlayerActive: boolean) {
@@ -102,9 +102,15 @@ export class PlayCards {
         const bothFilled = this.faceUpCardId !== null && this.faceDownCardId !== null;
 
         this.bga.statusBar.setTitle(
-            this.faceUpCardId === null ? _('${you} must select a face-up card') :
-            this.faceDownCardId === null ? _('${you} must select a face-down card') :
-            _('${you} may confirm your turn, or click on a card to change it')
+            this.role === 'attacking' ? (
+                this.faceUpCardId === null ? _('${you} are attacking and must select a face-up card') :
+                this.faceDownCardId === null ? _('${you} are attacking and must select a face-down card') :
+                _('${you} may confirm your turn, or click on a card to change it')
+            ) : (
+                this.faceUpCardId === null ? _('${you} are defending and must select a face-up card') :
+                this.faceDownCardId === null ? _('${you} are defending and must select a face-down card') :
+                _('${you} may confirm your turn, or click on a card to change it')
+            )
         );
 
         this.game.setHandSelectable(!this.busy && !bothFilled, cardId => this.onHandCardClick(cardId));

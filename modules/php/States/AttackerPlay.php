@@ -23,8 +23,8 @@ class AttackerPlay extends GameState
         parent::__construct($game,
             id: ST_ATTACKER_PLAY,
             type: StateType::ACTIVE_PLAYER,
-            description: clienttranslate('${actplayer} must play 2 cards, one face-up and one face-down'),
-            descriptionMyTurn: clienttranslate('${you} must play 2 cards, one face-up and one face-down'),
+            description: clienttranslate('${actplayer} is attacking and must place 1 card face up, 1 card face-down'),
+            descriptionMyTurn: clienttranslate('${you} are attacking and must place 1 card face up, 1 card face-down'),
         );
     }
 

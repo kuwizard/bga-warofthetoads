@@ -25,8 +25,8 @@ class DefenderPlay extends GameState
         parent::__construct($game,
             id: ST_DEFENDER_PLAY,
             type: StateType::ACTIVE_PLAYER,
-            description: clienttranslate('${actplayer} must play 2 cards in line with the Attacker\'s'),
-            descriptionMyTurn: clienttranslate('${you} must play 2 cards in line with the Attacker\'s'),
+            description: clienttranslate('${actplayer} is defending and must place 1 card face up, 1 card face-down'),
+            descriptionMyTurn: clienttranslate('${you} are defending and must place 1 card face up, 1 card face-down'),
         );
     }
 

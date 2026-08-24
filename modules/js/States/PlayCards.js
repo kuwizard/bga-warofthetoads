@@ -1,7 +1,8 @@
 export class PlayCards {
-    constructor(game, bga) {
+    constructor(game, bga, role) {
         this.game = game;
         this.bga = bga;
+        this.role = role;
         this.faceUpCardId = null;
         this.faceDownCardId = null;
         this.filledOrder = [];
@@ -79,9 +80,11 @@ export class PlayCards {
     }
     refresh() {
         const bothFilled = this.faceUpCardId !== null && this.faceDownCardId !== null;
-        this.bga.statusBar.setTitle(this.faceUpCardId === null ? _('${you} must select a face-up card') :
-            this.faceDownCardId === null ? _('${you} must select a face-down card') :
-                _('${you} may confirm your turn, or click on a card to change it'));
+        this.bga.statusBar.setTitle(this.role === 'attacking' ? (this.faceUpCardId === null ? _('${you} are attacking and must select a face-up card') :
+            this.faceDownCardId === null ? _('${you} are attacking and must select a face-down card') :
+                _('${you} may confirm your turn, or click on a card to change it')) : (this.faceUpCardId === null ? _('${you} are defending and must select a face-up card') :
+            this.faceDownCardId === null ? _('${you} are defending and must select a face-down card') :
+                _('${you} may confirm your turn, or click on a card to change it')));
         this.game.setHandSelectable(!this.busy && !bothFilled, cardId => this.onHandCardClick(cardId));
         this.game.setLaneCardsSelectable(this.playedCardIds(), !this.busy && bothFilled, cardId => this.onLaneCardClick(cardId));
         this.bga.statusBar.removeActionButtons();
