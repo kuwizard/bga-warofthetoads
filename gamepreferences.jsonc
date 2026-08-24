@@ -14,7 +14,7 @@
       "3": { "name": "Fast" },
       "4": { "name": "Very fast" }
     },
-    "default": 2
+    "default": 1
   },
 
   // 101 is reserved for the card-counting aid toggle (PR9) — default off, shows
