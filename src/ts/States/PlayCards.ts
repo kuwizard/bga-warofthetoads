@@ -115,16 +115,16 @@ export class PlayCards {
             return;
         }
 
-        if (this.filledOrder.length > 0) {
-            this.bga.statusBar.addActionButton(_('Cancel'), () => this.onCancel(), { id: 'btn-cancel-play-cards', color: 'secondary' });
-        }
-
         if (bothFilled) {
             const faceUpCardId = this.faceUpCardId!;
             const faceDownCardId = this.faceDownCardId!;
             this.bga.statusBar.addActionButton(_('Confirm'), () => {
                 this.bga.actions.performAction('actPlayCards', { faceUpCardId, faceDownCardId });
             }, { id: 'btn-confirm-play-cards' });
+        }
+
+        if (this.filledOrder.length > 0) {
+            this.bga.statusBar.addActionButton(_('Cancel'), () => this.onCancel(), { id: 'btn-cancel-play-cards', color: 'secondary' });
         }
     }
 }
