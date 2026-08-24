@@ -86,23 +86,9 @@ export class Hand {
         }));
     }
 
-    // Only the owner's client receives the full card (and has the element) — everyone else's stub is shrine.ts's job.
-    async notif_casualtySet(args: CasualtySetNotifArgs): Promise<void> {
-        if (args.card.type === undefined) {
-            return;
-        }
-
+    // Only the owner's client receives the full card. Retiring it is shrine.ts's job either way — it finds this element and flies it out of the hand — so all that is left here is letting go of it.
+    notif_casualtySet(args: CasualtySetNotifArgs): void {
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card.id);
-
-        const slot = document.getElementById(`wott-casualty-slot-${Number(args.player_id)}`);
-        const cardElement = document.getElementById(`wott-card-${args.card.id}`);
-        if (!slot || !cardElement) {
-            return;
-        }
-
-        cardElement.classList.remove('wott-selectable', 'wott-card--selected');
-        await flipCard(cardElement, true);
-        await slideIntoPlace(cardElement, slot);
     }
 
     async notif_scoutRevealed(args: ScoutRevealedNotifArgs): Promise<void> {

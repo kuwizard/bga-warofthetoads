@@ -7,11 +7,18 @@ function hostageBeforeCaptor(a: StackCardData, b: StackCardData): number {
     return a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown);
 }
 
+// Retired cards are grouped by their printed back ([H2]), and the two groups stay level: a tie and a declined stack each send one card of either deck, and each player's Casualty comes off their own deck.
+const DECK_COLORS: ('blue' | 'red')[] = ['blue', 'red'];
+
+// The retired pile is 3 cards wide, so 3 per deck is the last size that fits without opening a 3rd row (shrine.scss). Past that each deck collapses into a counted stack, however long the War runs.
+const RETIRED_SHOWN_FLAT = 3;
+
 // The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the pile of cards retired beside it. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
     private cards!: CardsUiData;
     private stackColumns: { [playerId: number]: HTMLElement } = {};
     private retiredElement!: HTMLElement;
+    private retiredDecks!: { [deck: string]: HTMLElement };
     private shrineCardElement!: HTMLElement;
     private firstPlayerId!: number;
 
@@ -25,8 +32,13 @@ export class Shrine {
         this.cards = cards;
         this.firstPlayerId = playerIdsInTableOrder[0];
 
-        const casualtySlotsHtml = playerIdsInTableOrder
-            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
+        // One deck per back ([H2]: a retired card keeps its physical back), so the two never mix into a single indistinguishable stack once collapsed. That deck's Casualty (RULES.md §9) sits at the bottom of it and the Monks pile on top. The count is each deck's first child, leaving shrine.scss's `:nth-last-child` layer rules counting cards only.
+        const retiredDecksHtml = DECK_COLORS
+            .map(deck => `
+                <div class="wott-retired-deck" id="wott-retired-deck-${deck}">
+                    <span class="wott-retired-deck-count" id="wott-retired-deck-count-${deck}">0</span>
+                </div>
+            `)
             .join('');
 
         // The tracker card and everything retired beside it (Monks and Casualties alike) form one block between the two stack columns, so the columns alone decide how wide the Shrine gets — see layout.scss for what top-down does with the three.
@@ -35,7 +47,7 @@ export class Shrine {
                 ${tplShrineCard()}
                 <div class="wott-zone" id="wott-retired">
                     <span class="wott-zone__label">${_('Monks/Casualties')}</span>
-                    <div class="wott-retired-cards" id="wott-retired-cards">${casualtySlotsHtml}</div>
+                    <div class="wott-retired-cards" id="wott-retired-cards">${retiredDecksHtml}</div>
                 </div>
             </div>
         `;
@@ -54,8 +66,7 @@ export class Shrine {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`)!;
         });
         this.retiredElement = document.getElementById('wott-retired-cards')!;
-        // No Casualty exists yet during the 1st War (RULES.md §8/§9) — the two slots stay collapsed until the 2nd.
-        this.retiredElement.classList.toggle('wott-retired-cards--no-casualties', cards.casualties.length === 0);
+        this.retiredDecks = Object.fromEntries(DECK_COLORS.map(deck => [deck, document.getElementById(`wott-retired-deck-${deck}`)!]));
         this.shrineCardElement = document.getElementById('wott-shrine-card')!;
         this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
         this.bga.gameui.addTooltipHtml('wott-retired', tplRetiredTooltip());
@@ -74,8 +85,10 @@ export class Shrine {
         [...cards.stacks]
             .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
-        cards.casualties.forEach(card => this.placeCasualty(card));
+        // Casualties before Monks: set aside at the previous War's end (RULES.md §9), they are the oldest card in their deck and so its bottom one.
+        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
 
@@ -87,7 +100,9 @@ export class Shrine {
             this.cards.shrine.push(card);
         });
 
-        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
+        this.refreshRetiredDecks();
+        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredDecks[card.deck] })));
+        this.refreshRetiredDecks();
     }
 
     // Every lane win, single or half of a double (RULES.md §6 ➎, §7) — Notifications::hostageCaptured().
@@ -120,24 +135,27 @@ export class Shrine {
         this.cards.shrine.push(...retiredCards);
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
 
-        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredElement })));
+        this.refreshRetiredDecks();
+        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredDecks[card.deck] })));
+        this.refreshRetiredDecks();
         document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
 
-    // The owner's own client got the full card and hand.ts animates it into the slot — only the redacted stub slides in here. The slots open up front so they are already on screen before either card arrives, not revealed after the fact by notif_warStarted.
+    // A Casualty is retired exactly where a Monk is (Cards.php::getFlagCount), so it joins that deck's stack — the only difference is where it flies in from. The owner's own card is on screen in their hand; everyone else only ever had a redacted stub, which starts from the back it gave up in that player's row.
     async notif_casualtySet(args: CasualtySetNotifArgs): Promise<void> {
-        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
-
-        if (args.card.type !== undefined) {
-            return;
-        }
-
         const playerId = Number(args.player_id);
         this.cards.casualties.push(args.card);
+        this.refreshRetiredDecks();
 
-        const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
-        await this.animateCasualtyIn(args.card, playerId, fromHandRect);
+        if (document.getElementById(`wott-card-${args.card.id}`)) {
+            await this.moveCards([{ card: args.card, container: this.retiredDecks[args.card.deck] }]);
+        } else {
+            const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
+            await this.animateCasualtyIn(args.card, playerId, fromHandRect);
+        }
+
+        this.refreshRetiredDecks();
     }
 
     // RULES.md §10 — both Casualties flip face-up at game end, whichever condition decided it. The owner's element already carries the real sprite; everyone else's is still the redacted stub, and revealCardFace covers both.
@@ -159,7 +177,7 @@ export class Shrine {
 
         document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
         Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
-        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
+        this.refreshRetiredDecks();
     }
 
     // RULES.md §7: flips to the back as soon as anyone is Angry, and rotates to point the back's baked-in Angry arrow at whichever side is actually Angry — layout.scss turns both rotations another quarter in top-down mode.
@@ -278,25 +296,33 @@ export class Shrine {
         return stackElement;
     }
 
-    private placeCasualty(card: StackCardData): void {
-        const slot = document.getElementById(`wott-casualty-slot-${card.controller}`);
-        if (slot) {
-            this.createCard(card, slot);
-        }
-    }
-
     // The redacted stub arriving live (notif_casualtySet) — from the spot its back gave up in that player's row, or the deck anchor when no row is on screen.
     private async animateCasualtyIn(card: StackCardData, playerId: number, fromHandRect?: DOMRect): Promise<void> {
-        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
-        if (!slot) {
-            return;
-        }
-
         const fromRect = fromHandRect ?? document.getElementById(`wott-deck-anchor-${playerId}`)?.getBoundingClientRect();
-        const cardElement = this.createCard(card, slot);
+        const cardElement = this.createCard(card, this.retiredDecks[card.deck]);
         if (fromRect) {
             await slideFromRects([{ element: cardElement, fromRect }]);
         }
+    }
+
+    // Runs on both sides of an arriving pair: the collapse must precede the slide so the cards fly to the stack they are joining, while the count must not run ahead of them.
+    private refreshRetiredDecks(): void {
+        const collapsed = DECK_COLORS.some(deck => this.retiredCountIncludingArriving(deck) > RETIRED_SHOWN_FLAT);
+
+        this.retiredElement.classList.toggle('wott-retired-cards--collapsed', collapsed);
+        DECK_COLORS.forEach(deck => {
+            const retiredDeck = this.retiredDecks[deck];
+            retiredDeck.classList.toggle('wott-retired-deck--collapsed', collapsed);
+            document.getElementById(`wott-retired-deck-count-${deck}`)!.textContent = `${this.cardsLandedIn(retiredDeck)}`;
+        });
+    }
+
+    private cardsLandedIn(retiredDeck: HTMLElement): number {
+        return retiredDeck.querySelectorAll('.wott-card-flip').length;
+    }
+
+    private retiredCountIncludingArriving(deck: 'blue' | 'red'): number {
+        return [...this.cards.casualties, ...this.cards.shrine].filter(card => card.deck === deck).length;
     }
 
     private setStackCount(playerId: number, count: number): void {

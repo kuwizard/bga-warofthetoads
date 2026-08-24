@@ -59,19 +59,8 @@ export class Hand {
             await this.animateFromDeck(card, deckAnchor, args.arrivesFaceUp);
         }));
     }
-    async notif_casualtySet(args) {
-        if (args.card.type === undefined) {
-            return;
-        }
+    notif_casualtySet(args) {
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card.id);
-        const slot = document.getElementById(`wott-casualty-slot-${Number(args.player_id)}`);
-        const cardElement = document.getElementById(`wott-card-${args.card.id}`);
-        if (!slot || !cardElement) {
-            return;
-        }
-        cardElement.classList.remove('wott-selectable', 'wott-card--selected');
-        await flipCard(cardElement, true);
-        await slideIntoPlace(cardElement, slot);
     }
     async notif_scoutRevealed(args) {
         if (isReadOnly(this.bga) || Number(args.player_id2) !== Number(this.bga.gameui.player_id)) {

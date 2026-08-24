@@ -467,20 +467,68 @@
   align-content: flex-start;
   justify-content: center;
   gap: 8px;
-  width: 196px;
+  width: 200px;
   min-height: 86px;
 }
 .wott-retired-cards .wott-card-flip {
   width: 60px;
 }
 
-.wott-casualty-slot {
+.wott-retired-cards--collapsed {
+  flex-wrap: nowrap;
+  width: auto;
+  gap: 16px;
+}
+
+.wott-retired-deck {
+  display: contents;
+}
+
+.wott-retired-deck--collapsed {
+  display: block;
+  position: relative;
+  align-self: flex-start;
   width: 60px;
   aspect-ratio: 25/36;
 }
-
-.wott-retired-cards--no-casualties .wott-casualty-slot {
+.wott-retired-deck--collapsed .wott-card-flip {
   display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+}
+.wott-retired-deck--collapsed .wott-card-flip:nth-last-child(-n+3) {
+  display: block;
+}
+.wott-retired-deck--collapsed .wott-card-flip:nth-last-child(3) {
+  z-index: 1;
+  margin: 8px 0 0 8px;
+}
+.wott-retired-deck--collapsed .wott-card-flip:nth-last-child(2) {
+  z-index: 2;
+  margin: 4px 0 0 4px;
+}
+.wott-retired-deck--collapsed .wott-card-flip:nth-last-child(1) {
+  z-index: 3;
+}
+
+.wott-retired-deck-count {
+  display: none;
+}
+
+.wott-retired-deck--collapsed .wott-retired-deck-count {
+  display: block;
+  position: absolute;
+  z-index: 4;
+  right: -4px;
+  bottom: -4px;
+  min-width: 1.5em;
+  padding: 0 0.3em;
+  border-radius: 999px;
+  background: rgba(0, 0, 0, 0.8);
+  color: #fff;
+  font-size: 0.9em;
+  text-align: center;
 }
 
 #wott-table {

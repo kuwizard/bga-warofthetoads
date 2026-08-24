@@ -3,6 +3,8 @@ import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from 
 function hostageBeforeCaptor(a, b) {
     return a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown);
 }
+const DECK_COLORS = ['blue', 'red'];
+const RETIRED_SHOWN_FLAT = 3;
 export class Shrine {
     constructor(bga, opponentHand) {
         this.bga = bga;
@@ -12,15 +14,19 @@ export class Shrine {
     render(gameArea, cards, playerIdsInTableOrder, angry) {
         this.cards = cards;
         this.firstPlayerId = playerIdsInTableOrder[0];
-        const casualtySlotsHtml = playerIdsInTableOrder
-            .map(playerId => `<div class="wott-casualty-slot" id="wott-casualty-slot-${playerId}"></div>`)
+        const retiredDecksHtml = DECK_COLORS
+            .map(deck => `
+                <div class="wott-retired-deck" id="wott-retired-deck-${deck}">
+                    <span class="wott-retired-deck-count" id="wott-retired-deck-count-${deck}">0</span>
+                </div>
+            `)
             .join('');
         const centerHtml = `
             <div class="wott-shrine-center">
                 ${tplShrineCard()}
                 <div class="wott-zone" id="wott-retired">
                     <span class="wott-zone__label">${_('Monks/Casualties')}</span>
-                    <div class="wott-retired-cards" id="wott-retired-cards">${casualtySlotsHtml}</div>
+                    <div class="wott-retired-cards" id="wott-retired-cards">${retiredDecksHtml}</div>
                 </div>
             </div>
         `;
@@ -36,7 +42,7 @@ export class Shrine {
             this.stackColumns[playerId] = document.getElementById(`wott-stack-column-${playerId}`);
         });
         this.retiredElement = document.getElementById('wott-retired-cards');
-        this.retiredElement.classList.toggle('wott-retired-cards--no-casualties', cards.casualties.length === 0);
+        this.retiredDecks = Object.fromEntries(DECK_COLORS.map(deck => [deck, document.getElementById(`wott-retired-deck-${deck}`)]));
         this.shrineCardElement = document.getElementById('wott-shrine-card');
         this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
         this.bga.gameui.addTooltipHtml('wott-retired', tplRetiredTooltip());
@@ -50,8 +56,9 @@ export class Shrine {
         [...cards.stacks]
             .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
-        cards.casualties.forEach(card => this.placeCasualty(card));
+        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
     async notif_laneTied(args) {
@@ -60,7 +67,9 @@ export class Shrine {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
         });
-        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
+        this.refreshRetiredDecks();
+        await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredDecks[card.deck] })));
+        this.refreshRetiredDecks();
     }
     async notif_hostageCaptured(args) {
         await this.captureStack(Number(args.winner.controller), args.winner, args.loser);
@@ -79,19 +88,24 @@ export class Shrine {
         }));
         this.cards.shrine.push(...retiredCards);
         this.cards.stacks = this.cards.stacks.filter(card => card.locationArg !== args.declinedStackId);
-        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredElement })));
+        this.refreshRetiredDecks();
+        await this.moveCards(retiredCards.map(card => ({ card, container: this.retiredDecks[card.deck] })));
+        this.refreshRetiredDecks();
         document.getElementById(`wott-stack-${args.declinedStackId}`)?.remove();
         this.refreshStackCount(playerId, this.cards.stacks);
     }
     async notif_casualtySet(args) {
-        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
-        if (args.card.type !== undefined) {
-            return;
-        }
         const playerId = Number(args.player_id);
         this.cards.casualties.push(args.card);
-        const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
-        await this.animateCasualtyIn(args.card, playerId, fromHandRect);
+        this.refreshRetiredDecks();
+        if (document.getElementById(`wott-card-${args.card.id}`)) {
+            await this.moveCards([{ card: args.card, container: this.retiredDecks[args.card.deck] }]);
+        }
+        else {
+            const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
+            await this.animateCasualtyIn(args.card, playerId, fromHandRect);
+        }
+        this.refreshRetiredDecks();
     }
     async notif_casualtyRevealed(args) {
         const index = this.cards.casualties.findIndex(casualty => casualty.id === args.card.id);
@@ -106,7 +120,7 @@ export class Shrine {
         this.cards.shrine = [];
         document.querySelectorAll('#wott-shrine .wott-stack').forEach(element => element.remove());
         Object.keys(this.stackColumns).forEach(playerId => this.setStackCount(Number(playerId), 0));
-        this.retiredElement.classList.remove('wott-retired-cards--no-casualties');
+        this.refreshRetiredDecks();
     }
     setMood(angry) {
         this.shrineCardElement.classList.toggle('wott-card-flip--flipped', Object.values(angry).some(isAngry => isAngry));
@@ -195,22 +209,27 @@ export class Shrine {
         }
         return stackElement;
     }
-    placeCasualty(card) {
-        const slot = document.getElementById(`wott-casualty-slot-${card.controller}`);
-        if (slot) {
-            this.createCard(card, slot);
-        }
-    }
     async animateCasualtyIn(card, playerId, fromHandRect) {
-        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
-        if (!slot) {
-            return;
-        }
         const fromRect = fromHandRect ?? document.getElementById(`wott-deck-anchor-${playerId}`)?.getBoundingClientRect();
-        const cardElement = this.createCard(card, slot);
+        const cardElement = this.createCard(card, this.retiredDecks[card.deck]);
         if (fromRect) {
             await slideFromRects([{ element: cardElement, fromRect }]);
         }
+    }
+    refreshRetiredDecks() {
+        const collapsed = DECK_COLORS.some(deck => this.retiredCountIncludingArriving(deck) > RETIRED_SHOWN_FLAT);
+        this.retiredElement.classList.toggle('wott-retired-cards--collapsed', collapsed);
+        DECK_COLORS.forEach(deck => {
+            const retiredDeck = this.retiredDecks[deck];
+            retiredDeck.classList.toggle('wott-retired-deck--collapsed', collapsed);
+            document.getElementById(`wott-retired-deck-count-${deck}`).textContent = `${this.cardsLandedIn(retiredDeck)}`;
+        });
+    }
+    cardsLandedIn(retiredDeck) {
+        return retiredDeck.querySelectorAll('.wott-card-flip').length;
+    }
+    retiredCountIncludingArriving(deck) {
+        return [...this.cards.casualties, ...this.cards.shrine].filter(card => card.deck === deck).length;
     }
     setStackCount(playerId, count) {
         const el = document.getElementById(`wott-stack-count-${playerId}`);
