@@ -387,51 +387,23 @@ class Notifications
         ]);
     }
 
-    /**
-     * [H4]/§7 — Angry, winning both lanes keeps both stacks: a Leap-Frog!
-     * `$winners`/`$losers`/`$stackIds` are parallel arrays, 1 entry per lane
-     * won, in the same order — same redaction split as `hostageCaptured()`.
-     *
-     * @param Card[] $winners
-     * @param Card[] $losers
-     * @param int[]  $stackIds
-     */
-    public static function leapFrog(Player $player, array $winners, array $losers, array $stackIds): void
+    // [H4]/§7 — Angry, winning both lanes keeps both stacks: a Leap-Frog! Text only; each lane was already captured and animated by its own `hostageCaptured()` as it fought.
+    public static function leapFrog(Player $player): void
     {
         self::notifyAll('leapFrog', clienttranslate('${player_name} wins both lanes while Angry — Leap-Frog! Both stacks are kept'), [
-            'player'   => $player,
-            'winners'  => array_map(fn(Card $c) => $c->getUiData(), $winners),
-            'losers'   => array_map(fn(Card $c) => $c->getUiData(), $losers),
-            'stackIds' => $stackIds,
+            'player' => $player,
         ]);
     }
 
-    /**
-     * [H14]/§7 — Calm, winning both lanes: both stacks are formed (already
-     * captured by the time this is sent), but the winner must now choose
-     * which 1 to keep — `States/ChooseStack.php` (state 75) follows. Same
-     * parallel-array shape as `leapFrog()`.
-     *
-     * @param Card[] $winners
-     * @param Card[] $losers
-     * @param int[]  $stackIds
-     */
-    public static function doubleWinCalm(Player $player, array $winners, array $losers, array $stackIds): void
+    // [H14]/§7 — Calm, winning both lanes: both stacks are formed (each captured by its own `hostageCaptured()`), but the winner must now choose which 1 to keep — `States/ChooseStack.php` (state 75) follows.
+    public static function doubleWinCalm(Player $player): void
     {
         self::notifyAll('doubleWinCalm', clienttranslate('${player_name} wins both lanes while Calm and must choose which stack to keep'), [
-            'player'   => $player,
-            'winners'  => array_map(fn(Card $c) => $c->getUiData(), $winners),
-            'losers'   => array_map(fn(Card $c) => $c->getUiData(), $losers),
-            'stackIds' => $stackIds,
+            'player' => $player,
         ]);
     }
 
-    /**
-     * `ChooseStack`'s resolution ([H14]): the declined stack's Captor and
-     * Hostage both retire to the Shrine as Monks. No card data needed here —
-     * both stacks were already fully rendered client-side by `doubleWinCalm()`,
-     * so the client just reparents/flips its own existing elements by id.
-     */
+    // `ChooseStack`'s resolution ([H14]): the declined stack's Captor and Hostage retire as Monks. No card data needed — `hostageCaptured()` already rendered both stacks, so the client just reparents/flips its own elements by id.
     public static function stackKept(Player $player, int $keptStackId, int $declinedStackId): void
     {
         self::notifyAll('stackKept', clienttranslate('${player_name} keeps 1 stack; the other retires to the Shrine'), [

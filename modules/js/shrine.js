@@ -1,5 +1,8 @@
 import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
+function hostageBeforeCaptor(a, b) {
+    return a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown);
+}
 export class Shrine {
     constructor(bga, opponentHand) {
         this.bga = bga;
@@ -45,7 +48,7 @@ export class Shrine {
             }
         });
         [...cards.stacks]
-            .sort((a, b) => a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown))
+            .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
         cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
         cards.casualties.forEach(card => this.placeCasualty(card));
@@ -60,13 +63,7 @@ export class Shrine {
         await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
     }
     async notif_hostageCaptured(args) {
-        await this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
-    }
-    async notif_leapFrog(args) {
-        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
-    }
-    async notif_doubleWinCalm(args) {
-        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
+        await this.captureStack(Number(args.winner.controller), args.winner, args.loser);
     }
     async notif_stackKept(args) {
         const playerId = Number(args.player_id);
@@ -143,19 +140,17 @@ export class Shrine {
             document.getElementById(`wott-stack-${stackId}`)?.classList.add('wott-card--selected');
         }
     }
-    async captureStacks(controller, winners, losers) {
-        const entries = [];
-        winners.forEach((winner, i) => {
-            const loser = losers[i];
-            this.removeFromLanes(loser.id);
-            this.removeFromLanes(winner.id);
-            this.cards.stacks.push(loser, winner);
-            const stackElement = this.stackElementFor(winner.locationArg, controller);
-            if (stackElement) {
-                entries.push({ card: loser, container: stackElement }, { card: winner, container: stackElement });
-            }
-        });
-        await this.moveCards(entries);
+    async captureStack(controller, winner, loser) {
+        this.removeFromLanes(loser.id);
+        this.removeFromLanes(winner.id);
+        this.cards.stacks.push(loser, winner);
+        const stackElement = this.stackElementFor(winner.locationArg, controller);
+        if (stackElement) {
+            await this.moveCards([
+                { card: loser, container: stackElement },
+                { card: winner, container: stackElement },
+            ]);
+        }
         this.refreshStackCount(controller, this.cards.stacks);
     }
     async moveCards(entries) {

@@ -5,6 +5,8 @@ const FRAMEWORK_MIN_DURATION = 1;
 class TextOnlyNotifs {
     notif_scoutNothingToShow(_args) { }
     notif_siegeGuessFizzles(_args) { }
+    notif_leapFrog(_args) { }
+    notif_doubleWinCalm(_args) { }
     notif_warEnded(_args) { }
 }
 let rawLog;

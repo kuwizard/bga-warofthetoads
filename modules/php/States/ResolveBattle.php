@@ -58,15 +58,15 @@ class ResolveBattle extends GameState
             $laneResults[$lane] = $this->resolveLane($context, $card1, $card2, $attackerId);
         }
 
-        /** @var array<int, array{0: Card, 1: Card}[]> playerId => its lane wins as [winner, loser] pairs */
-        $wins = [$attackerId => [], $defenderId => []];
+        $lanesWonByPlayerId = [$attackerId => 0, $defenderId => 0];
         foreach ($laneResults as $result) {
             if ($result !== null) {
-                [$winner, $loser] = $result;
-                $wins[$winner->getController()][] = [$winner, $loser];
+                [$winner] = $result;
+                $lanesWonByPlayerId[$winner->getController()]++;
             }
         }
 
+        // Each lane fights and its outcome animates before the next one lights up — a double win is 2 ordinary captures here, and §7's limit only applies once both are in.
         foreach ([LANE_OPEN, LANE_HIDDEN] as $lane) {
             [$card1, $card2] = $laneCards[$lane];
             Notifications::laneFighting($lane, $card1, $card2);
@@ -78,38 +78,23 @@ class ResolveBattle extends GameState
                 continue;
             }
 
-            // A double-lane win is captured and announced together, below.
             [$winner, $loser] = $result;
-            if (count($wins[$winner->getController()]) === 1) {
-                $stackId = Cards::capture($winner, $loser);
-                Notifications::hostageCaptured(Players::get($winner->getController()), $winner, $loser, $stackId);
-            }
+            $stackId = Cards::capture($winner, $loser);
+            Notifications::hostageCaptured(Players::get($winner->getController()), $winner, $loser, $stackId);
         }
 
+        // Won both lanes (§7): both stacks are captured already, so these lines are text only — keep both (Angry — Leap-Frog!) or hand off to ChooseStack ([H14] — Calm).
         foreach ([$attackerId, $defenderId] as $playerId) {
-            $laneWins = $wins[$playerId];
-
-            if (count($laneWins) !== 2) {
+            if ($lanesWonByPlayerId[$playerId] !== 2) {
                 continue;
-            }
-
-            // Won both lanes (§7): capture both stacks, then either keep both
-            // (Angry — Leap-Frog!) or hand off to ChooseStack ([H14] — Calm).
-            $winners = [];
-            $losers = [];
-            $stackIds = [];
-            foreach ($laneWins as [$winner, $loser]) {
-                $stackIds[] = Cards::capture($winner, $loser);
-                $winners[] = $winner;
-                $losers[] = $loser;
             }
 
             if ($isAngry[$playerId]) {
-                Notifications::leapFrog(Players::get($playerId), $winners, $losers, $stackIds);
+                Notifications::leapFrog(Players::get($playerId));
                 continue;
             }
 
-            Notifications::doubleWinCalm(Players::get($playerId), $winners, $losers, $stackIds);
+            Notifications::doubleWinCalm(Players::get($playerId));
 
             // ChooseStack pauses here before BattleEnd's own moodChanged runs — re-derive now, since these 2 captures can flip either player's Angry/Calm.
             Notifications::moodChanged(Cards::getAngryByPlayerId());

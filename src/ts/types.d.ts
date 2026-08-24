@@ -179,22 +179,15 @@ interface HostageCapturedNotifArgs {
     stackId: number;
 }
 
-// `winners`/`losers`/`stackIds` are parallel arrays, 1 entry per lane won, in
-// the same order — see Notifications::leapFrog()/doubleWinCalm().
+// Text only — each lane won was already captured by its own hostageCaptured.
 interface LeapFrogNotifArgs {
     player_id: number;
     player_name: string;
-    winners: CardData[];
-    losers: StackCardData[];
-    stackIds: number[];
 }
 
 interface DoubleWinCalmNotifArgs {
     player_id: number;
     player_name: string;
-    winners: CardData[];
-    losers: StackCardData[];
-    stackIds: number[];
 }
 
 interface StackKeptNotifArgs {

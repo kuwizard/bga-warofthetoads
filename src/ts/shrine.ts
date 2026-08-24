@@ -2,6 +2,11 @@ import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrin
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 import { OpponentHand } from "./opponentHand.js";
 
+// DOM order inside a stack *is* its z-order (shrine.scss offsets `:first-child`), and Cards::getUiData()'s stacks query has no ORDER BY of its own — the same order captureStack() pushes them in live.
+function hostageBeforeCaptor(a: StackCardData, b: StackCardData): number {
+    return a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown);
+}
+
 // The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the pile of cards retired beside it. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
     private cards!: CardsUiData;
@@ -66,12 +71,8 @@ export class Shrine {
                 stackOwnerByStackId[card.locationArg] = card.controller;
             }
         });
-        // DOM order inside a stack *is* its z-order (shrine.scss offsets
-        // `:first-child`), so the Hostage must be placed before its Captor —
-        // the order captureStacks() pushes them in live. The payload itself
-        // has none: Cards::getUiData()'s stacks query has no ORDER BY.
         [...cards.stacks]
-            .sort((a, b) => a.locationArg - b.locationArg || Number(b.facedown) - Number(a.facedown))
+            .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
         cards.shrine.forEach(card => this.createCard(card, this.retiredElement));
         cards.casualties.forEach(card => this.placeCasualty(card));
@@ -89,18 +90,9 @@ export class Shrine {
         await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredElement })));
     }
 
-    /** `ResolveBattle`'s single-lane-win branch (RULES.md §6 ➎) — Notifications::hostageCaptured(). */
+    // Every lane win, single or half of a double (RULES.md §6 ➎, §7) — Notifications::hostageCaptured().
     async notif_hostageCaptured(args: HostageCapturedNotifArgs): Promise<void> {
-        await this.captureStacks(Number(args.winner.controller), [args.winner], [args.loser]);
-    }
-
-    /** `ResolveBattle`'s double-win-while-Angry branch (§7, [H4]) — Notifications::leapFrog(). */
-    async notif_leapFrog(args: LeapFrogNotifArgs): Promise<void> {
-        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
-    }
-
-    async notif_doubleWinCalm(args: DoubleWinCalmNotifArgs): Promise<void> {
-        await this.captureStacks(Number(args.player_id), args.winners, args.losers);
+        await this.captureStack(Number(args.winner.controller), args.winner, args.loser);
     }
 
     /**
@@ -215,24 +207,20 @@ export class Shrine {
         }
     }
 
-    /** 1 or 2 parallel [winner, loser] pairs, captured and rendered identically regardless of Angry/Calm/single-lane. */
-    private async captureStacks(controller: number, winners: CardData[], losers: StackCardData[]): Promise<void> {
-        const entries: { card: StackCardData, container: HTMLElement }[] = [];
+    private async captureStack(controller: number, winner: CardData, loser: StackCardData): Promise<void> {
+        this.removeFromLanes(loser.id);
+        this.removeFromLanes(winner.id);
+        this.cards.stacks.push(loser, winner);
 
-        winners.forEach((winner, i) => {
-            const loser = losers[i];
-            this.removeFromLanes(loser.id);
-            this.removeFromLanes(winner.id);
-            this.cards.stacks.push(loser, winner);
+        const stackElement = this.stackElementFor(winner.locationArg, controller);
+        if (stackElement) {
+            // Hostage before Captor: DOM order inside a stack is its z-order (shrine.scss).
+            await this.moveCards([
+                { card: loser, container: stackElement },
+                { card: winner, container: stackElement },
+            ]);
+        }
 
-            const stackElement = this.stackElementFor(winner.locationArg, controller);
-            if (stackElement) {
-                // Hostage before Captor: DOM order inside a stack is its z-order (shrine.scss).
-                entries.push({ card: loser, container: stackElement }, { card: winner, container: stackElement });
-            }
-        });
-
-        await this.moveCards(entries);
         this.refreshStackCount(controller, this.cards.stacks);
     }
 
@@ -267,13 +255,7 @@ export class Shrine {
         }
     }
 
-    /**
-     * A Captor or Hostage just captured (`ResolveBattle`'s hostageCaptured/
-     * leapFrog/doubleWinCalm). `stackOwnerId` is the Captor's controller (the
-     * capturing player) — never `card.controller`, which for a Hostage is
-     * still its original (losing) owner. Each card's own deck-back colour is
-     * still its own controller's, so a Hostage shows its true owner's colour.
-     */
+    // `stackOwnerId` is the capturing player, never `card.controller` — a Hostage's is still its original (losing) owner, which is exactly what its deck-back colour should keep showing.
     private placeStackCard(card: StackCardData, stackOwnerId: number): void {
         const stackElement = this.stackElementFor(card.locationArg, stackOwnerId);
         if (stackElement) {
