@@ -1,4 +1,4 @@
-import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
+import { tplHandCard, tplCardTooltip, tplShownCard, tplWarBattleIndicator } from "./tpls.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
@@ -12,6 +12,9 @@ export class Hand {
     private cards!: CardsUiData;
     private gameArea!: HTMLElement;
     private handElement!: HTMLElement;
+    private warBattleElement!: HTMLElement;
+    private war: number = 1;
+    private battle: number = 1;
     // Reapplied to each card as it's created — setSelectable() only touches elements that already exist.
     private selectable: boolean = false;
     private selectableOnClick?: (cardId: number) => void;
@@ -22,13 +25,32 @@ export class Hand {
     ) {
     }
 
-    render(gameArea: HTMLElement, cards: CardsUiData, viewerHasSeat: boolean): void {
+    render(gameArea: HTMLElement, cards: CardsUiData, viewerHasSeat: boolean, war: number, battle: number): void {
         this.cards = cards;
         this.gameArea = gameArea;
-        gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div>`);
+        this.war = war;
+        this.battle = battle;
+        gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div><div id="wott-war-battle"></div>`);
         this.handElement = document.getElementById('wott-my-hand')!;
+        this.warBattleElement = document.getElementById('wott-war-battle')!;
         this.handElement.classList.toggle('wott-my-hand--hidden', !viewerHasSeat);
         cards.hand.forEach(card => this.appendCard(card));
+        this.updateWarBattleText();
+    }
+
+    notif_battleStarted(args: BattleStartedNotifArgs): void {
+        this.battle = args.battleNumber;
+        this.updateWarBattleText();
+    }
+
+    notif_warStarted(args: WarStartedNotifArgs): void {
+        this.war = args.war;
+        this.battle = 1;
+        this.updateWarBattleText();
+    }
+
+    private updateWarBattleText(): void {
+        this.warBattleElement.textContent = tplWarBattleIndicator(this.war, this.battle);
     }
 
     async notif_cardReturned(args: CardReturnedNotifArgs): Promise<void> {
@@ -151,11 +173,14 @@ export class Hand {
         return this.cards.hand.find(card => card.id === cardId);
     }
 
+    // The indicator always sits on the side of the hand facing the rest of the board — below the hand when it's pinned to the top, above it when it's pinned to the bottom.
     setPosition(position: 'top' | 'bottom'): void {
         if (position === 'top') {
             this.gameArea.prepend(this.handElement);
+            this.handElement.insertAdjacentElement('afterend', this.warBattleElement);
         } else {
             this.gameArea.append(this.handElement);
+            this.handElement.insertAdjacentElement('beforebegin', this.warBattleElement);
         }
     }
 

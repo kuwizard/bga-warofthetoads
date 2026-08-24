@@ -26,6 +26,14 @@ $hand-card-height: math.div($hand-card-width * 36, 25);
   display: none;
 }
 
+#wott-war-battle {
+  text-align: center;
+  font-size: 0.8em;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.65;
+}
+
 // Two-sided hand card (see tpls.ts::tplHandCard) — rotated via
 // .wott-card-flip--flipped, e.g. when ReturnCard confirms/undoes a card
 // (Game.ts::notif_cardReturned / notif_cardReturnUndone).

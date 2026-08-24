@@ -73,6 +73,8 @@ interface WarOfTheToadsGamedatas extends Gamedatas<WarOfTheToadsPlayer> {
     angry: AngryByPlayerId;
     // Current-war deck colour per player (Globals::getDeckColorByPlayerId()) — diverges from table order after the 2nd-War swap.
     deckColors: { [playerId: number]: 'blue' | 'red' };
+    war: number;
+    battle: number;
     // Null until the game is over; re-derived server-side on every load, never replayed from the log.
     gameEnd: GameEndSummary | null;
 }

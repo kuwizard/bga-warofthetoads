@@ -98,6 +98,8 @@ class Game extends \Bga\GameFramework\Table
             'cards'      => Cards::getUiData($currentPlayerId),
             'angry'      => Cards::getAngryByPlayerId(),
             'deckColors' => Cards::getDeckColorByPlayerId(),
+            'war'        => Globals::getWar(),
+            'battle'     => Globals::getBattle(),
             'gameEnd'    => $this->gamestate->getCurrentMainStateId() === ST_GAME_END ? ComputeScores::summary() : null,
         ];
     }

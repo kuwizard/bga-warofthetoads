@@ -123,6 +123,11 @@ export const guessableCardTypes: { [type: string]: { label: string; strength: nu
     siege: { label: 'Siege Cannon', strength: null },
 };
 
+// hand.ts's small progress readout, pinned to whichever edge of the hand faces the board.
+export function tplWarBattleIndicator(war: number, battle: number): string {
+    return `${_('War')} ${war}/2, ${_('Battle')} ${battle}/4`;
+}
+
 // Its own id keeps it from clashing with the same card's element elsewhere.
 export function tplShownCard(card: CardData): string {
     return `

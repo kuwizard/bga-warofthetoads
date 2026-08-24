@@ -1,4 +1,4 @@
-import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
+import { tplHandCard, tplCardTooltip, tplShownCard, tplWarBattleIndicator } from "./tpls.js";
 import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 const DEAL_STAGGER_MS = 144;
@@ -7,15 +7,33 @@ export class Hand {
     constructor(bga, playerPanels) {
         this.bga = bga;
         this.playerPanels = playerPanels;
+        this.war = 1;
+        this.battle = 1;
         this.selectable = false;
     }
-    render(gameArea, cards, viewerHasSeat) {
+    render(gameArea, cards, viewerHasSeat, war, battle) {
         this.cards = cards;
         this.gameArea = gameArea;
-        gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div>`);
+        this.war = war;
+        this.battle = battle;
+        gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div><div id="wott-war-battle"></div>`);
         this.handElement = document.getElementById('wott-my-hand');
+        this.warBattleElement = document.getElementById('wott-war-battle');
         this.handElement.classList.toggle('wott-my-hand--hidden', !viewerHasSeat);
         cards.hand.forEach(card => this.appendCard(card));
+        this.updateWarBattleText();
+    }
+    notif_battleStarted(args) {
+        this.battle = args.battleNumber;
+        this.updateWarBattleText();
+    }
+    notif_warStarted(args) {
+        this.war = args.war;
+        this.battle = 1;
+        this.updateWarBattleText();
+    }
+    updateWarBattleText() {
+        this.warBattleElement.textContent = tplWarBattleIndicator(this.war, this.battle);
     }
     async notif_cardReturned(args) {
         const playerId = Number(args.player_id);
@@ -113,9 +131,11 @@ export class Hand {
     setPosition(position) {
         if (position === 'top') {
             this.gameArea.prepend(this.handElement);
+            this.handElement.insertAdjacentElement('afterend', this.warBattleElement);
         }
         else {
             this.gameArea.append(this.handElement);
+            this.handElement.insertAdjacentElement('beforebegin', this.warBattleElement);
         }
     }
     appendCard(card) {
