@@ -86,7 +86,7 @@ export class Shrine {
             .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
         // Casualties before Monks: set aside at the previous War's end (RULES.md §9), they are the oldest card in their deck and so its bottom one.
-        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
         cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
         this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
@@ -340,13 +340,13 @@ export class Shrine {
     }
 
     // Builds a card that has no element yet — a page load, or a capture seen by a client that never rendered the lane card. Cards that are already on the table travel via moveCards() instead.
-    private createCard(card: StackCardData, container: HTMLElement): HTMLElement {
+    private createCard(card: StackCardData, container: HTMLElement, showAbilityTooltip: boolean = true): HTMLElement {
         container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`)!;
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
 
         // A redacted stub (no `name`) has nothing meaningful to show in a tooltip.
-        if (card.name !== undefined) {
+        if (showAbilityTooltip && card.name !== undefined) {
             this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card as CardData));
         }
 

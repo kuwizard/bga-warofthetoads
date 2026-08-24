@@ -56,7 +56,7 @@ export class Shrine {
         [...cards.stacks]
             .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
-        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
         cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
         this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
@@ -241,11 +241,11 @@ export class Shrine {
         const count = new Set(stacks.filter(c => c.controller === playerId && !c.facedown).map(c => c.locationArg)).size;
         this.setStackCount(playerId, count);
     }
-    createCard(card, container) {
+    createCard(card, container, showAbilityTooltip = true) {
         container.insertAdjacentHTML('beforeend', tplLaneCard(card, card.deck));
         const cardElement = document.getElementById(`wott-card-${card.id}`);
         cardElement.classList.toggle('wott-card-flip--flipped', card.facedown);
-        if (card.name !== undefined) {
+        if (showAbilityTooltip && card.name !== undefined) {
             this.bga.gameui.addTooltipHtml(`wott-card-${card.id}`, tplCardTooltip(card));
         }
         return cardElement;
