@@ -62,28 +62,43 @@ function notifMethodNames(handler: object): string[] {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(handler)).filter(name => name.startsWith('notif_'));
 }
 
-// The framework copies its own minDuration once at setup; re-reading the floor per notification is what makes a mid-game speed change take effect.
-function holdNotifsForCurrentAnimationSpeed(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>, handlers: object[]): void {
-    handlers.forEach(handler => notifMethodNames(handler)
-        .filter(name => !Object.prototype.hasOwnProperty.call(handler, name))
-        .forEach(name => {
-            const handle = (handler as any)[name].bind(handler);
+// The framework subscribes once per handler object, so a name several modules share (cardsDrawn, moodChanged) would play — and pad with NOTIF_MIN_DURATION — once per module.
+function mergeHandlers(handlers: object[]): object {
+    const reactions: Record<string, (...args: any[]) => any> = {};
 
-            Object.defineProperty(handler, name, {
-                configurable: true,
-                value: (args: any, notif?: { log?: string }) => {
-                    const silent = !notif?.log || !bga.gameui.bgaAnimationsActive();
-                    return Promise.all([handle(args, notif), delay(silent ? 0 : animDur(NOTIF_MIN_DURATION))]);
-                },
-            });
-        }));
+    handlers.forEach(handler => notifMethodNames(handler).forEach(name => {
+        const react = (handler as any)[name].bind(handler);
+        const reactSoFar = reactions[name];
+
+        reactions[name] = reactSoFar
+            ? (...args: any[]) => Promise.all([reactSoFar(...args), react(...args)])
+            : react;
+    }));
+
+    // The framework looks for notif_* on the prototype, so the merged reactions must live there.
+    return Object.create(reactions);
+}
+
+// The framework copies its own minDuration once at setup; re-reading the floor per notification is what makes a mid-game speed change take effect.
+function holdNotifsForCurrentAnimationSpeed(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>, handler: object): void {
+    notifMethodNames(handler).forEach(name => {
+        const handle = (handler as any)[name];
+
+        Object.defineProperty(handler, name, {
+            configurable: true,
+            value: (args: any, notif?: { log?: string }) => {
+                const silent = !notif?.log || !bga.gameui.bgaAnimationsActive();
+                return Promise.all([handle(args, notif), delay(silent ? 0 : animDur(NOTIF_MIN_DURATION))]);
+            },
+        });
+    });
 }
 
 export function notificationOptions(game: Game, handlers: object[]) {
     const bga = game.bga;
 
-    const allHandlers = [...handlers, new TextOnlyNotifs()];
-    holdNotifsForCurrentAnimationSpeed(bga, allHandlers);
+    const handler = mergeHandlers([...handlers, new TextOnlyNotifs()]);
+    holdNotifsForCurrentAnimationSpeed(bga, handler);
 
     let statusElement: HTMLElement | null = null;
     let savedStatus: string | undefined;
@@ -95,7 +110,7 @@ export function notificationOptions(game: Game, handlers: object[]) {
     };
 
     return {
-        handlers: allHandlers,
+        handlers: [handler],
         minDuration: FRAMEWORK_MIN_DURATION,
 
         onStart: (name: string, msg: string, args: any): void => {

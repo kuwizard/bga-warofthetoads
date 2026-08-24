@@ -43,11 +43,20 @@ function colorizeDecksInTemplate(log, args) {
 function notifMethodNames(handler) {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(handler)).filter(name => name.startsWith('notif_'));
 }
-function holdNotifsForCurrentAnimationSpeed(bga, handlers) {
-    handlers.forEach(handler => notifMethodNames(handler)
-        .filter(name => !Object.prototype.hasOwnProperty.call(handler, name))
-        .forEach(name => {
-        const handle = handler[name].bind(handler);
+function mergeHandlers(handlers) {
+    const reactions = {};
+    handlers.forEach(handler => notifMethodNames(handler).forEach(name => {
+        const react = handler[name].bind(handler);
+        const reactSoFar = reactions[name];
+        reactions[name] = reactSoFar
+            ? (...args) => Promise.all([reactSoFar(...args), react(...args)])
+            : react;
+    }));
+    return Object.create(reactions);
+}
+function holdNotifsForCurrentAnimationSpeed(bga, handler) {
+    notifMethodNames(handler).forEach(name => {
+        const handle = handler[name];
         Object.defineProperty(handler, name, {
             configurable: true,
             value: (args, notif) => {
@@ -55,12 +64,12 @@ function holdNotifsForCurrentAnimationSpeed(bga, handlers) {
                 return Promise.all([handle(args, notif), delay(silent ? 0 : animDur(NOTIF_MIN_DURATION))]);
             },
         });
-    }));
+    });
 }
 export function notificationOptions(game, handlers) {
     const bga = game.bga;
-    const allHandlers = [...handlers, new TextOnlyNotifs()];
-    holdNotifsForCurrentAnimationSpeed(bga, allHandlers);
+    const handler = mergeHandlers([...handlers, new TextOnlyNotifs()]);
+    holdNotifsForCurrentAnimationSpeed(bga, handler);
     let statusElement = null;
     let savedStatus;
     let savedTitle;
@@ -70,7 +79,7 @@ export function notificationOptions(game, handlers) {
         return { log: colorizeDecksInTemplate(log, args), args };
     };
     return {
-        handlers: allHandlers,
+        handlers: [handler],
         minDuration: FRAMEWORK_MIN_DURATION,
         onStart: (name, msg, args) => {
             const template = rawLog !== undefined && producedMessage(rawLog, msg) ? rawLog : stripSubstitutionMarkup(msg);
