@@ -18,11 +18,14 @@ interface CardData {
     band: string;
 }
 
+// Sent by Managers/Cards::getHandCounts() with every notification that changes a hand: a row of anonymous card backs (opponentHand.ts) has no ids to count, so the server's count is the only thing it can trust.
+type HandCountsByPlayerId = { [playerId: number]: number };
+
 // Mirrors Managers/Cards::getUiData() — [H13]: only `hand` ever carries full
 // card data, and only for the requesting player's own hand.
 interface CardsUiData {
     hand: CardData[];
-    handCounts: { [playerId: number]: number };
+    handCounts: HandCountsByPlayerId;
     deckCounts: { [playerId: number]: number };
     lanes: LaneCardData[];
     stacks: StackCardData[];
@@ -115,6 +118,7 @@ interface BattleStartedNotifArgs {
 interface CardsPlayedNotifArgs {
     player_id: number;
     player_name: string;
+    handCounts: HandCountsByPlayerId;
     faceUpCard: LaneCardData;
     faceDownCard: LaneCardData;
 }
@@ -123,6 +127,7 @@ interface CardsDrawnNotifArgs {
     player_id: number;
     player_name: string;
     count: number;
+    handCounts: HandCountsByPlayerId;
     arrivesFaceUp: boolean;
     // Present only in the `_private` block delivered to the drawing player
     // (Notifications::cardsDrawn()) — absent for everyone else, [H13].
@@ -137,6 +142,7 @@ interface CardsRevealedNotifArgs {
 interface CardReturnedNotifArgs {
     player_id: number;
     player_name: string;
+    handCounts: HandCountsByPlayerId;
     // Present only in the `_private` block delivered to the returning player
     // (Notifications::cardReturned()) — absent for everyone else, [H13].
     card_id?: number;
@@ -146,6 +152,7 @@ interface CardReturnedNotifArgs {
 interface CardReturnUndoneNotifArgs {
     player_id: number;
     player_name: string;
+    handCounts: HandCountsByPlayerId;
     // Present only in the `_private` block delivered to the acting player
     // (Notifications::cardReturnUndone()) — absent for everyone else, [H13].
     card?: CardData;
@@ -301,6 +308,7 @@ interface WarEndedNotifArgs {
 interface CasualtySetNotifArgs {
     player_id: number;
     player_name: string;
+    handCounts: HandCountsByPlayerId;
     card: StackCardData;
 }
 

@@ -5,7 +5,7 @@ import { animDur, delay, isReadOnly } from "./common.js";
 
 const DEAL_STAGGER_MS = 144;
 
-// The viewing player's own hand, never the opponent's — RULES.md's hidden hand is the whole point, and card-backs would say nothing the panel's deck count doesn't already.
+// The viewing player's own hand — every other hand is a row of backs (opponentHand.ts).
 export class Hand {
     private cards!: CardsUiData;
     private gameArea!: HTMLElement;
@@ -20,11 +20,12 @@ export class Hand {
     ) {
     }
 
-    render(gameArea: HTMLElement, cards: CardsUiData): void {
+    render(gameArea: HTMLElement, cards: CardsUiData, viewerHasSeat: boolean): void {
         this.cards = cards;
         this.gameArea = gameArea;
         gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div>`);
         this.handElement = document.getElementById('wott-my-hand')!;
+        this.handElement.classList.toggle('wott-my-hand--hidden', !viewerHasSeat);
         cards.hand.forEach(card => this.appendCard(card));
     }
 
@@ -32,7 +33,6 @@ export class Hand {
         const playerId = Number(args.player_id);
 
         this.playerPanels.adjustDeckCount(playerId, 1);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
 
         // [H13]: only the returning player's own client is sent `card_id`.
         if (args.card_id === undefined) {
@@ -53,7 +53,6 @@ export class Hand {
         const playerId = Number(args.player_id);
 
         this.playerPanels.adjustDeckCount(playerId, -1);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + 1;
 
         if (args.card === undefined) {
             return;
@@ -71,7 +70,6 @@ export class Hand {
         const playerId = Number(args.player_id);
 
         this.playerPanels.adjustDeckCount(playerId, -args.count);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
 
         // The War's opening deal is already in `getAllDatas()` by the time its notification arrives.
         const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
@@ -90,16 +88,13 @@ export class Hand {
 
     // Only the owner's client receives the full card (and has the element) — everyone else's stub is shrine.ts's job.
     async notif_casualtySet(args: CasualtySetNotifArgs): Promise<void> {
-        const playerId = Number(args.player_id);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
-
         if (args.card.type === undefined) {
             return;
         }
 
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card.id);
 
-        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
+        const slot = document.getElementById(`wott-casualty-slot-${Number(args.player_id)}`);
         const cardElement = document.getElementById(`wott-card-${args.card.id}`);
         if (!slot || !cardElement) {
             return;
@@ -147,9 +142,8 @@ export class Hand {
         });
     }
 
-    onCardsPlayed(playerId: number, cardIds: number[]): void {
+    onCardsPlayed(cardIds: number[]): void {
         this.cards.hand = this.cards.hand.filter(card => !cardIds.includes(card.id));
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? cardIds.length) - cardIds.length;
     }
 
     getCard(cardId: number): CardData | undefined {

@@ -1,0 +1,26 @@
+// A row of anonymous card backs per player whose hand is hidden (src/ts/opponentHand.ts).
+
+@use 'variables' as v;
+@use 'hand' as h;
+
+.wott-opponent-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: v.$gap * 2;
+  padding: v.$gap * 2;
+  background: hsla(0, 0%, 100%, 0.45);
+  border-radius: v.$radius * 2;
+  min-height: h.$hand-card-height;
+
+  // Scoped to direct children so a back animating out of .wott-deck-anchor keeps the deck's own width until it lands.
+  > .wott-card {
+    height: h.$hand-card-height;
+    width: auto;
+    flex-shrink: 0;
+  }
+}
+
+.wott-opponent-hand.wott-opponent-hand--hidden {
+  display: none;
+}

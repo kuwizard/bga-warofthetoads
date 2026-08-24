@@ -431,6 +431,16 @@ class Cards extends CachedDB_Manager
         return static::getAll()->where('controller', $playerId)->where('location', LOCATION_DECK)->count();
     }
 
+    public static function getHandCounts(): array
+    {
+        $handCounts = [];
+        foreach (Players::getAll() as $player) {
+            $handCounts[$player->getId()] = static::getHandCount($player->getId());
+        }
+
+        return $handCounts;
+    }
+
     // ── UI DATA ───────────────────────────────────────────────────────────────
 
     /**
@@ -442,17 +452,14 @@ class Cards extends CachedDB_Manager
      */
     public static function getUiData(int $currentPlayerId): array
     {
-        $handCounts = [];
         $deckCounts = [];
         foreach (Players::getAll() as $player) {
-            $pid = $player->getId();
-            $handCounts[$pid] = static::getHandCount($pid);
-            $deckCounts[$pid] = static::getDeckCount($pid);
+            $deckCounts[$player->getId()] = static::getDeckCount($player->getId());
         }
 
         return [
             'hand'       => static::getHand($currentPlayerId)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
-            'handCounts' => $handCounts,
+            'handCounts' => static::getHandCounts(),
             'deckCounts' => $deckCounts,
             'lanes'      => static::getLaneCards()->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),
             'stacks'     => static::getAll()->where('location', LOCATION_STACK)->map(fn(Card $c) => $c->getUiData($currentPlayerId))->toArray(),

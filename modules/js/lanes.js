@@ -5,9 +5,10 @@ const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 const ANIMATION_FALLBACK_MS = 2000;
 export class Lanes {
-    constructor(bga, hand) {
+    constructor(bga, hand, opponentHand) {
         this.bga = bga;
         this.hand = hand;
+        this.opponentHand = opponentHand;
         this.printedStrengthByCardId = new Map();
     }
     render(gameArea, lanes, playerIdsInTableOrder) {
@@ -36,10 +37,11 @@ export class Lanes {
     }
     async notif_cardsPlayed(args) {
         const playerId = Number(args.player_id);
-        this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
+        this.hand.onCardsPlayed([args.faceUpCard.id, args.faceDownCard.id]);
+        const [faceUpRect, faceDownRect] = this.opponentHand.takeCardRects(playerId, 2, Number(args.handCounts[playerId]));
         await Promise.all([
-            this.playCard(args.faceUpCard),
-            this.playCard(args.faceDownCard),
+            this.playCard(args.faceUpCard, faceUpRect),
+            this.playCard(args.faceDownCard, faceDownRect),
         ]);
     }
     async notif_cardsRevealed(args) {
@@ -99,11 +101,11 @@ export class Lanes {
         await this.waitForAnimationEnd(cardElement);
         cardElement.classList.remove('wott-card--tactic');
     }
-    async playCard(card) {
+    async playCard(card, fromHandRect) {
         const slot = this.slotFor(card);
         const existingElement = document.getElementById(`wott-card-${card.id}`);
         if (!existingElement) {
-            this.createCardElement(card, slot);
+            await this.playFromHiddenHand(card, slot, fromHandRect);
             return;
         }
         existingElement.classList.remove('wott-selectable', 'wott-card--selected');
@@ -117,6 +119,15 @@ export class Lanes {
             await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
+    }
+    async playFromHiddenHand(card, slot, fromHandRect) {
+        const cardElement = this.createCardElement(card, slot);
+        if (!fromHandRect) {
+            return;
+        }
+        cardElement.classList.add('wott-card-flip--flipped');
+        await slideFromRects([{ element: cardElement, fromRect: fromHandRect }]);
+        await flipCard(cardElement, card.facedown);
     }
     upgradeToLaneCard(card, element) {
         if (element.dataset.controller !== undefined) {

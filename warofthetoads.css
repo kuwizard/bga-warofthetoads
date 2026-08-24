@@ -156,6 +156,10 @@
   width: 130px;
 }
 
+#wott-my-hand.wott-my-hand--hidden {
+  display: none;
+}
+
 .wott-card-flip {
   perspective: 1000px;
 }
@@ -239,6 +243,26 @@
 
 .wott-card-tooltip__description {
   line-height: 1.4;
+}
+
+.wott-opponent-hand {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 16px;
+  padding: 16px;
+  background: hsla(0, 0%, 100%, 0.45);
+  border-radius: 12px;
+  min-height: 187.2px;
+}
+.wott-opponent-hand > .wott-card {
+  height: 187.2px;
+  width: auto;
+  flex-shrink: 0;
+}
+
+.wott-opponent-hand.wott-opponent-hand--hidden {
+  display: none;
 }
 
 #wott-lanes {

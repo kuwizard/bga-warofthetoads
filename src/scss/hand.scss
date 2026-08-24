@@ -1,4 +1,4 @@
-// The viewing player's own hand (src/ts/hand.ts) — the opponent's is never rendered, so there is nothing to style for it here.
+// The viewing player's own hand (src/ts/hand.ts) — every other hand is a row of backs, styled in opponent-hand.scss.
 
 @use 'sass:math';
 @use 'variables' as v;
@@ -20,6 +20,10 @@ $hand-card-height: math.div($hand-card-width * 36, 25);
   .wott-card-flip {
     width: $hand-card-width;
   }
+}
+
+#wott-my-hand.wott-my-hand--hidden {
+  display: none;
 }
 
 // Two-sided hand card (see tpls.ts::tplHandCard) — rotated via

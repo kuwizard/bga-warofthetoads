@@ -1,5 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
+import { OpponentHand } from "./opponentHand.js";
 import { flipCard, revealCardFace, slideAllIntoPlace, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur } from "./common.js";
 
@@ -25,6 +26,7 @@ export class Lanes {
     constructor(
         private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
         private hand: Hand,
+        private opponentHand: OpponentHand,
     ) {
     }
 
@@ -63,11 +65,14 @@ export class Lanes {
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
         const playerId = Number(args.player_id);
-        this.hand.onCardsPlayed(playerId, [args.faceUpCard.id, args.faceDownCard.id]);
+        this.hand.onCardsPlayed([args.faceUpCard.id, args.faceDownCard.id]);
+
+        // Both backs leave the row together, so both spots must be read before either card starts moving.
+        const [faceUpRect, faceDownRect] = this.opponentHand.takeCardRects(playerId, 2, Number(args.handCounts[playerId]));
 
         await Promise.all([
-            this.playCard(args.faceUpCard),
-            this.playCard(args.faceDownCard),
+            this.playCard(args.faceUpCard, faceUpRect),
+            this.playCard(args.faceDownCard, faceDownRect),
         ]);
     }
 
@@ -144,19 +149,13 @@ export class Lanes {
         cardElement.classList.remove('wott-card--tactic');
     }
 
-    /**
-     * Places a just-played card into its lane slot. If the card still has a
-     * DOM element in the acting player's own hand (never true for the
-     * opponent — their hand is never rendered, hand.ts), reparents and
-     * slides it via the same FLIP technique as hand.ts::animateReturnToDeck;
-     * otherwise the card simply appears, already face-down if `facedown`.
-     */
-    private async playCard(card: LaneCardData): Promise<void> {
+    // A card the viewer already holds an element for is reparented and slid; anyone else's is built here and arrives from fromHandRect, the spot a back gave up in their row.
+    private async playCard(card: LaneCardData, fromHandRect?: DOMRect): Promise<void> {
         const slot = this.slotFor(card);
         const existingElement = document.getElementById(`wott-card-${card.id}`);
 
         if (!existingElement) {
-            this.createCardElement(card, slot);
+            await this.playFromHiddenHand(card, slot, fromHandRect);
             return;
         }
 
@@ -175,6 +174,18 @@ export class Lanes {
             await flipCard(existingElement, true);
         }
         await slideIntoPlace(existingElement, slot);
+    }
+
+    // It leaves the row face-down like every other back and only turns over once it has landed, so an open play still reads as a card being revealed.
+    private async playFromHiddenHand(card: LaneCardData, slot: HTMLElement, fromHandRect?: DOMRect): Promise<void> {
+        const cardElement = this.createCardElement(card, slot);
+        if (!fromHandRect) {
+            return;
+        }
+
+        cardElement.classList.add('wott-card-flip--flipped');
+        await slideFromRects([{ element: cardElement, fromRect: fromHandRect }]);
+        await flipCard(cardElement, card.facedown);
     }
 
     // hand.ts::tplHandCard has neither — a hand card is always the viewing player's own, so `data-controller` and the strength badge were never needed until it moves into a lane.

@@ -6,9 +6,10 @@ import { ChooseStack } from "./States/ChooseStack.js";
 import { ScoutReveal } from "./States/ScoutReveal.js";
 import { SiegeGuess } from "./States/SiegeGuess.js";
 import { Hand } from "./hand.js";
+import { OpponentHand } from "./opponentHand.js";
 import { Lanes } from "./lanes.js";
 import { Shrine } from "./shrine.js";
-import { Layout, BOARD_LAYOUT_PREF_ID, HAND_POSITION_PREF_ID } from "./layout.js";
+import { Layout, BOARD_LAYOUT_PREF_ID, HAND_POSITION_PREF_ID, OPPONENT_HAND_PREF_ID } from "./layout.js";
 import { PlayerPanels } from "./playerPanels.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
@@ -25,6 +26,7 @@ export class Game {
     private playCards: PlayCards;
     private chooseStack: ChooseStack;
     private hand: Hand;
+    private opponentHand: OpponentHand;
     private lanes: Lanes;
     private shrine: Shrine;
     private layout: Layout;
@@ -82,15 +84,21 @@ export class Game {
         const gameArea = this.bga.gameArea.getElement();
         gameArea.classList.add('wott-game-area');
 
-        this.shrine = new Shrine(this.bga);
+        this.opponentHand = new OpponentHand();
+        this.shrine = new Shrine(this.bga, this.opponentHand);
         this.playerPanels = new PlayerPanels(this.bga, this.shrine);
         this.hand = new Hand(this.bga, this.playerPanels);
-        this.lanes = new Lanes(this.bga, this.hand);
+        this.lanes = new Lanes(this.bga, this.hand, this.opponentHand);
         this.layout = new Layout(this.bga);
         this.gameEnd = new GameEnd(this.bga);
 
+        // A spectator holds no seat, so every hand is a back-row; a replay viewer holds one, and getAllDatas() filled it for them.
+        const myPlayerId = Number(this.bga.gameui.player_id);
+        const hiddenHandPlayerIds = playerIdsInTableOrder.filter(playerId => playerId !== myPlayerId);
+
         const table = this.layout.render(gameArea, playerIdsInTableOrder);
-        this.hand.render(gameArea, this.gamedatas.cards);
+        this.hand.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder.includes(myPlayerId));
+        this.opponentHand.render(gameArea, hiddenHandPlayerIds, this.gamedatas.cards, this.gamedatas.deckColors);
         this.lanes.render(table, this.gamedatas.cards.lanes, playerIdsInTableOrder);
         this.shrine.render(table, this.gamedatas.cards, playerIdsInTableOrder, this.gamedatas.angry);
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry, this.gamedatas.cards, this.gamedatas.deckColors);
@@ -98,7 +106,7 @@ export class Game {
 
         this.applyLayoutPreferences();
         this.bga.userPreferences.onChange = (prefId) => {
-            if (prefId === HAND_POSITION_PREF_ID || prefId === BOARD_LAYOUT_PREF_ID) {
+            if (prefId === HAND_POSITION_PREF_ID || prefId === BOARD_LAYOUT_PREF_ID || prefId === OPPONENT_HAND_PREF_ID) {
                 this.applyLayoutPreferences();
             }
             if (prefId === ANIMATION_SPEED_PREF_ID) {
@@ -122,6 +130,8 @@ export class Game {
 
     private applyLayoutPreferences() {
         this.hand.setPosition(this.layout.getHandPosition());
+        this.opponentHand.setPositions(this.layout.getHandPositions());
+        this.opponentHand.setShown(this.layout.isOpponentHandShown());
         this.layout.apply();
     }
 
@@ -178,7 +188,7 @@ export class Game {
         debug('notifications subscriptions setup');
 
         this.bga.notifications.setupPromiseNotifications(
-            notificationOptions(this, [this.hand, this.lanes, this.shrine, this.playerPanels, this.gameEnd])
+            notificationOptions(this, [this.hand, this.opponentHand, this.lanes, this.shrine, this.playerPanels, this.gameEnd])
         );
     }
 }

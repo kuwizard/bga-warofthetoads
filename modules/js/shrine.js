@@ -1,8 +1,9 @@
 import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
 export class Shrine {
-    constructor(bga) {
+    constructor(bga, opponentHand) {
         this.bga = bga;
+        this.opponentHand = opponentHand;
         this.stackColumns = {};
     }
     render(gameArea, cards, playerIdsInTableOrder, angry) {
@@ -90,8 +91,10 @@ export class Shrine {
         if (args.card.type !== undefined) {
             return;
         }
+        const playerId = Number(args.player_id);
         this.cards.casualties.push(args.card);
-        await this.animateCasualtyIn(args.card, Number(args.player_id));
+        const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
+        await this.animateCasualtyIn(args.card, playerId, fromHandRect);
     }
     async notif_casualtyRevealed(args) {
         const index = this.cards.casualties.findIndex(casualty => casualty.id === args.card.id);
@@ -203,20 +206,16 @@ export class Shrine {
             this.createCard(card, slot);
         }
     }
-    async animateCasualtyIn(card, playerId) {
+    async animateCasualtyIn(card, playerId, fromHandRect) {
         const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
         if (!slot) {
             return;
         }
-        const anchor = document.getElementById(`wott-deck-anchor-${playerId}`);
-        if (!anchor) {
-            this.createCard(card, slot);
-            return;
+        const fromRect = fromHandRect ?? document.getElementById(`wott-deck-anchor-${playerId}`)?.getBoundingClientRect();
+        const cardElement = this.createCard(card, slot);
+        if (fromRect) {
+            await slideFromRects([{ element: cardElement, fromRect }]);
         }
-        const cardElement = this.createCard(card, anchor);
-        const fromRect = cardElement.getBoundingClientRect();
-        slot.appendChild(cardElement);
-        await slideFromRects([{ element: cardElement, fromRect }]);
     }
     setStackCount(playerId, count) {
         const el = document.getElementById(`wott-stack-count-${playerId}`);

@@ -8,17 +8,17 @@ export class Hand {
         this.playerPanels = playerPanels;
         this.selectable = false;
     }
-    render(gameArea, cards) {
+    render(gameArea, cards, viewerHasSeat) {
         this.cards = cards;
         this.gameArea = gameArea;
         gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div>`);
         this.handElement = document.getElementById('wott-my-hand');
+        this.handElement.classList.toggle('wott-my-hand--hidden', !viewerHasSeat);
         cards.hand.forEach(card => this.appendCard(card));
     }
     async notif_cardReturned(args) {
         const playerId = Number(args.player_id);
         this.playerPanels.adjustDeckCount(playerId, 1);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
         if (args.card_id === undefined) {
             return;
         }
@@ -34,7 +34,6 @@ export class Hand {
     async notif_cardReturnUndone(args) {
         const playerId = Number(args.player_id);
         this.playerPanels.adjustDeckCount(playerId, -1);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + 1;
         if (args.card === undefined) {
             return;
         }
@@ -49,7 +48,6 @@ export class Hand {
     async notif_cardsDrawn(args) {
         const playerId = Number(args.player_id);
         this.playerPanels.adjustDeckCount(playerId, -args.count);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 0) + args.count;
         const drawnCards = (args.cards ?? []).filter(card => !document.getElementById(`wott-card-${card.id}`));
         const deckAnchor = this.playerPanels.getDeckAnchor(playerId);
         if (!deckAnchor) {
@@ -62,13 +60,11 @@ export class Hand {
         }));
     }
     async notif_casualtySet(args) {
-        const playerId = Number(args.player_id);
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? 1) - 1;
         if (args.card.type === undefined) {
             return;
         }
         this.cards.hand = this.cards.hand.filter(card => card.id !== args.card.id);
-        const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
+        const slot = document.getElementById(`wott-casualty-slot-${Number(args.player_id)}`);
         const cardElement = document.getElementById(`wott-card-${args.card.id}`);
         if (!slot || !cardElement) {
             return;
@@ -107,9 +103,8 @@ export class Hand {
             underlay?.addEventListener('click', close);
         });
     }
-    onCardsPlayed(playerId, cardIds) {
+    onCardsPlayed(cardIds) {
         this.cards.hand = this.cards.hand.filter(card => !cardIds.includes(card.id));
-        this.cards.handCounts[playerId] = (this.cards.handCounts[playerId] ?? cardIds.length) - cardIds.length;
     }
     getCard(cardId) {
         return this.cards.hand.find(card => card.id === cardId);

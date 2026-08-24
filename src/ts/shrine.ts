@@ -1,5 +1,6 @@
 import { tplLaneCard, tplCardTooltip, tplRetiredTooltip, tplShrineCard, tplShrineTooltip } from "./tpls.js";
 import { hideCardFace, revealCardFace, slideAllIntoPlace, slideFromRects } from "./animations.js";
+import { OpponentHand } from "./opponentHand.js";
 
 // The Shrine (RULES.md §6 ➏, §7): the tracker card itself, each player's captured stacks in their own column, and the pile of cards retired beside it. Calm/Angry arrives server-derived ([H4]) and is never computed here.
 export class Shrine {
@@ -9,7 +10,10 @@ export class Shrine {
     private shrineCardElement!: HTMLElement;
     private firstPlayerId!: number;
 
-    constructor(private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>) {
+    constructor(
+        private bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>,
+        private opponentHand: OpponentHand,
+    ) {
     }
 
     render(gameArea: HTMLElement, cards: CardsUiData, playerIdsInTableOrder: number[], angry: AngryByPlayerId): void {
@@ -137,8 +141,11 @@ export class Shrine {
             return;
         }
 
+        const playerId = Number(args.player_id);
         this.cards.casualties.push(args.card);
-        await this.animateCasualtyIn(args.card, Number(args.player_id));
+
+        const [fromHandRect] = this.opponentHand.takeCardRects(playerId, 1, Number(args.handCounts[playerId]));
+        await this.animateCasualtyIn(args.card, playerId, fromHandRect);
     }
 
     // RULES.md §10 — both Casualties flip face-up at game end, whichever condition decided it. The owner's element already carries the real sprite; everyone else's is still the redacted stub, and revealCardFace covers both.
@@ -296,23 +303,18 @@ export class Shrine {
         }
     }
 
-    // The redacted stub arriving live (notif_casualtySet) — slides from the deck anchor on that player's own panel, mirroring hand.ts's deck-to-hand deal.
-    private async animateCasualtyIn(card: StackCardData, playerId: number): Promise<void> {
+    // The redacted stub arriving live (notif_casualtySet) — from the spot its back gave up in that player's row, or the deck anchor when no row is on screen.
+    private async animateCasualtyIn(card: StackCardData, playerId: number, fromHandRect?: DOMRect): Promise<void> {
         const slot = document.getElementById(`wott-casualty-slot-${playerId}`);
         if (!slot) {
             return;
         }
 
-        const anchor = document.getElementById(`wott-deck-anchor-${playerId}`);
-        if (!anchor) {
-            this.createCard(card, slot);
-            return;
+        const fromRect = fromHandRect ?? document.getElementById(`wott-deck-anchor-${playerId}`)?.getBoundingClientRect();
+        const cardElement = this.createCard(card, slot);
+        if (fromRect) {
+            await slideFromRects([{ element: cardElement, fromRect }]);
         }
-
-        const cardElement = this.createCard(card, anchor);
-        const fromRect = cardElement.getBoundingClientRect();
-        slot.appendChild(cardElement);
-        await slideFromRects([{ element: cardElement, fromRect }]);
     }
 
     private setStackCount(playerId: number, count: number): void {

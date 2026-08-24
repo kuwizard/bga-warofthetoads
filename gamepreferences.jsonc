@@ -43,5 +43,19 @@
       "2": { "name": "Bottom" }
     },
     "default": 1
+  },
+
+  // Read via layout.ts::OPPONENT_HAND_PREF_ID — the row of card backs
+  // (src/ts/opponentHand.ts) that sits at whichever end preference 103 leaves
+  // free. Hiding it only takes the row off screen: cards then fly out of that
+  // player's deck instead, and the count is still kept up to date underneath.
+  "104": {
+    "name": "Opponent's hand",
+    "needReload": false,
+    "values": {
+      "1": { "name": "Show" },
+      "2": { "name": "Hide" }
+    },
+    "default": 1
   }
 }

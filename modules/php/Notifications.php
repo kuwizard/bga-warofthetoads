@@ -101,6 +101,7 @@ class Notifications
     {
         self::notifyAll('cardReturned', clienttranslate('${player_name} returns a card to the bottom of their deck'), [
             'player'          => $player,
+            'handCounts'      => Cards::getHandCounts(),
             '_merge_private'  => true,
             '_private'        => [
                 $player->getId() => [
@@ -121,6 +122,7 @@ class Notifications
     {
         self::notifyAll('cardReturnUndone', clienttranslate('${player_name} cancels their card return'), [
             'player'         => $player,
+            'handCounts'     => Cards::getHandCounts(),
             '_merge_private' => true,
             '_private'       => [
                 $player->getId() => [
@@ -157,6 +159,7 @@ class Notifications
             'cardName'       => $faceUpCard->getName(),
             'cardStrength'   => self::strengthSuffix($faceUpCard),
             'cardDeck'       => $faceUpCard->getDeck(),
+            'handCounts'     => Cards::getHandCounts(),
             'faceUpCard'     => $faceUpCard->getUiData(),
             'faceDownCard'   => $faceDownCard->getUiData(),
         ]);
@@ -172,6 +175,7 @@ class Notifications
         self::notifyAll('cardsDrawn', clienttranslate('${player_name} draws ${count} card(s)'), [
             'player'         => $player,
             'count'          => $cards->count(),
+            'handCounts'     => Cards::getHandCounts(),
             'arrivesFaceUp'  => $arrivesFaceUp,
             '_merge_private' => true,
             '_private'       => [
@@ -480,6 +484,7 @@ class Notifications
         self::notifyAll('casualtySet', clienttranslate('${player_name} sets their last card aside face-down — their Casualty'), [
             'player'         => $player,
             'card'           => $card->getUiData(),
+            'handCounts'     => Cards::getHandCounts(),
             '_merge_private' => true,
             '_private'       => [
                 $player->getId() => [
