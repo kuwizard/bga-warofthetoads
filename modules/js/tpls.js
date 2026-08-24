@@ -101,5 +101,12 @@ export const guessableCardTypes = {
     siege: { label: 'Siege Cannon', strength: null },
 };
 export function tplShownCard(card) {
-    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-shown-card-${card.id}"></div>`;
+    return `
+        <div class="wott-card-flip wott-card-flip--flipped" id="wott-shown-card-${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${card.deck}-back"></div>
+            </div>
+        </div>
+    `;
 }

@@ -123,7 +123,14 @@ export const guessableCardTypes: { [type: string]: { label: string; strength: nu
     siege: { label: 'Siege Cannon', strength: null },
 };
 
-// A face inside the Scout reveal popin (hand.ts) — plain div, no flip machinery.
+// Its own id keeps it from clashing with the same card's element elsewhere.
 export function tplShownCard(card: CardData): string {
-    return `<div class="wott-card wott-card--${card.deck}-${cardRoleSlug(card.type)}" id="wott-shown-card-${card.id}"></div>`;
+    return `
+        <div class="wott-card-flip wott-card-flip--flipped" id="wott-shown-card-${card.id}">
+            <div class="wott-card-flip__inner">
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--front wott-card--${card.deck}-${cardRoleSlug(card.type)}"></div>
+                <div class="wott-card wott-card-flip__face wott-card-flip__face--back wott-card--${card.deck}-back"></div>
+            </div>
+        </div>
+    `;
 }

@@ -4,6 +4,8 @@ import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 
 const DEAL_STAGGER_MS = 144;
+// The popin opens on a row of backs; this is how long they sit there before the first one turns over.
+const SHOWN_CARDS_SETTLE_MS = 400;
 
 // The viewing player's own hand — every other hand is a row of backs (opponentHand.ts).
 export class Hand {
@@ -105,10 +107,22 @@ export class Hand {
 
         args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
 
-        await this.waitForDialogClose(dialog, dialogId);
+        await this.waitForDialogClose(dialog, dialogId, () => this.revealShownCards(args.cards));
     }
 
-    private waitForDialogClose(dialog: PopinDialog, dialogId: string): Promise<void> {
+    private async revealShownCards(cards: CardData[]): Promise<void> {
+        await delay(animDur(SHOWN_CARDS_SETTLE_MS));
+
+        await Promise.all(cards.map(async (card, index) => {
+            await delay(index * animDur(DEAL_STAGGER_MS));
+            const cardElement = document.getElementById(`wott-shown-card-${card.id}`);
+            if (cardElement) {
+                await flipCard(cardElement, false);
+            }
+        }));
+    }
+
+    private waitForDialogClose(dialog: PopinDialog, dialogId: string, onShown: () => void): Promise<void> {
         return new Promise(resolve => {
             let resolved = false;
             const close = () => {
@@ -125,6 +139,7 @@ export class Hand {
             dialog.replaceCloseCallback(close);
             dialog.show();
             underlay?.addEventListener('click', close);
+            onShown();
         });
     }
 

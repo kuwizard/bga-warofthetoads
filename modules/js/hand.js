@@ -2,6 +2,7 @@ import { tplHandCard, tplCardTooltip, tplShownCard } from "./tpls.js";
 import { flipCard, slideFromRects, slideIntoPlace } from "./animations.js";
 import { animDur, delay, isReadOnly } from "./common.js";
 const DEAL_STAGGER_MS = 144;
+const SHOWN_CARDS_SETTLE_MS = 400;
 export class Hand {
     constructor(bga, playerPanels) {
         this.bga = bga;
@@ -72,9 +73,19 @@ export class Hand {
         dialog.setTitle(_('Cards shown to you'));
         dialog.setContent(`<div class="wott-shown-cards">${args.cards.map(tplShownCard).join('')}</div>`);
         args.cards.forEach(card => this.bga.gameui.addTooltipHtml(`wott-shown-card-${card.id}`, tplCardTooltip(card)));
-        await this.waitForDialogClose(dialog, dialogId);
+        await this.waitForDialogClose(dialog, dialogId, () => this.revealShownCards(args.cards));
     }
-    waitForDialogClose(dialog, dialogId) {
+    async revealShownCards(cards) {
+        await delay(animDur(SHOWN_CARDS_SETTLE_MS));
+        await Promise.all(cards.map(async (card, index) => {
+            await delay(index * animDur(DEAL_STAGGER_MS));
+            const cardElement = document.getElementById(`wott-shown-card-${card.id}`);
+            if (cardElement) {
+                await flipCard(cardElement, false);
+            }
+        }));
+    }
+    waitForDialogClose(dialog, dialogId, onShown) {
         return new Promise(resolve => {
             let resolved = false;
             const close = () => {
@@ -90,6 +101,7 @@ export class Hand {
             dialog.replaceCloseCallback(close);
             dialog.show();
             underlay?.addEventListener('click', close);
+            onShown();
         });
     }
     onCardsPlayed(cardIds) {
