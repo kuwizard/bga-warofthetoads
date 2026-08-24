@@ -43,6 +43,8 @@ export class PlayerPanels {
         });
 
         this.setMoods(angryByPlayerId);
+
+        playerIdsInTableOrder.forEach(playerId => this.updateDeckTooltip(playerId, cards.deckCounts[playerId] ?? 0));
     }
 
     /** Notifications::moodChanged() — both players' state, once per Battle. */
@@ -157,6 +159,12 @@ export class PlayerPanels {
         const deckElement = document.getElementById(`wott-deck-${playerId}`);
         deckElement?.classList.remove('wott-deck--tier-1', 'wott-deck--tier-2', 'wott-deck--tier-3');
         deckElement?.classList.add(this.stackTierClass(count));
+
+        this.updateDeckTooltip(playerId, count);
+    }
+
+    private updateDeckTooltip(playerId: number, count: number): void {
+        this.bga.gameui.addTooltip(`wott-deck-${playerId}`, _('Remaining cards in deck: ${n}').replace('${n}', `${count}`), '');
     }
 
     // Coarse tiers rather than one layer per remaining card (decks run up to 9 — RULES.md §2) — just enough for a player to see the pile thinning out.

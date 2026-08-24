@@ -27,6 +27,7 @@ export class PlayerPanels {
             `);
         });
         this.setMoods(angryByPlayerId);
+        playerIdsInTableOrder.forEach(playerId => this.updateDeckTooltip(playerId, cards.deckCounts[playerId] ?? 0));
     }
     notif_moodChanged(args) {
         this.setMoods(args.angry);
@@ -115,6 +116,10 @@ export class PlayerPanels {
         const deckElement = document.getElementById(`wott-deck-${playerId}`);
         deckElement?.classList.remove('wott-deck--tier-1', 'wott-deck--tier-2', 'wott-deck--tier-3');
         deckElement?.classList.add(this.stackTierClass(count));
+        this.updateDeckTooltip(playerId, count);
+    }
+    updateDeckTooltip(playerId, count) {
+        this.bga.gameui.addTooltip(`wott-deck-${playerId}`, _('Remaining cards in deck: ${n}').replace('${n}', `${count}`), '');
     }
     stackTierClass(count) {
         if (count >= 4) {
