@@ -123,9 +123,9 @@ export const guessableCardTypes: { [type: string]: { label: string; strength: nu
     siege: { label: 'Siege Cannon', strength: null },
 };
 
-// hand.ts's small progress readout, pinned to whichever edge of the hand faces the board.
-export function tplWarBattleIndicator(war: number, battle: number): string {
-    return `${_('War')} ${war}/2, ${_('Battle')} ${battle}/4`;
+// hand.ts's small progress readout, pinned to whichever edge of the hand faces the board. The role half flips every Battle (BattleEnd.php swaps attackerId).
+export function tplWarBattleIndicator(war: number, battle: number, isAttacker: boolean): string {
+    return `${_('War')} ${war}/2, ${_('Battle')} ${battle}/4. ${_("You're currently:")} <strong>${isAttacker ? _('Attacker') : _('Defender')}</strong>`;
 }
 
 // Its own id keeps it from clashing with the same card's element elsewhere.

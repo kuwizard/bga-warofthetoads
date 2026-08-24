@@ -75,6 +75,7 @@ interface WarOfTheToadsGamedatas extends Gamedatas<WarOfTheToadsPlayer> {
     deckColors: { [playerId: number]: 'blue' | 'red' };
     war: number;
     battle: number;
+    attackerId: number;
     // Null until the game is over; re-derived server-side on every load, never replayed from the log.
     gameEnd: GameEndSummary | null;
 }

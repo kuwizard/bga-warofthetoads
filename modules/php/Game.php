@@ -100,6 +100,7 @@ class Game extends \Bga\GameFramework\Table
             'deckColors' => Cards::getDeckColorByPlayerId(),
             'war'        => Globals::getWar(),
             'battle'     => Globals::getBattle(),
+            'attackerId' => Globals::getAttackerId(),
             'gameEnd'    => $this->gamestate->getCurrentMainStateId() === ST_GAME_END ? ComputeScores::summary() : null,
         ];
     }

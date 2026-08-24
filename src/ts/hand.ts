@@ -15,6 +15,7 @@ export class Hand {
     private warBattleElement!: HTMLElement;
     private war: number = 1;
     private battle: number = 1;
+    private attackerId: number = 0;
     // Reapplied to each card as it's created — setSelectable() only touches elements that already exist.
     private selectable: boolean = false;
     private selectableOnClick?: (cardId: number) => void;
@@ -25,11 +26,12 @@ export class Hand {
     ) {
     }
 
-    render(gameArea: HTMLElement, cards: CardsUiData, viewerHasSeat: boolean, war: number, battle: number): void {
+    render(gameArea: HTMLElement, cards: CardsUiData, viewerHasSeat: boolean, war: number, battle: number, attackerId: number): void {
         this.cards = cards;
         this.gameArea = gameArea;
         this.war = war;
         this.battle = battle;
+        this.attackerId = attackerId;
         gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div><div id="wott-war-battle"></div>`);
         this.handElement = document.getElementById('wott-my-hand')!;
         this.warBattleElement = document.getElementById('wott-war-battle')!;
@@ -38,8 +40,10 @@ export class Hand {
         this.updateWarBattleText();
     }
 
+    // The attacker/defender role flips every Battle (BattleEnd.php's setAttackerId), so `battleStarted`'s `player_id` (the new attacker) is enough to update both halves of the line.
     notif_battleStarted(args: BattleStartedNotifArgs): void {
         this.battle = args.battleNumber;
+        this.attackerId = Number(args.player_id);
         this.updateWarBattleText();
     }
 
@@ -50,7 +54,7 @@ export class Hand {
     }
 
     private updateWarBattleText(): void {
-        this.warBattleElement.textContent = tplWarBattleIndicator(this.war, this.battle);
+        this.warBattleElement.innerHTML = tplWarBattleIndicator(this.war, this.battle, this.attackerId === Number(this.bga.gameui.player_id));
     }
 
     async notif_cardReturned(args: CardReturnedNotifArgs): Promise<void> {

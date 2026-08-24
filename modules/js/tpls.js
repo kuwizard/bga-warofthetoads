@@ -100,8 +100,8 @@ export const guessableCardTypes = {
     general: { label: 'General', strength: 7 },
     siege: { label: 'Siege Cannon', strength: null },
 };
-export function tplWarBattleIndicator(war, battle) {
-    return `${_('War')} ${war}/2, ${_('Battle')} ${battle}/4`;
+export function tplWarBattleIndicator(war, battle, isAttacker) {
+    return `${_('War')} ${war}/2, ${_('Battle')} ${battle}/4. ${_("You're currently:")} <strong>${isAttacker ? _('Attacker') : _('Defender')}</strong>`;
 }
 export function tplShownCard(card) {
     return `

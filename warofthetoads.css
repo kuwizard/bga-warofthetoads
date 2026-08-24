@@ -167,6 +167,9 @@
   text-transform: uppercase;
   opacity: 0.65;
 }
+#wott-war-battle strong {
+  font-weight: 700;
+}
 
 .wott-card-flip {
   perspective: 1000px;

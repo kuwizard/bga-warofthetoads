@@ -32,6 +32,10 @@ $hand-card-height: math.div($hand-card-width * 36, 25);
   letter-spacing: 0.08em;
   text-transform: uppercase;
   opacity: 0.65;
+
+  strong {
+    font-weight: 700;
+  }
 }
 
 // Two-sided hand card (see tpls.ts::tplHandCard) — rotated via

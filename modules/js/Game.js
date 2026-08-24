@@ -46,7 +46,7 @@ export class Game {
         const myPlayerId = Number(this.bga.gameui.player_id);
         const hiddenHandPlayerIds = playerIdsInTableOrder.filter(playerId => playerId !== myPlayerId);
         const table = this.layout.render(gameArea, playerIdsInTableOrder);
-        this.hand.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder.includes(myPlayerId), this.gamedatas.war, this.gamedatas.battle);
+        this.hand.render(gameArea, this.gamedatas.cards, playerIdsInTableOrder.includes(myPlayerId), this.gamedatas.war, this.gamedatas.battle, this.gamedatas.attackerId);
         this.opponentHand.render(gameArea, hiddenHandPlayerIds, this.gamedatas.cards, this.gamedatas.deckColors);
         this.lanes.render(table, this.gamedatas.cards.lanes, playerIdsInTableOrder);
         this.shrine.render(table, this.gamedatas.cards, playerIdsInTableOrder, this.gamedatas.angry);

@@ -9,13 +9,15 @@ export class Hand {
         this.playerPanels = playerPanels;
         this.war = 1;
         this.battle = 1;
+        this.attackerId = 0;
         this.selectable = false;
     }
-    render(gameArea, cards, viewerHasSeat, war, battle) {
+    render(gameArea, cards, viewerHasSeat, war, battle, attackerId) {
         this.cards = cards;
         this.gameArea = gameArea;
         this.war = war;
         this.battle = battle;
+        this.attackerId = attackerId;
         gameArea.insertAdjacentHTML('afterbegin', `<div id="wott-my-hand"></div><div id="wott-war-battle"></div>`);
         this.handElement = document.getElementById('wott-my-hand');
         this.warBattleElement = document.getElementById('wott-war-battle');
@@ -25,6 +27,7 @@ export class Hand {
     }
     notif_battleStarted(args) {
         this.battle = args.battleNumber;
+        this.attackerId = Number(args.player_id);
         this.updateWarBattleText();
     }
     notif_warStarted(args) {
@@ -33,7 +36,7 @@ export class Hand {
         this.updateWarBattleText();
     }
     updateWarBattleText() {
-        this.warBattleElement.textContent = tplWarBattleIndicator(this.war, this.battle);
+        this.warBattleElement.innerHTML = tplWarBattleIndicator(this.war, this.battle, this.attackerId === Number(this.bga.gameui.player_id));
     }
     async notif_cardReturned(args) {
         const playerId = Number(args.player_id);
