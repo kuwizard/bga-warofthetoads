@@ -346,7 +346,13 @@
     filter: brightness(1.5) drop-shadow(0 0 10px #f2b632);
   }
 }
-.wott-card--blocked .wott-card-flip__face {
+.wott-card--blocked .wott-card-flip__face--front::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: inherit;
+  border-radius: inherit;
+  clip-path: inset(66% 0 0 0);
   filter: grayscale(0.8) brightness(0.7);
 }
 
