@@ -1,4 +1,5 @@
 import { PlayerTurn } from "./States/PlayerTurn.js";
+import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions } from "./notifications.js";
 export class Game {
@@ -13,6 +14,12 @@ export class Game {
         debug('Starting game setup');
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
+        applyAnimationSpeed(this.bga);
+        this.bga.userPreferences.onChange = (prefId) => {
+            if (prefId === ANIMATION_SPEED_PREF_ID) {
+                applyAnimationSpeed(this.bga);
+            }
+        };
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
             <div id="player-tables"></div>
         `);

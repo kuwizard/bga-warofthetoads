@@ -1,6 +1,7 @@
 // Import specifiers must end in .js — tsc emits them unchanged, and the browser
 // cannot resolve an extensionless ES module path.
 import { PlayerTurn } from "./States/PlayerTurn.js";
+import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions } from "./notifications.js";
 
@@ -45,6 +46,15 @@ export class Game {
         debug('Starting game setup');
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
+
+        // Before anything renders: --am scales every CSS duration and every animDur() call.
+        applyAnimationSpeed(this.bga);
+        this.bga.userPreferences.onChange = (prefId) => {
+            if (prefId === ANIMATION_SPEED_PREF_ID) {
+                applyAnimationSpeed(this.bga);
+            }
+            // Add further preference checks here as this project gains its own.
+        };
 
         // Container for the per-player zones
         this.bga.gameArea.getElement().insertAdjacentHTML('beforeend', `
