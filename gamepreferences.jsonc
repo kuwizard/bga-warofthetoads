@@ -1,10 +1,26 @@
 {
   // user preferences ids should be between 100 and 199
   // See https://en.doc.boardgamearena.com/Options_and_preferences:_gameoptions.json,_gamepreferences.json for more details
-  /*
-  EXAMPLE:
 
-  "100": {
+  // Drives the --am CSS custom property (src/scss/Game.scss) and the client's
+  // animDur() helper (src/ts/common.ts). No cssPref — Game.ts applies the
+  // multiplier itself via JS so it can also drive non-CSS animation code.
+  "101": {
+    "name": "Animation speed",
+    "needReload": false,
+    "values": {
+      "1": { "name": "Slow" },
+      "2": { "name": "Normal" },
+      "3": { "name": "Fast" },
+      "4": { "name": "Very fast" }
+    },
+    "default": 1
+  }
+
+  /*
+  EXAMPLE (next free id is 102):
+
+  "102": {
     "name": "Colorblind Support",
     "values": {
       "0": {
