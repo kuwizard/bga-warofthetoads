@@ -4,6 +4,7 @@
 // is layout only.
 
 @use 'variables' as v;
+@use 'attribute-icons' as ai;
 
 #wott-lanes {
   display: flex;
@@ -56,11 +57,40 @@
 }
 
 .wott-lane[data-lane="2"] .wott-lane-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: url('img/icons.png') no-repeat center;
-  background-size: 25%;
+  position: relative;
+
+  &::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40%;
+    aspect-ratio: 1;
+    transform: translate(-50%, -50%);
+    @include ai.wott-icon-sprite;
+    background-position: 0% 0%; // closed-eye
+  }
+}
+
+// ── Battle special-attribute icons (Ka-Boom!/Oops!/Sabotage!/Assassinate!, RULES.md §3) ──
+
+.wott-attribute-icon {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 5;
+  animation: wott-attribute-icon-rise calc(1.2s * var(--am)) ease-out forwards;
+}
+
+@keyframes wott-attribute-icon-rise {
+  0%   { opacity: 0; transform: translate(-50%, 12px) scale(0.6); }
+  25%  { opacity: 1; transform: translate(-50%, -8px) scale(1); }
+  70%  { opacity: 1; transform: translate(-50%, -28px) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -44px) scale(1); }
 }
 
 // ── Tactic feedback (src/ts/lanes.ts, RULES.md §6 ➍) ─────────────────────────

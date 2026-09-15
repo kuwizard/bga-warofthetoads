@@ -2,6 +2,7 @@
 
 @use 'sass:map';
 @use 'variables' as v;
+@use 'attribute-icons' as ai;
 
 // !important: BGA colours ${player_name} with an inline style of its own, inside this span.
 @each $deck, $color in v.$deck-colors {
@@ -9,4 +10,13 @@
   .wott-log-deck--#{$deck} * {
     color: $color !important;
   }
+}
+
+// Battle special-attribute icons (src/ts/notifications.ts::iconizeEffectInTemplate).
+.wott-log-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  vertical-align: -4px;
 }

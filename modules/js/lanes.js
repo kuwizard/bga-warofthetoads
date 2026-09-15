@@ -1,6 +1,6 @@
 import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { flipCard, revealCardFace, slideAllIntoPlace, slideFromRects, slideIntoPlace } from "./animations.js";
-import { animDur } from "./common.js";
+import { animDur, ATTRIBUTE_ICON_BY_EFFECT } from "./common.js";
 const LANE_OPEN = 1;
 const LANE_HIDDEN = 2;
 const ANIMATION_FALLBACK_MS = 2000;
@@ -34,6 +34,9 @@ export class Lanes {
     }
     notif_moodChanged(_args) {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
+    }
+    async notif_battleSpecialEffect(args) {
+        await this.showAttributeIcon(args.loserId, args.effect);
     }
     async notif_cardsPlayed(args) {
         const playerId = Number(args.player_id);
@@ -91,6 +94,17 @@ export class Lanes {
             }
         });
         await slideAllIntoPlace(moves);
+    }
+    async showAttributeIcon(cardId, effect) {
+        const cardElement = document.getElementById(`wott-card-${cardId}`);
+        const icon = ATTRIBUTE_ICON_BY_EFFECT[effect];
+        if (!cardElement || !icon) {
+            return;
+        }
+        cardElement.insertAdjacentHTML('beforeend', `<div class="wott-attribute-icon wott-icon--${icon}"></div>`);
+        const iconElement = cardElement.lastElementChild;
+        await this.waitForAnimationEnd(iconElement);
+        iconElement.remove();
     }
     async flashTactic(cardId) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);

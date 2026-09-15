@@ -1,0 +1,26 @@
+// Attribute-icon sprite (img/icons.png) — shared by lanes.scss and log.scss.
+
+@use 'sass:math';
+
+$wott-icon-cols: 3;
+$wott-icon-rows: 2;
+
+// Order matters: it is the column/row order baked into img/icons.png.
+$wott-icon-names: closed-eye, cannon, sabotage, assassinate, x-symbol, vulnerable;
+
+@mixin wott-icon-sprite {
+  background-image: url('img/icons.png');
+  background-repeat: no-repeat;
+  background-size: #{$wott-icon-cols * 100%} #{$wott-icon-rows * 100%};
+}
+
+@each $name in $wott-icon-names {
+  $index: index($wott-icon-names, $name) - 1;
+  $col: $index % $wott-icon-cols;
+  $row: math.div($index - $col, $wott-icon-cols);
+
+  .wott-icon--#{$name} {
+    @include wott-icon-sprite;
+    background-position: #{math.div($col, $wott-icon-cols - 1) * 100%} #{math.div($row, $wott-icon-rows - 1) * 100%};
+  }
+}

@@ -1,5 +1,5 @@
 import { debug } from "./debug.js";
-import { animDur, delay } from "./common.js";
+import { animDur, delay, ATTRIBUTE_ICON_BY_EFFECT } from "./common.js";
 const NOTIF_MIN_DURATION = 1440;
 const FRAMEWORK_MIN_DURATION = 1;
 class TextOnlyNotifs {
@@ -42,6 +42,10 @@ function colorizeDecksInTemplate(log, args) {
         return colored.replace(placeholders, `<span class="wott-log-deck wott-log-deck--${deck}">${placeholders}</span>`);
     }, log);
 }
+function iconizeEffectInTemplate(log, args) {
+    const icon = args && ATTRIBUTE_ICON_BY_EFFECT[args.effect];
+    return icon ? `<span class="wott-log-icon wott-icon--${icon}"></span>${log}` : log;
+}
 function notifMethodNames(handler) {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(handler)).filter(name => name.startsWith('notif_'));
 }
@@ -78,7 +82,7 @@ export function notificationOptions(game, handlers) {
     game.bgaFormatText = (log, args) => {
         if (!formattingOwnTitle)
             rawLog = log;
-        return { log: colorizeDecksInTemplate(log, args), args };
+        return { log: iconizeEffectInTemplate(colorizeDecksInTemplate(log, args), args), args };
     };
     return {
         handlers: [handler],

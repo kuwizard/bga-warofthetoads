@@ -370,6 +370,25 @@ class Notifications
         ]);
     }
 
+    // `ResolveBattle::resolveLane()`'s BATTLE_EFFECT_* branches — fired before `hostageCaptured()` so the icon rises while the loser is still in the lane.
+    public static function battleSpecialEffect(string $effect, Card $winner, Card $loser): void
+    {
+        $messageByEffect = [
+            BATTLE_EFFECT_CANNON_WIN  => clienttranslate('Ka-Boom! ${winnerName}\'s Siege Cannon destroys ${loserName}'),
+            BATTLE_EFFECT_CANNON_LOSS => clienttranslate('Oops! ${loserName} misfires in Defence'),
+            BATTLE_EFFECT_SABOTAGE    => clienttranslate('Sabotage! ${winnerName} disables the Siege Cannon'),
+            BATTLE_EFFECT_ASSASSINATE => clienttranslate('Assassinate! ${winnerName} strikes down ${loserName}'),
+        ];
+
+        self::notifyAll('battleSpecialEffect', $messageByEffect[$effect], [
+            'effect'     => $effect,
+            'i18n'       => ['winnerName', 'loserName'],
+            'winnerName' => $winner->getName(),
+            'loserName'  => $loser->getName(),
+            'loserId'    => $loser->getId(),
+        ]);
+    }
+
     /**
      * `ResolveBattle` (RULES.md §6 ➏): a single-lane win, capped at 1 Hostage
      * regardless of Calm/Angry (§7 only ever caps a *double*-lane win).

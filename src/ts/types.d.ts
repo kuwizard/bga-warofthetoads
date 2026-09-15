@@ -182,6 +182,14 @@ interface HostageCapturedNotifArgs {
     stackId: number;
 }
 
+// Fired before hostageCaptured — see Notifications::battleSpecialEffect().
+interface BattleSpecialEffectNotifArgs {
+    effect: string;
+    winnerName: string;
+    loserName: string;
+    loserId: number;
+}
+
 // Text only — each lane won was already captured by its own hostageCaptured.
 interface LeapFrogNotifArgs {
     player_id: number;

@@ -110,6 +110,13 @@ const SPECIAL_ATTRIBUTE_BEATS_SIEGE      = 'beats_siege';      // Saboteur
 const SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN = 'loses_to_assassin'; // General A, General B
 const SPECIAL_ATTRIBUTE_SIEGE             = 'siege';            // Siege Cannon, [H16]
 
+// ── Battle special-attribute win effects (ResolveBattle::resolveLane(), RULES.md §3) ──
+
+const BATTLE_EFFECT_CANNON_WIN  = 'cannonWin';   // Ka-Boom! — Siege Cannon wins in Attack
+const BATTLE_EFFECT_CANNON_LOSS = 'cannonLoss';  // Oops! — Siege Cannon always loses in Defence
+const BATTLE_EFFECT_SABOTAGE    = 'sabotage';    // Sabotage! — Saboteur beats a Siege Cannon in Attack
+const BATTLE_EFFECT_ASSASSINATE = 'assassinate'; // Assassinate! — Assassin beats a General
+
 // ── Tactic priority bands ────────────────────────────────────────────────────────
 // The order the Tactic pipeline resolves in (IMPLEMENTATION_PLAN.md §2.3).
 

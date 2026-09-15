@@ -2,7 +2,7 @@ import { tplLaneCard, tplCardTooltip } from "./tpls.js";
 import { Hand } from "./hand.js";
 import { OpponentHand } from "./opponentHand.js";
 import { flipCard, revealCardFace, slideAllIntoPlace, slideFromRects, slideIntoPlace } from "./animations.js";
-import { animDur } from "./common.js";
+import { animDur, ATTRIBUTE_ICON_BY_EFFECT } from "./common.js";
 
 // See constants.inc.php's `LANE_OPEN`/`LANE_HIDDEN` — mirrored here as plain
 // numbers since `Card::getUiData()`'s `locationArg` is the only place they
@@ -61,6 +61,11 @@ export class Lanes {
     // Fired once per Battle from BattleEnd, and again from ResolveBattle's Calm double-win branch (which pauses at ChooseStack before BattleEnd runs) — either way, whichever lane fought last stops glowing.
     notif_moodChanged(_args: MoodChangedNotifArgs): void {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
+    }
+
+    // Notifications::battleSpecialEffect() — fires before hostageCaptured (shrine.ts), so the loser is still in the lane.
+    async notif_battleSpecialEffect(args: BattleSpecialEffectNotifArgs): Promise<void> {
+        await this.showAttributeIcon(args.loserId, args.effect);
     }
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
@@ -136,6 +141,19 @@ export class Lanes {
         });
 
         await slideAllIntoPlace(moves);
+    }
+
+    private async showAttributeIcon(cardId: number, effect: string): Promise<void> {
+        const cardElement = document.getElementById(`wott-card-${cardId}`);
+        const icon = ATTRIBUTE_ICON_BY_EFFECT[effect];
+        if (!cardElement || !icon) {
+            return;
+        }
+
+        cardElement.insertAdjacentHTML('beforeend', `<div class="wott-attribute-icon wott-icon--${icon}"></div>`);
+        const iconElement = cardElement.lastElementChild as HTMLElement;
+        await this.waitForAnimationEnd(iconElement);
+        iconElement.remove();
     }
 
     private async flashTactic(cardId: number): Promise<void> {

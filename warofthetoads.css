@@ -276,6 +276,48 @@
   display: none;
 }
 
+.wott-icon--closed-eye {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 0% 0%;
+}
+
+.wott-icon--cannon {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 50% 0%;
+}
+
+.wott-icon--sabotage {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 100% 0%;
+}
+
+.wott-icon--assassinate {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 0% 100%;
+}
+
+.wott-icon--x-symbol {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 50% 100%;
+}
+
+.wott-icon--vulnerable {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 100% 100%;
+}
+
 #wott-lanes {
   display: flex;
   flex-direction: column;
@@ -326,13 +368,52 @@
 }
 
 .wott-lane[data-lane="2"] .wott-lane-slot {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: url("img/icons.png") no-repeat center;
-  background-size: 25%;
+  position: relative;
+}
+.wott-lane[data-lane="2"] .wott-lane-slot::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 40%;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 200%;
+  background-position: 0% 0%;
 }
 
+.wott-attribute-icon {
+  position: absolute;
+  top: -14px;
+  left: 50%;
+  width: 40px;
+  height: 40px;
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 5;
+  animation: wott-attribute-icon-rise calc(1.2s * var(--am)) ease-out forwards;
+}
+
+@keyframes wott-attribute-icon-rise {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, 12px) scale(0.6);
+  }
+  25% {
+    opacity: 1;
+    transform: translate(-50%, -8px) scale(1);
+  }
+  70% {
+    opacity: 1;
+    transform: translate(-50%, -28px) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -44px) scale(1);
+  }
+}
 .wott-card__strength {
   position: absolute;
   top: -8px;
@@ -778,6 +859,14 @@
 .wott-log-deck--red,
 .wott-log-deck--red * {
   color: #c0392b !important;
+}
+
+.wott-log-icon {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  margin-right: 4px;
+  vertical-align: -4px;
 }
 
 @font-face {

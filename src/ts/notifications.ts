@@ -1,6 +1,6 @@
 import type { Game } from "./Game.js";
 import { debug } from "./debug.js";
-import { animDur, delay } from "./common.js";
+import { animDur, delay, ATTRIBUTE_ICON_BY_EFFECT } from "./common.js";
 
 const NOTIF_MIN_DURATION = 1440;
 const FRAMEWORK_MIN_DURATION = 1;
@@ -60,6 +60,12 @@ function colorizeDecksInTemplate(log: string, args: any): string {
     }, log);
 }
 
+// Icons off `args.effect` (a data arg, never translated), so this survives every language, unlike matching the (translated) message text.
+function iconizeEffectInTemplate(log: string, args: any): string {
+    const icon = args && ATTRIBUTE_ICON_BY_EFFECT[args.effect];
+    return icon ? `<span class="wott-log-icon wott-icon--${icon}"></span>${log}` : log;
+}
+
 function notifMethodNames(handler: object): string[] {
     return Object.getOwnPropertyNames(Object.getPrototypeOf(handler)).filter(name => name.startsWith('notif_'));
 }
@@ -108,7 +114,7 @@ export function notificationOptions(game: Game, handlers: object[]) {
 
     game.bgaFormatText = (log: string, args: any) => {
         if (!formattingOwnTitle) rawLog = log;
-        return { log: colorizeDecksInTemplate(log, args), args };
+        return { log: iconizeEffectInTemplate(colorizeDecksInTemplate(log, args), args), args };
     };
 
     return {

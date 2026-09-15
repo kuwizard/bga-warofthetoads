@@ -78,8 +78,11 @@ class ResolveBattle extends GameState
                 continue;
             }
 
-            [$winner, $loser] = $result;
+            [$winner, $loser, $effect] = $result;
             $stackId = Cards::capture($winner, $loser);
+            if ($effect !== null) {
+                Notifications::battleSpecialEffect($effect, $winner, $loser);
+            }
             Notifications::hostageCaptured(Players::get($winner->getController()), $winner, $loser, $stackId);
         }
 
@@ -121,8 +124,6 @@ class ResolveBattle extends GameState
     }
 
     /**
-     * @return array{0: Card, 1: Card}|null [winner, loser], or null on a tie.
-     *
      * [H16]: a Siege Cannon overrides Strength entirely and a lane containing
      * one can never tie — it always loses in Defence, and in Attack it wins
      * unless facing a Saboteur. Otherwise an Assassin unconditionally beats a
@@ -134,26 +135,26 @@ class ResolveBattle extends GameState
         $defenderCard = $card1->getController() === $attackerId ? $card2 : $card1;
 
         if ($defenderCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_SIEGE) {
-            return [$attackerCard, $defenderCard];
+            return [$attackerCard, $defenderCard, BATTLE_EFFECT_CANNON_LOSS];
         }
         if ($attackerCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_SIEGE) {
             return $defenderCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_BEATS_SIEGE
-                ? [$defenderCard, $attackerCard]
-                : [$attackerCard, $defenderCard];
+                ? [$defenderCard, $attackerCard, BATTLE_EFFECT_SABOTAGE]
+                : [$attackerCard, $defenderCard, BATTLE_EFFECT_CANNON_WIN];
         }
 
         if ($attackerCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_BEATS_GENERAL
             && $defenderCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN) {
-            return [$attackerCard, $defenderCard];
+            return [$attackerCard, $defenderCard, BATTLE_EFFECT_ASSASSINATE];
         }
         if ($defenderCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_BEATS_GENERAL
             && $attackerCard->getSpecialAttribute() === SPECIAL_ATTRIBUTE_LOSES_TO_ASSASSIN) {
-            return [$defenderCard, $attackerCard];
+            return [$defenderCard, $attackerCard, BATTLE_EFFECT_ASSASSINATE];
         }
 
         $cmp = $context->getStrength($attackerCard) <=> $context->getStrength($defenderCard);
         if ($cmp !== 0) {
-            return $cmp > 0 ? [$attackerCard, $defenderCard] : [$defenderCard, $attackerCard];
+            return $cmp > 0 ? [$attackerCard, $defenderCard, null] : [$defenderCard, $attackerCard, null];
         }
 
         // [H18] a Saboteur on each side cancels out and the tie stands.
@@ -163,6 +164,6 @@ class ResolveBattle extends GameState
             return null;
         }
 
-        return $attackerBreaks ? [$attackerCard, $defenderCard] : [$defenderCard, $attackerCard];
+        return $attackerBreaks ? [$attackerCard, $defenderCard, null] : [$defenderCard, $attackerCard, null];
     }
 }

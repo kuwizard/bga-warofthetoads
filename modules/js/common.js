@@ -1,7 +1,13 @@
 const ANIMATION_SPEED_PREF_ID = 100;
 const ANIMATION_SPEED_STORAGE_KEY = 'wott-animation-speed';
 const ANIMATION_SPEED_MULTIPLIERS = { 1: 2, 2: 1, 3: 0.5, 4: 0.08 };
-export { ANIMATION_SPEED_PREF_ID };
+const ATTRIBUTE_ICON_BY_EFFECT = {
+    cannonWin: 'cannon',
+    cannonLoss: 'sabotage',
+    sabotage: 'sabotage',
+    assassinate: 'assassinate',
+};
+export { ANIMATION_SPEED_PREF_ID, ATTRIBUTE_ICON_BY_EFFECT };
 export function isReadOnly(bga) {
     return bga.players.isCurrentPlayerSpectator() || typeof g_replayFrom != 'undefined' || g_archive_mode;
 }
