@@ -18,7 +18,10 @@ export function animDur(ms) {
 export function delay(ms) {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
-export function applyAnimationSpeed(bga) {
+function setAnimationSpeedVar(preference) {
+    document.documentElement.style.setProperty('--am', String(ANIMATION_SPEED_MULTIPLIERS[preference] ?? 1));
+}
+export function applyAnimationSpeedInitial(bga) {
     const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
     let preference = bga.userPreferences.get(ANIMATION_SPEED_PREF_ID);
     if (isReadOnly(bga) && ANIMATION_SPEED_MULTIPLIERS[preferenceWhileWatching] !== undefined) {
@@ -27,5 +30,9 @@ export function applyAnimationSpeed(bga) {
     else {
         localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
     }
-    document.documentElement.style.setProperty('--am', String(ANIMATION_SPEED_MULTIPLIERS[preference] ?? 1));
+    setAnimationSpeedVar(preference);
+}
+export function applyAnimationSpeedChange(preference) {
+    localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
+    setAnimationSpeedVar(preference);
 }

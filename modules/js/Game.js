@@ -12,7 +12,7 @@ import { PlayerPanels } from "./playerPanels.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions } from "./notifications.js";
-import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
+import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeedInitial, applyAnimationSpeedChange } from "./common.js";
 export class Game {
     constructor(bga) {
         debug('warofthetoads constructor');
@@ -33,7 +33,7 @@ export class Game {
         debug('Starting game setup');
         debug('gamedatas', gamedatas);
         this.gamedatas = gamedatas;
-        applyAnimationSpeed(this.bga);
+        applyAnimationSpeedInitial(this.bga);
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
         const gameArea = this.bga.gameArea.getElement();
         gameArea.classList.add('wott-game-area');
@@ -54,12 +54,12 @@ export class Game {
         this.playerPanels.render(playerIdsInTableOrder, this.gamedatas.angry, this.gamedatas.cards, this.gamedatas.deckColors);
         this.gameEnd.render(gameArea, this.gamedatas.players, playerIdsInTableOrder, this.gamedatas.gameEnd);
         this.applyLayoutPreferences();
-        this.bga.userPreferences.onChange = (prefId) => {
+        this.bga.userPreferences.onChange = (prefId, value) => {
             if (prefId === HAND_POSITION_PREF_ID || prefId === BOARD_LAYOUT_PREF_ID || prefId === OPPONENT_HAND_PREF_ID) {
                 this.applyLayoutPreferences();
             }
             if (prefId === ANIMATION_SPEED_PREF_ID) {
-                applyAnimationSpeed(this.bga);
+                applyAnimationSpeedChange(value);
             }
         };
         this.setupNotifications();

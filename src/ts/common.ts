@@ -25,8 +25,13 @@ export function delay(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-export function applyAnimationSpeed(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>): void {
-    // A replay or spectated table reports the table owner's preferences, not the viewer's.
+function setAnimationSpeedVar(preference: number): void {
+    document.documentElement.style.setProperty('--am', String(ANIMATION_SPEED_MULTIPLIERS[preference] ?? 1));
+}
+
+// Called once from setup(): picks the initial speed to apply.
+export function applyAnimationSpeedInitial(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>): void {
+    // A replay or spectated table reports the table owner's preference here, not the viewer's.
     const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
     let preference = bga.userPreferences.get(ANIMATION_SPEED_PREF_ID);
 
@@ -36,5 +41,11 @@ export function applyAnimationSpeed(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsG
         localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
     }
 
-    document.documentElement.style.setProperty('--am', String(ANIMATION_SPEED_MULTIPLIERS[preference] ?? 1));
+    setAnimationSpeedVar(preference);
+}
+
+// Called from userPreferences.onChange with the freshly picked value, which always wins and is persisted.
+export function applyAnimationSpeedChange(preference: number): void {
+    localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
+    setAnimationSpeedVar(preference);
 }

@@ -14,7 +14,7 @@ import { PlayerPanels } from "./playerPanels.js";
 import { GameEnd } from "./gameEnd.js";
 import { debug, stateLogger } from "./debug.js";
 import { notificationOptions } from "./notifications.js";
-import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeed } from "./common.js";
+import { ANIMATION_SPEED_PREF_ID, applyAnimationSpeedInitial, applyAnimationSpeedChange } from "./common.js";
 
 export class Game {
     public bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>;
@@ -77,7 +77,7 @@ export class Game {
         this.gamedatas = gamedatas;
 
         // Before anything renders: --am scales every CSS duration and every animDur() below it.
-        applyAnimationSpeed(this.bga);
+        applyAnimationSpeedInitial(this.bga);
 
         // BGA rotates `playerorder` to reflect whose turn is next — only `no` is a stable seat order.
         const playerIdsInTableOrder = this.getPlayerIdsInTableOrder();
@@ -106,12 +106,12 @@ export class Game {
         this.gameEnd.render(gameArea, this.gamedatas.players, playerIdsInTableOrder, this.gamedatas.gameEnd);
 
         this.applyLayoutPreferences();
-        this.bga.userPreferences.onChange = (prefId) => {
+        this.bga.userPreferences.onChange = (prefId, value) => {
             if (prefId === HAND_POSITION_PREF_ID || prefId === BOARD_LAYOUT_PREF_ID || prefId === OPPONENT_HAND_PREF_ID) {
                 this.applyLayoutPreferences();
             }
             if (prefId === ANIMATION_SPEED_PREF_ID) {
-                applyAnimationSpeed(this.bga);
+                applyAnimationSpeedChange(value);
             }
         };
 
