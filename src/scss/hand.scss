@@ -48,7 +48,7 @@ $hand-card-height: math.div($hand-card-width * 36, 25);
 .wott-card-flip__inner {
   position: relative;
   width: 100%;
-  aspect-ratio: 25 / 36;
+  aspect-ratio: 5 / 7;
   transition: transform calc(0.48s * var(--am)) ease;
   transform-style: preserve-3d;
 }

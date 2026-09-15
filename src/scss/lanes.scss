@@ -45,9 +45,9 @@
 
 .wott-lane-slot {
   width: 130px;
-  aspect-ratio: 25 / 36;
+  aspect-ratio: 5 / 7;
   border: 2px dashed rgba(0, 0, 0, 0.2);
-  border-radius: v.$radius * 2;
+  border-radius: 8px;
 
   .wott-card-flip {
     width: 100%;
