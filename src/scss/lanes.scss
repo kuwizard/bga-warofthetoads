@@ -55,6 +55,14 @@
   }
 }
 
+.wott-lane[data-lane="2"] .wott-lane-slot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: url('img/icons.png') no-repeat center;
+  background-size: 25%;
+}
+
 // ── Tactic feedback (src/ts/lanes.ts, RULES.md §6 ➍) ─────────────────────────
 
 .wott-card__strength {
