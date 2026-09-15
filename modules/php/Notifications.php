@@ -398,7 +398,7 @@ class Notifications
     // [H14]/§7 — Calm, winning both lanes: both stacks are formed (each captured by its own `hostageCaptured()`), but the winner must now choose which 1 to keep — `States/ChooseStack.php` (state 75) follows.
     public static function doubleWinCalm(Player $player): void
     {
-        self::notifyAll('doubleWinCalm', clienttranslate('${player_name} wins both lanes while Calm and must choose which stack to keep'), [
+        self::notifyAll('doubleWinCalm', clienttranslate('${player_name} wins both lanes while Calm and must choose which Hostage stack to keep'), [
             'player' => $player,
         ]);
     }
