@@ -64,7 +64,7 @@ export class Shrine {
             .sort(hostageBeforeCaptor)
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
         cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
-        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
         this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
@@ -73,6 +73,7 @@ export class Shrine {
         tiedCards.forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
+            this.bga.gameui.removeTooltip(`wott-card-${card.id}`);
         });
         this.refreshRetiredDecks();
         await this.moveCards(tiedCards.map(card => ({ card, container: this.retiredDecks[card.deck] })));

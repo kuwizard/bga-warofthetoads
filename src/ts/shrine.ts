@@ -96,7 +96,7 @@ export class Shrine {
             .forEach(card => this.placeStackCard(card, stackOwnerByStackId[card.locationArg]));
         // Casualties before Monks: set aside at the previous War's end (RULES.md §9), they are the oldest card in their deck and so its bottom one.
         cards.casualties.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
-        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck]));
+        cards.shrine.forEach(card => this.createCard(card, this.retiredDecks[card.deck], false));
         this.refreshRetiredDecks();
         playerIdsInTableOrder.forEach(playerId => this.refreshStackCount(playerId, cards.stacks));
     }
@@ -107,6 +107,8 @@ export class Shrine {
         tiedCards.forEach(card => {
             this.removeFromLanes(card.id);
             this.cards.shrine.push(card);
+            // A Monk stays face-up, so hideCardFace never runs to clear the lane's own ability tooltip — do it here instead.
+            this.bga.gameui.removeTooltip(`wott-card-${card.id}`);
         });
 
         this.refreshRetiredDecks();
