@@ -16,7 +16,7 @@ class Bodyguard extends Card
         $this->name        = clienttranslate('Bodyguard');
         $this->strength    = 6;
         $this->band        = TACTIC_BAND_BLOCK;
-        $this->description = clienttranslate("Block your opponent's Tactic");
+        $this->description = clienttranslate("Block your opponent's Tactic. Cannot block the Trickster");
     }
 
     public function applyTactic(BattleContext $context): void
