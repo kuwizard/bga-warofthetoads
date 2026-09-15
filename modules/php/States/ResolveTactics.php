@@ -78,6 +78,9 @@ class ResolveTactics extends GameState
             return false;
         }
 
+        // Persist now so a refresh during ScoutReveal doesn't revert the lane switch.
+        Cards::applyLanes($context->getLanes());
+
         Globals::setBattleContext($context->toArray());
         Globals::setTacticsRemainingBands($remainingBands);
         Globals::setScoutShowers($showers);
