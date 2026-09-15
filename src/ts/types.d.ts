@@ -59,6 +59,13 @@ type StackCardData = LaneCardData;
 // read (Managers/Cards::getAngryByPlayerId()) — no column, no Global.
 type AngryByPlayerId = { [playerId: number]: boolean };
 
+// shrine.ts's tooltip line per player — name and color come from bga.players, not gamedatas.
+interface ShrinePlayerMoodStatus {
+    name: string;
+    color: string;
+    angry: boolean;
+}
+
 // Mirrors States/ComputeScores::summary() — a null `wars` entry is a Stalemate, and a null `winnerId` the [H3] draw only `lowestCasualty` can reach.
 interface GameEndSummary {
     condition: 'secondWar' | 'wonAndStalemate' | 'lowestCasualty';

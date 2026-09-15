@@ -51,7 +51,6 @@ export class Shrine {
         this.retiredElement = document.getElementById('wott-retired-cards');
         this.retiredDecks = Object.fromEntries(DECK_COLORS.map(deck => [deck, document.getElementById(`wott-retired-deck-${deck}`)]));
         this.shrineCardElement = document.getElementById('wott-shrine-card');
-        this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip());
         this.bga.gameui.addTooltipHtml('wott-retired', tplRetiredTooltip());
         this.setMood(angry);
         const stackOwnerByStackId = {};
@@ -135,6 +134,17 @@ export class Shrine {
         this.shrineCardElement.classList.toggle('wott-shrine-card--rotated', this.isSoleAngry(this.firstPlayerId, angry));
         Object.entries(this.stackColumns).forEach(([playerId, column]) => {
             column.classList.toggle('wott-stack-column--angry', !!angry[Number(playerId)]);
+        });
+        this.bga.gameui.addTooltipHtml('wott-shrine-card', tplShrineTooltip(this.playerMoodStatuses(angry)));
+    }
+    playerMoodStatuses(angry) {
+        return Object.keys(this.stackColumns).map(playerId => {
+            const player = this.bga.players.getPlayerById(Number(playerId));
+            return {
+                name: player?.name ?? '',
+                color: player?.color ?? '',
+                angry: !!angry[Number(playerId)],
+            };
         });
     }
     isSoleAngry(playerId, angry) {

@@ -51,14 +51,24 @@ export function tplShrineCard() {
         </div>
     `;
 }
-export function tplShrineTooltip() {
+export function tplShrineTooltip(playerStatuses) {
+    const statusLines = playerStatuses
+        .map(({ name, color, angry }) => {
+        const nameHtml = `<strong style="color:#${color}">${name}</strong>`;
+        const moodHtml = `<span class="wott-mood${angry ? ' wott-mood--angry' : ''}">${angry ? _('Angry') : _('Calm')}</span>`;
+        return _('${player_name} is ${mood}').replace('${player_name}', nameHtml).replace('${mood}', moodHtml);
+    })
+        .map(line => `<div class="wott-card-tooltip__description">${line}</div>`)
+        .join('');
     return `
         <div class="wott-card-tooltip">
+            <div class="wott-card wott-card--shrine-front wott-card-tooltip__image"></div>
             <div class="wott-card-tooltip__text">
                 <strong class="wott-card-tooltip__name">${_('The Shrine')}</strong>
                 <div class="wott-card-tooltip__description">${_('You are Angry if you currently have fewer Hostages than your opponent.')}</div>
                 <div class="wott-card-tooltip__description">${_('Calm, winning both lanes captures 1 Hostage stack and retires the other. Angry, winning both lanes captures both.')}</div>
                 <div class="wott-card-tooltip__description">${_('The end facing you states your own mood.')}</div>
+                ${statusLines}
             </div>
         </div>
     `;
