@@ -24,12 +24,12 @@
 @use './log';
 
 // Custom fonts, if the game ships any. Font files live in img/ (deployed via SFTP).
-// @font-face {
-//   font-family: 'FiraSansCondensed';
-//   src: url('img/fonts/FiraSansCondensed-Regular.ttf') format('truetype');
-//   font-weight: normal;
-//   font-style: normal;
-// }
+@font-face {
+  font-family: 'Blanka';
+  src: url('img/fonts/Blanka.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
 
 // Animation speed multiplier — driven by the "Animation speed" player preference.
 // JS sets --am on :root at setup; this declaration is only the fallback for

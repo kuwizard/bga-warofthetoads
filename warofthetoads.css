@@ -343,6 +343,7 @@
   border-radius: 999px;
   background: #f2b632;
   color: #2b1a00;
+  font-family: "Blanka", sans-serif;
   font-weight: 700;
   font-size: 15px;
   text-align: center;
@@ -779,6 +780,12 @@
   color: #c0392b !important;
 }
 
+@font-face {
+  font-family: "Blanka";
+  src: url("img/fonts/Blanka.otf") format("opentype");
+  font-weight: normal;
+  font-style: normal;
+}
 :root {
   --am: 1;
 }
