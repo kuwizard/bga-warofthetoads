@@ -31,13 +31,17 @@ function setAnimationSpeedVar(preference: number): void {
 
 // Called once from setup(): picks the initial speed to apply.
 export function applyAnimationSpeedInitial(bga: Bga<WarOfTheToadsPlayer, WarOfTheToadsGamedatas>): void {
-    // A replay or spectated table reports the table owner's preference here, not the viewer's.
-    const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
     let preference = bga.userPreferences.get(ANIMATION_SPEED_PREF_ID);
 
-    if (isReadOnly(bga) && ANIMATION_SPEED_MULTIPLIERS[preferenceWhileWatching] !== undefined) {
-        preference = preferenceWhileWatching;
-    } else {
+    if (ANIMATION_SPEED_MULTIPLIERS[preference] === undefined) {
+        // No usable preference reported (e.g. an anonymous spectator) — fall back to what this browser last used.
+        const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
+        if (ANIMATION_SPEED_MULTIPLIERS[preferenceWhileWatching] !== undefined) {
+            preference = preferenceWhileWatching;
+        }
+    }
+
+    if (!isReadOnly(bga)) {
         localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
     }
 

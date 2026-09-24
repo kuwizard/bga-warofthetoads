@@ -22,12 +22,14 @@ function setAnimationSpeedVar(preference) {
     document.documentElement.style.setProperty('--am', String(ANIMATION_SPEED_MULTIPLIERS[preference] ?? 1));
 }
 export function applyAnimationSpeedInitial(bga) {
-    const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
     let preference = bga.userPreferences.get(ANIMATION_SPEED_PREF_ID);
-    if (isReadOnly(bga) && ANIMATION_SPEED_MULTIPLIERS[preferenceWhileWatching] !== undefined) {
-        preference = preferenceWhileWatching;
+    if (ANIMATION_SPEED_MULTIPLIERS[preference] === undefined) {
+        const preferenceWhileWatching = Number(localStorage.getItem(ANIMATION_SPEED_STORAGE_KEY));
+        if (ANIMATION_SPEED_MULTIPLIERS[preferenceWhileWatching] !== undefined) {
+            preference = preferenceWhileWatching;
+        }
     }
-    else {
+    if (!isReadOnly(bga)) {
         localStorage.setItem(ANIMATION_SPEED_STORAGE_KEY, String(preference));
     }
     setAnimationSpeedVar(preference);
