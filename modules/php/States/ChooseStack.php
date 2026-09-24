@@ -29,8 +29,8 @@ class ChooseStack extends GameState
         parent::__construct($game,
             id: ST_CHOOSE_STACK,
             type: StateType::ACTIVE_PLAYER,
-            description: clienttranslate('${actplayer} must choose which Hostage stack to keep'),
-            descriptionMyTurn: clienttranslate('${you} must choose which Hostage stack to keep'),
+            description: clienttranslate('${actplayer} must choose which Hostage stack to RETIRE to the Shrine'),
+            descriptionMyTurn: clienttranslate('${you} must choose which Hostage stack to RETIRE to the Shrine'),
         );
     }
 

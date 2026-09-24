@@ -51,7 +51,7 @@ export class ChooseStack {
         const bubble = document.createElement('div');
         bubble.id = bubbleId;
         bubble.className = 'wott-explain-bubble';
-        bubble.textContent = _('You won both lanes while Calm: pick which stack stays your visible Hostage — the other becomes an anonymous Monk. Both cards were already revealed in the log, so this does not change your score; it is mostly cosmetic.');
+        bubble.textContent = _('You won both lanes while Calm: pick which stack retires to the Shrine as an anonymous Monk — the other stays your visible Hostage. Both cards were already revealed in the log, so this does not change your score; it is mostly cosmetic.');
         bubble.style.left = `${rect.left + rect.width / 2}px`;
         bubble.style.top = `${rect.bottom + 12}px`;
 
@@ -73,9 +73,10 @@ export class ChooseStack {
             return;
         }
 
-        const stackId = this.selectedStackId;
+        // Selecting a stack marks it for retirement, but actChooseStack takes the stack to KEEP — send the other one.
+        const keptStackId = this.pendingStackIds.find(id => id !== this.selectedStackId);
         this.bga.statusBar.addActionButton(_('Confirm'), () => {
-            this.bga.actions.performAction('actChooseStack', { stack_id: stackId });
+            this.bga.actions.performAction('actChooseStack', { stack_id: keptStackId });
         }, { id: 'btn-confirm-choose-stack' });
 
         this.bga.statusBar.addActionButton(_('Cancel'), () => {
