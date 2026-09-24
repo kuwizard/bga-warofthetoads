@@ -101,7 +101,7 @@ export function notificationOptions(game, handlers) {
                 savedTitle = titleElement.innerHTML;
             }
             formattingOwnTitle = true;
-            bga.statusBar.setTitle(msg, args);
+            bga.statusBar.setTitle(template, args);
             formattingOwnTitle = false;
             statusElement.innerHTML = titleElement.innerHTML;
         },

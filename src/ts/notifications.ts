@@ -136,8 +136,9 @@ export function notificationOptions(game: Game, handlers: object[]) {
                 savedTitle = titleElement.innerHTML;
             }
 
+            // setTitle() re-runs bgaFormatText itself, so it needs the pre-formatting template, not `msg` (double icon otherwise — bug 245232).
             formattingOwnTitle = true;
-            bga.statusBar.setTitle(msg, args);
+            bga.statusBar.setTitle(template, args);
             formattingOwnTitle = false;
 
             // setTitle() renders into #pagemaintitletext, which BGA covers with
