@@ -3,10 +3,10 @@
 @use 'sass:math';
 
 $wott-icon-cols: 3;
-$wott-icon-rows: 2;
+$wott-icon-rows: 3;
 
 // Order matters: it is the column/row order baked into img/icons.png.
-$wott-icon-names: closed-eye, cannon, sabotage, assassinate, x-symbol, vulnerable;
+$wott-icon-names: closed-eye, cannon, sabotage, assassinate, x-symbol, vulnerable, angry;
 
 @mixin wott-icon-sprite {
   background-image: url('img/icons.png');

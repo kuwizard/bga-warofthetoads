@@ -279,43 +279,50 @@
 .wott-icon--closed-eye {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
+  background-size: 300% 300%;
   background-position: 0% 0%;
 }
 
 .wott-icon--cannon {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
+  background-size: 300% 300%;
   background-position: 50% 0%;
 }
 
 .wott-icon--sabotage {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
+  background-size: 300% 300%;
   background-position: 100% 0%;
 }
 
 .wott-icon--assassinate {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
-  background-position: 0% 100%;
+  background-size: 300% 300%;
+  background-position: 0% 50%;
 }
 
 .wott-icon--x-symbol {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
-  background-position: 50% 100%;
+  background-size: 300% 300%;
+  background-position: 50% 50%;
 }
 
 .wott-icon--vulnerable {
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
-  background-position: 100% 100%;
+  background-size: 300% 300%;
+  background-position: 100% 50%;
+}
+
+.wott-icon--angry {
+  background-image: url("img/icons.png");
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
+  background-position: 0% 100%;
 }
 
 #wott-lanes {
@@ -380,7 +387,7 @@
   transform: translate(-50%, -50%);
   background-image: url("img/icons.png");
   background-repeat: no-repeat;
-  background-size: 300% 200%;
+  background-size: 300% 300%;
   background-position: 0% 0%;
 }
 

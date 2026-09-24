@@ -36,7 +36,13 @@ export class Lanes {
         this.lanesElement.querySelectorAll('.wott-lane--fighting').forEach(lane => lane.classList.remove('wott-lane--fighting'));
     }
     async notif_battleSpecialEffect(args) {
-        await this.showAttributeIcon(args.loserId, args.effect);
+        const icon = ATTRIBUTE_ICON_BY_EFFECT[args.effect];
+        if (icon) {
+            await this.showAttributeIcon(args.loserId, icon);
+        }
+    }
+    async notif_tacticAngry(args) {
+        await this.showAttributeIcon(args.cardId, 'angry');
     }
     async notif_cardsPlayed(args) {
         const playerId = Number(args.player_id);
@@ -95,10 +101,9 @@ export class Lanes {
         });
         await slideAllIntoPlace(moves);
     }
-    async showAttributeIcon(cardId, effect) {
+    async showAttributeIcon(cardId, icon) {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
-        const icon = ATTRIBUTE_ICON_BY_EFFECT[effect];
-        if (!cardElement || !icon) {
+        if (!cardElement) {
             return;
         }
         cardElement.insertAdjacentHTML('beforeend', `<div class="wott-attribute-icon wott-icon--${icon}"></div>`);

@@ -65,7 +65,15 @@ export class Lanes {
 
     // Notifications::battleSpecialEffect() — fires before hostageCaptured (shrine.ts), so the loser is still in the lane.
     async notif_battleSpecialEffect(args: BattleSpecialEffectNotifArgs): Promise<void> {
-        await this.showAttributeIcon(args.loserId, args.effect);
+        const icon = ATTRIBUTE_ICON_BY_EFFECT[args.effect];
+        if (icon) {
+            await this.showAttributeIcon(args.loserId, icon);
+        }
+    }
+
+    // [H15] Berserker's Angry is for this Battle only and never touches the Shrine (RULES.md §7 stays hostage-driven) — bug 245471.
+    async notif_tacticAngry(args: TacticAngryNotifArgs): Promise<void> {
+        await this.showAttributeIcon(args.cardId, 'angry');
     }
 
     async notif_cardsPlayed(args: CardsPlayedNotifArgs): Promise<void> {
@@ -143,10 +151,9 @@ export class Lanes {
         await slideAllIntoPlace(moves);
     }
 
-    private async showAttributeIcon(cardId: number, effect: string): Promise<void> {
+    private async showAttributeIcon(cardId: number, icon: string): Promise<void> {
         const cardElement = document.getElementById(`wott-card-${cardId}`);
-        const icon = ATTRIBUTE_ICON_BY_EFFECT[effect];
-        if (!cardElement || !icon) {
+        if (!cardElement) {
             return;
         }
 

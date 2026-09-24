@@ -32,9 +32,6 @@ export class PlayerPanels {
     notif_moodChanged(args) {
         this.setMoods(args.angry);
     }
-    notif_tacticAngry(args) {
-        this.setMoods(args.angry);
-    }
     async notif_warStarted(args) {
         this.applyPlayerColors(args.playerColors);
         const piles = Object.keys(args.deckColors)

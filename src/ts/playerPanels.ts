@@ -1,4 +1,4 @@
-// Calm/Angry (RULES.md §7) is never derived here: [H4] pins when it is evaluated and [H15]'s Berserker Angry is not a function of hostage counts at all, so the value only ever arrives from the server.
+// Calm/Angry (RULES.md §7) is never derived here — [H4] pins when it is evaluated, so the value only ever arrives from the server.
 import { guessableCardTypes } from "./tpls.js";
 import { Shrine } from "./shrine.js";
 import { slideFromRects } from "./animations.js";
@@ -49,11 +49,6 @@ export class PlayerPanels {
 
     /** Notifications::moodChanged() — both players' state, once per Battle. */
     notif_moodChanged(args: MoodChangedNotifArgs): void {
-        this.setMoods(args.angry);
-    }
-
-    // [H15] BattleEnd's own moodChanged reverts this — nothing persists the override.
-    notif_tacticAngry(args: TacticAngryNotifArgs): void {
         this.setMoods(args.angry);
     }
 
