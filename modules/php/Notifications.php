@@ -5,6 +5,7 @@ namespace Bga\Games\WarOfTheToads;
 
 use Bga\Games\WarOfTheToads\Helpers\Collection;
 use Bga\Games\WarOfTheToads\Managers\Cards;
+use Bga\Games\WarOfTheToads\Managers\Players;
 use Bga\Games\WarOfTheToads\Models\Card;
 use Bga\Games\WarOfTheToads\Models\Player;
 
@@ -374,7 +375,7 @@ class Notifications
     public static function battleSpecialEffect(string $effect, Card $winner, Card $loser): void
     {
         $messageByEffect = [
-            BATTLE_EFFECT_CANNON_WIN  => clienttranslate('Ka-Boom! ${winnerName}\'s Siege Cannon destroys ${loserName}'),
+            BATTLE_EFFECT_CANNON_WIN  => clienttranslate('Ka-Boom! ${player_name}\'s Siege Cannon destroys ${loserName}'),
             BATTLE_EFFECT_CANNON_LOSS => clienttranslate('Oops! ${loserName} misfires in Defence'),
             BATTLE_EFFECT_SABOTAGE    => clienttranslate('Sabotage! ${winnerName} disables the Siege Cannon'),
             BATTLE_EFFECT_ASSASSINATE => clienttranslate('Assassinate! ${winnerName} strikes down ${loserName}'),
@@ -383,6 +384,7 @@ class Notifications
         self::notifyAll('battleSpecialEffect', $messageByEffect[$effect], [
             'effect'     => $effect,
             'i18n'       => ['winnerName', 'loserName'],
+            'player'     => Players::get($winner->getController()),
             'winnerName' => $winner->getName(),
             'loserName'  => $loser->getName(),
             'loserId'    => $loser->getId(),
